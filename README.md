@@ -2,7 +2,7 @@
 
 放置ビルド型パチンコローグライク。全10面の納品ノルマを、玉デッキ×リール構成×お守り×盤面役物のビルドで打ち抜く。
 
-**Play: https://otarumi-cmyk.github.io/lucky-pachi/**
+**Play: https://mirupurasu-dev.github.io/lucky-pachi/**
 
 - 発射は全自動（おまかせ照準）。あなたはビルドを組むだけ
 - 面クリアで絵柄が解禁されていくメタ進行つき

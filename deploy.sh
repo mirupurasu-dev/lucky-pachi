@@ -6,4 +6,4 @@ cp ../lucky-pachi/index.html ../lucky-pachi/game.js .
 git add -A
 git commit -m "update game" || echo "no changes"
 git push
-echo "→ 数十秒後に https://otarumi-cmyk.github.io/lucky-pachi/ に反映"
+echo "→ 数十秒後に https://mirupurasu-dev.github.io/lucky-pachi/ に反映"
