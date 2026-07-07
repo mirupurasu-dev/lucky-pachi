@@ -544,6 +544,13 @@ function buildBoard() {
     { x: 105, y: 352, r: 15, ang: 0, dir: 1 },
     { x: 355, y: 352, r: 15, ang: 0, dir: -1 },
   ];
+  // 道釘(こぼし付き)の座標を先に確定。最下段の通常釘との間隔チェックに使う
+  const guideNails = [];
+  for (let i = 0; i < 11; i++) {
+    if (i === 3 || i === 7) continue;
+    guideNails.push({ x: 60 + i * 14, y: 536 + i * 2.8 });
+    guideNails.push({ x: 400 - i * 14, y: 536 + i * 2.8 });
+  }
   for (let row = 0; row < 15; row++) {
     const y = 96 + row * 33;
     if (y > 530) break;
@@ -553,14 +560,13 @@ function buildBoard() {
       if (nearBlock(x, y, 12)) continue;
       if (BOARD.windmills.some(w => dist(x, y, w.x, w.y) < w.r + 13)) continue;
       if (TULIPS.some(t => dist(x, y, t.x, t.y) < 30)) continue;
+      if (y > 500 && guideNails.some(g => dist(x, y, g.x, g.y) < 19)) continue; // 道釘の起点と挟まって玉詰まりする釘は間引く
       BOARD.pins.push({ x, y, alive: true, key: false });
     }
   }
   // 道釘(こぼし付き)。勾配は玉が滞留しない角度(2.8/14≒11°)
-  for (let i = 0; i < 11; i++) {
-    if (i === 3 || i === 7) continue;
-    BOARD.pins.push({ x: 60 + i * 14, y: 536 + i * 2.8, alive: true, key: false, guide: true });
-    BOARD.pins.push({ x: 400 - i * 14, y: 536 + i * 2.8, alive: true, key: false, guide: true });
+  for (const g of guideNails) {
+    BOARD.pins.push({ x: g.x, y: g.y, alive: true, key: false, guide: true });
   }
   // 寄り釘・命釘
   BOARD.pins.push({ x: 214, y: 552, alive: true, key: false, guide: true });
