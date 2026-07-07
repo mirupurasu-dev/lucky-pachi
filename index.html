@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>幸運のパチンコ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0c0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Reggae+One&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0b;
+    --panel: #14171599;
+    --panel2: #1b201d;
+    --line: #2a312d;
+    --text: #f2f5f3;
+    --dim: #8a948e;
+    --accent: #29e07c;      /* 面テーマでJSから書き換わる */
+    --accent2: #159254;
+    --danger: #ff4d5e;
+    --f-base: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    --f-disp: 'Reggae One', 'Zen Kaku Gothic New', sans-serif;
+    --f-num: 'Orbitron', 'Courier New', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--f-base);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+  #app { display: flex; gap: 16px; padding: 12px; align-items: stretch; }
+  #boardWrap {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line), 0 0 46px color-mix(in srgb, var(--accent) 18%, transparent), 0 24px 70px rgba(0,0,0,.7);
+    transition: box-shadow .8s;
+  }
+  canvas#board { display: block; background: #10130f; }
+
+  /* ================= 右パネル ================= */
+  #side { width: 296px; display: flex; flex-direction: column; gap: 9px; max-height: 780px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 14px;
+    backdrop-filter: blur(3px);
+  }
+  .card h3 { font-size: 10px; letter-spacing: .2em; color: var(--dim); margin-bottom: 6px; font-weight: 800; }
+
+  #stageLabel { font-size: 11px; color: var(--accent); font-weight: 900; letter-spacing: .08em; margin-bottom: 2px; transition: color .8s; }
+  #quotaAmount { font-size: 27px; font-weight: 800; line-height: 1.1; font-family: var(--f-num); letter-spacing: .02em; }
+  #quotaAmount span { font-size: 12px; color: var(--dim); margin-left: 3px; font-family: var(--f-base); font-weight: 800; }
+  #shotsBarWrap { margin-top: 8px; height: 8px; border-radius: 4px; background: #0a0c0b; border: 1px solid var(--line); overflow: hidden; }
+  #shotsBar { height: 100%; background: var(--accent); width: 100%; transition: width .2s linear, background .8s; }
+  #shotsBar.low { background: var(--danger); }
+  #shotsLabel { margin-top: 4px; font-size: 11px; color: var(--dim); }
+  #shotsLabel b { color: var(--text); }
+
+  #balls { font-size: 30px; font-weight: 800; color: var(--accent); line-height: 1.05; transition: color .8s; font-family: var(--f-num); letter-spacing: .02em; }
+  #balls span { font-size: 12px; color: var(--dim); margin-left: 3px; font-family: var(--f-base); font-weight: 800; }
+  .statChip b { font-family: var(--f-num); font-weight: 600; font-size: 10.5px; }
+  #balls.bump { animation: bump .3s ease; }
+  @keyframes bump { 30% { transform: scale(1.12); } }
+  #statChips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .statChip {
+    font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 6px;
+    background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  }
+  .statChip b { color: var(--accent); transition: color .8s; }
+
+  .chipRow { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; }
+  .chip {
+    position: relative;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 7px;
+    padding: 4px 8px; font-size: 11px; font-weight: 900; cursor: help;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+  .chip .cnt { color: var(--dim); font-size: 10px; }
+  .chip .tip {
+    display: none; position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 40;
+    width: 180px; background: #060807ee; border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 9px; font-size: 10.5px; font-weight: 600; line-height: 1.5; color: var(--text);
+  }
+  .chip:hover .tip { display: block; }
+  .chip.sym { font-size: 13px; padding: 3px 7px; }
+
+  #log { flex: 1; min-height: 60px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+         font-size: 11px; line-height: 1.65; font-weight: 600; color: var(--dim); }
+  #log .hit { color: var(--accent); font-weight: 800; }
+  #log .bad { color: var(--danger); font-weight: 800; }
+
+  /* 発射つよさコントロール */
+  #powerCtl { display: flex; gap: 6px; align-items: stretch; }
+  .pwBtn {
+    width: 54px; font-size: 17px; font-weight: 900;
+    background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; cursor: pointer; font-family: inherit;
+  }
+  .pwBtn:active { border-color: var(--accent); color: var(--accent); }
+  #pwBar {
+    flex: 1; display: flex; gap: 3px; height: 40px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  }
+  #pwBar .seg { flex: 1; height: 100%; border-radius: 2px; background: #202623; }
+  #pwBar .seg.on { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  #controls { display: flex; gap: 6px; }
+  .ctlBtn {
+    flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; letter-spacing: .05em;
+    background: var(--panel2); color: var(--dim); border: 1px solid var(--line); border-radius: 8px;
+    cursor: pointer; font-family: inherit; transition: color .2s, border-color .2s;
+  }
+  .ctlBtn.on { color: var(--accent); border-color: var(--accent2); }
+
+  /* ================= オーバーレイ共通 ================= */
+  .overlay {
+    position: absolute; inset: 0; background: rgba(4, 6, 5, .9); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; z-index: 60;
+  }
+  .overlay.show { display: flex; }
+  .overlay .inner { text-align: center; padding: 20px; width: 100%; max-width: 430px; }
+  .overlay h1 { font-size: 38px; font-weight: 400; letter-spacing: .05em; line-height: 1.3; font-family: var(--f-disp); }
+  .overlay h1 .green { color: var(--accent); }
+  .overlay h1 .red { color: var(--danger); }
+  .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
+  .overlay p b { color: var(--text); }
+  .bigBtn {
+    margin-top: 18px; padding: 13px 40px; font-size: 15px; font-weight: 900; letter-spacing: .12em;
+    background: var(--accent); color: #04140b; border: none; border-radius: 10px; cursor: pointer; font-family: inherit;
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .bigBtn:hover { filter: brightness(1.15); }
+  .ghostBtn {
+    margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--dim);
+    padding: 9px 26px; border-radius: 9px; font-size: 12px; font-weight: 800; letter-spacing: .1em;
+    cursor: pointer; font-family: inherit;
+  }
+  .ghostBtn:hover { color: var(--text); border-color: var(--dim); }
+
+  /* ================= ドラフト/ショップ ================= */
+  #draftCards { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
+  .draftCard {
+    width: 128px; background: linear-gradient(170deg, #1b201d, #101312);
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px 12px;
+    cursor: pointer; font-family: inherit; color: var(--text); text-align: center;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .draftCard:hover {
+    transform: translateY(-6px) scale(1.04);
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .draftCard .kind { font-size: 9px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
+  .draftCard.rare { border-color: #38c8ff66; }
+  .draftCard.rare .kind { color: #38c8ff; }
+  .draftCard.rare:hover { border-color: #38c8ff; box-shadow: 0 10px 30px #38c8ff40; }
+  .draftCard.legend { border-color: #ff4dff88; box-shadow: 0 0 16px #ff4dff2e; }
+  .draftCard.legend .kind { color: #ff4dff; }
+  .draftCard.legend:hover { border-color: #ff4dff; box-shadow: 0 10px 34px #ff4dff55; }
+  .shopItem .rar { font-size: 9px; font-weight: 900; letter-spacing: .12em; margin-right: 4px; }
+  .draftCard .icon { font-size: 34px; line-height: 1.6; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 60%, transparent)); }
+  .draftCard .icon .dot2 { display: inline-block; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 14px currentColor; }
+  .draftCard .nm { font-size: 13.5px; font-weight: 900; margin-top: 2px; }
+  .draftCard .ds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 5px; line-height: 1.5; min-height: 44px; }
+
+  /* 開始リール選択 */
+  #buildGrid, #removeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 12px; }
+  .buildCard {
+    background: linear-gradient(170deg, #1b201d, #101312);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 4px 7px; cursor: pointer; font-family: inherit; color: var(--text);
+    text-align: center; transition: transform .12s, border-color .12s;
+  }
+  .buildCard:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--accent); }
+  .buildCard:disabled { opacity: .28; cursor: default; }
+  .buildCard .g { font-size: 24px; line-height: 1.3; }
+  .buildCard .n { font-size: 10.5px; font-weight: 900; margin-top: 2px; }
+  .buildCard .d { font-size: 8.5px; color: var(--dim); font-weight: 600; margin-top: 3px; line-height: 1.35; min-height: 22px; }
+  .buildCard.rare { border-color: #38c8ff55; }
+  .buildCard.rare:hover:not(:disabled) { border-color: #38c8ff; box-shadow: 0 6px 18px #38c8ff33; }
+
+  #shopItems { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .shopItem {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 13px; cursor: pointer; font-family: inherit; color: var(--text); width: 100%;
+  }
+  .shopItem:hover:not(:disabled) { border-color: var(--accent2); }
+  .shopItem:disabled { opacity: .35; cursor: default; }
+  .shopItem .ic { font-size: 20px; width: 26px; text-align: center; }
+  .shopItem .nm { font-size: 13px; font-weight: 900; }
+  .shopItem .ds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 1px; }
+  .shopItem .pr { margin-left: auto; font-size: 14px; font-weight: 900; color: var(--accent); white-space: nowrap; }
+
+  /* ================= 演出レイヤー ================= */
+  #fxLayer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+
+  /* カットイン帯 */
+  #cutin {
+    position: absolute; left: -120%; top: 40%; width: 140%; height: 96px;
+    background: linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--accent) 88%, black) 12%, color-mix(in srgb, var(--accent) 88%, black) 88%, transparent 100%);
+    transform: skewY(-4deg);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+  }
+  #cutin.show { animation: cutinSweep 1.5s cubic-bezier(.16,.9,.24,1) forwards; }
+  @keyframes cutinSweep {
+    0%   { left: -130%; opacity: 0; }
+    18%  { left: -6%; opacity: 1; }
+    72%  { left: -4%; opacity: 1; }
+    100% { left: 130%; opacity: 0; }
+  }
+  #cutinText {
+    font-size: 46px; font-weight: 400; font-style: italic; letter-spacing: .1em;
+    font-family: var(--f-disp);
+    color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 26px rgba(255,255,255,.6);
+    white-space: nowrap;
+  }
+  #cutin .stripes {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,.14) 0 12px, transparent 12px 34px);
+    mix-blend-mode: overlay;
+  }
+
+  /* 面タイトルカード */
+  #stageCard {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    flex-direction: column; background: rgba(3,5,4,.72); z-index: 55;
+    pointer-events: none;
+  }
+  #stageCard.show { display: flex; animation: stageCardIn 2.2s ease forwards; }
+  @keyframes stageCardIn { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  #stageCard .num {
+    font-size: 15px; letter-spacing: .55em; color: var(--accent); font-weight: 900;
+    animation: trackIn 1.6s ease;
+  }
+  #stageCard .nm {
+    font-size: 60px; font-weight: 400; letter-spacing: .28em; margin-top: 8px; text-indent: .28em;
+    font-family: var(--f-disp);
+    text-shadow: 0 0 34px color-mix(in srgb, var(--accent) 65%, transparent);
+    animation: trackIn 1.9s ease;
+  }
+  @keyframes trackIn { from { letter-spacing: .9em; opacity: 0; } to { opacity: 1; } }
+
+  /* 納品スタンプ */
+  #stamp {
+    position: absolute; left: 50%; top: 42%;
+    transform: translate(-50%,-50%) rotate(-8deg) scale(3);
+    border: 5px solid var(--accent); color: var(--accent); border-radius: 10px;
+    font-size: 46px; font-weight: 400; letter-spacing: .12em; padding: 6px 26px;
+    font-family: var(--f-disp);
+    opacity: 0; background: rgba(4,6,5,.55);
+  }
+  #stamp.show { animation: stampSlam .9s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes stampSlam {
+    0% { opacity: 0; transform: translate(-50%,-50%) rotate(-8deg) scale(3); }
+    30% { opacity: 1; transform: translate(-50%,-50%) rotate(-8deg) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%,-50%) rotate(-8deg) scale(1); }
+  }
+
+  /* 画面フラッシュ */
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  #flash.go { animation: flashOut .5s ease-out forwards; }
+  @keyframes flashOut { from { opacity: .75; } to { opacity: 0; } }
+
+  /* ================= スマホ対応(スクロール無し・アプリ的レイアウト) ================= */
+  :root { --mtop-h: 74px; --mbottom-h: 100px; } /* JSがResizeObserverで実測して上書きする */
+
+  /* デスクトップでは以下のラッパーは透明(子要素がそのまま#sideのflex列に並ぶ) */
+  #topBar, #sheetCards, #bottomBar { display: contents; }
+  #sheetBackdrop, #sheetToggle { display: none; }
+
+  @media (max-width: 940px) {
+    html { height: 100dvh; overflow: hidden; }
+    body {
+      position: fixed; inset: 0; width: 100%; height: 100dvh;
+      overflow: hidden; overscroll-behavior: none; touch-action: none;
+      padding: 0; align-items: stretch; justify-content: stretch;
+    }
+    #app { flex-direction: column; padding: 0; gap: 0; width: 100%; max-width: none; height: 100dvh; margin: 0; }
+
+    #boardWrap {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      padding-top: calc(var(--mtop-h) + env(safe-area-inset-top));
+      padding-bottom: calc(var(--mbottom-h) + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 0; box-shadow: none;
+    }
+    canvas#board { max-width: 100%; max-height: 100%; width: auto; height: auto; touch-action: none; display: block; }
+
+    #side { position: static; display: block; width: 100%; max-height: none; }
+
+    /* ---- 上部HUD(ノルマ+持ち玉、常時表示) ---- */
+    #topBar {
+      display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 22;
+      padding-top: env(safe-area-inset-top);
+      background: rgba(10,12,11,.88); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    #topBar .card {
+      background: none; border: none; border-radius: 0; backdrop-filter: none;
+      padding: 6px 10px; flex: 1 1 50%; min-width: 140px;
+    }
+    #topBar h3 { display: none; }
+    #stageLabel { font-size: 9px; margin-bottom: 1px; }
+    #quotaAmount { font-size: 18px; }
+    #shotsBarWrap { margin-top: 4px; height: 5px; }
+    #shotsLabel { margin-top: 2px; font-size: 9.5px; }
+    #balls { font-size: 20px; }
+    #statChips { margin-top: 3px; gap: 4px; }
+    .statChip { font-size: 9px; padding: 2px 6px; }
+
+    /* ---- 下部固定バー(発射つよさ + 操作 + 装備トグル) ---- */
+    #bottomBar {
+      display: flex; flex-direction: column; gap: 5px;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 22;
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+      background: rgba(10,12,11,.92); backdrop-filter: blur(8px);
+      border-top: 1px solid var(--line);
+    }
+    #powerCtl { height: 42px; }
+    .pwBtn { width: 46px; font-size: 15px; }
+    #controls { gap: 4px; }
+    .ctlBtn { padding: 9px 2px; font-size: 9px; line-height: 1.25; }
+    #sheetToggle { display: block; }
+
+    /* ---- 装備シート(下からスライドイン、押した時だけ画面を覆う) ---- */
+    #sheetBackdrop {
+      display: block; position: fixed; inset: 0;
+      bottom: var(--mbottom-h);
+      background: rgba(0,0,0,.55); z-index: 33;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    #sheetBackdrop.open { opacity: 1; pointer-events: auto; }
+    #sheetCards {
+      display: flex; flex-direction: column; gap: 8px;
+      position: fixed; left: 0; right: 0; bottom: var(--mbottom-h); z-index: 35;
+      max-height: min(62dvh, calc(100dvh - var(--mtop-h) - var(--mbottom-h) - 16px));
+      overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+      background: #0d0f0e; border: 1px solid var(--line); border-bottom: none;
+      border-radius: 16px 16px 0 0;
+      padding: 12px 12px calc(10px + env(safe-area-inset-bottom));
+      box-shadow: 0 -14px 40px rgba(0,0,0,.55);
+      transform: translateY(calc(100% + 100dvh)); /* 自身の高さに関わらず確実に画面外へ退避 */
+      pointer-events: none;
+      transition: transform .3s cubic-bezier(.2,.85,.25,1);
+    }
+    #sheetCards.open { transform: translateY(0); pointer-events: auto; }
+    #sheetCards .card { padding: 8px 4px; }
+    #sheetCards .card:not(:last-child) { border-bottom: 1px solid var(--line); border-radius: 0; padding-bottom: 10px; }
+
+    .overlay h1 { font-size: 26px; }
+    .overlay .inner { max-width: 94%; padding: 12px; max-height: 92dvh; overflow-y: auto; }
+    #cutinText { font-size: 30px; }
+    #stageCard .nm { font-size: 40px; }
+    #stamp { font-size: 30px; }
+    #fever .row { font-size: 48px; }
+    #draftCards { gap: 7px; }
+    .draftCard { width: calc(33.3% - 7px); min-width: 92px; padding: 10px 6px 9px; }
+    .draftCard .ds { font-size: 9.5px; min-height: 38px; }
+    #buildGrid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .buildCard .d { font-size: 8px; }
+  }
+
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 45; opacity: 0; transition: opacity .5s;
+    background: radial-gradient(ellipse at center, transparent 46%, rgba(0,0,0,.78) 100%);
+  }
+
+  /* FEVERマーキー(RUSH中) */
+  #fever { position: absolute; inset: 0; overflow: hidden; display: none; z-index: 38; pointer-events: none; opacity: .12; }
+  #fever.on { display: block; }
+  #fever .row {
+    position: absolute; white-space: nowrap;
+    font-size: 74px; font-weight: 400; font-style: italic; letter-spacing: .1em;
+    font-family: var(--f-disp);
+    color: transparent; -webkit-text-stroke: 2px #fff;
+    animation: feverScroll 7s linear infinite;
+  }
+  #fever .row:nth-child(2) { animation-duration: 9s; animation-direction: reverse; opacity: .7; }
+  #fever .row:nth-child(3) { animation-duration: 5.5s; opacity: .5; }
+  @keyframes feverScroll { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+
+  /* 持ち玉オドメーター */
+  #balls .dg { display: inline-block; }
+  #balls .dg.roll { animation: dgRoll .34s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes dgRoll {
+    0% { transform: translateY(-.55em) scale(1.15); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  #vignette.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="boardWrap">
+    <canvas id="board" width="600" height="910"></canvas>
+
+    <div id="vignette"></div>
+    <div id="fever">
+      <div class="row" style="top:14%">FEVER FEVER FEVER FEVER FEVER FEVER FEVER FEVER </div>
+      <div class="row" style="top:44%">RUSH RUSH RUSH RUSH RUSH RUSH RUSH RUSH RUSH </div>
+      <div class="row" style="top:74%">FEVER FEVER FEVER FEVER FEVER FEVER FEVER FEVER </div>
+    </div>
+    <div id="fxLayer">
+      <div id="cutin"><div class="stripes"></div><span id="cutinText">RUSH</span></div>
+      <div id="stamp">納品完了</div>
+      <div id="flash"></div>
+    </div>
+    <div id="stageCard"><div class="num">第一面</div><div class="nm">場末</div></div>
+
+    <div class="overlay show" id="titleOverlay">
+      <div class="inner">
+        <h1><span class="green">幸運の</span><br>パチンコ</h1>
+        <p>玉を集め、リールを組み替え、台を改造しながら<br>全10面の<b>納品ノルマ</b>を打ち抜く放置系パチンコローグライク。<br>発射は全自動。あなたはビルドを組むだけ。</p>
+        <p id="bestLoop" style="margin-top:6px;color:var(--accent);font-weight:900;display:none"></p>
+        <button class="bigBtn" id="startBtn">開店</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="buildOverlay">
+      <div class="inner" style="max-width:440px">
+        <h1 style="font-size:22px" id="buildTitle">開始リールを組め</h1>
+        <p id="buildSub" style="margin-top:4px"></p>
+        <div id="buildGrid"></div>
+        <p id="buildLocked" style="margin-top:8px;font-size:10px;color:var(--dim);font-weight:700"></p>
+        <div id="buildPicked" class="chipRow" style="margin-top:8px;justify-content:center"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="draftOverlay">
+      <div class="inner">
+        <h1 style="font-size:24px"><span class="green">戦利品</span>を1つ選べ</h1>
+        <p style="margin-top:4px">REEL＝リールに絵柄を1個追加。<b>同じ絵柄を重ねるほど3揃いが出やすくなる（枚数の3乗）</b>。<br>BALL＝玉デッキに特殊玉を追加。RELIC＝台そのものを改造。3系統を重ねてビルドを作れ。</p>
+        <div id="draftCards"></div>
+        <button class="ghostBtn" id="draftSkip">受け取らない</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="shopOverlay">
+      <div class="inner">
+        <h1 style="font-size:24px">闇改造<span class="green">屋台</span></h1>
+        <p id="shopSub" style="margin-top:4px"></p>
+        <div id="shopItems"></div>
+        <button class="bigBtn" id="shopNext" style="margin-top:14px;padding:11px 34px;font-size:13px">次の面へ</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="gameoverOverlay">
+      <div class="inner">
+        <h1><span class="red">廃業</span></h1>
+        <p id="gameoverText"></p>
+        <button class="bigBtn" id="retryBtn">もう一度</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="clearOverlay">
+      <div class="inner">
+        <h1><span class="green">全納品完了</span></h1>
+        <p id="clearText"></p>
+        <button class="bigBtn" id="nextLoopBtn">2周目に挑む</button>
+        <p style="margin-top:8px"><button class="ghostBtn" id="clearRetryBtn" style="margin-top:2px">1周目に戻る</button></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="removeOverlay">
+      <div class="inner" style="max-width:440px">
+        <h1 style="font-size:22px">🧹 絵柄を<span class="green">1枚はがす</span></h1>
+        <p style="margin-top:4px">リールが薄くなるぶん、<b>残った絵柄が揃いやすくなる</b>（枚数の3乗）</p>
+        <div id="removeGrid"></div>
+        <button class="ghostBtn" id="removeCancel">やめる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="side">
+    <div id="topBar">
+      <div class="card" id="deadlineCard">
+        <h3>納品ノルマ</h3>
+        <div id="stageLabel"></div>
+        <div id="quotaAmount">0<span>玉</span></div>
+        <div id="shotsBarWrap"><div id="shotsBar"></div></div>
+        <div id="shotsLabel">この面の残り <b id="shotsLeft">0</b> 発</div>
+      </div>
+
+      <div class="card" id="ballsCard">
+        <h3>持ち玉</h3>
+        <div id="balls">0<span>玉</span></div>
+        <div id="statChips">
+          <span class="statChip">運 <b id="luckV">1.0</b></span>
+          <span class="statChip">倍率 <b id="multV">×1.0</b></span>
+          <span class="statChip">相乗 <b id="synV">×1.00</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="sheetBackdrop"></div>
+    <div id="sheetCards">
+      <div class="card">
+        <h3>玉デッキ</h3>
+        <div class="chipRow" id="deckChips"></div>
+      </div>
+
+      <div class="card">
+        <h3>リール構成（揃うと発動）</h3>
+        <div class="chipRow" id="symChips"></div>
+      </div>
+
+      <div class="card">
+        <h3>お守り</h3>
+        <div class="chipRow" id="relicChips"></div>
+      </div>
+
+      <div class="card">
+        <h3>盤面役物（6スロット）</h3>
+        <div class="chipRow" id="partChips"></div>
+      </div>
+
+      <div class="card">
+        <h3>シナジー・特殊役</h3>
+        <div class="chipRow" id="synChips"></div>
+        <div class="chipRow" id="recipeChips" style="margin-top:6px"></div>
+      </div>
+
+      <div class="card" id="log"></div>
+    </div>
+
+    <div id="bottomBar">
+      <div id="powerCtl">
+        <button class="pwBtn" id="pwDown">◀</button>
+        <div id="pwBar"></div>
+        <button class="pwBtn" id="pwUp">▶</button>
+      </div>
+
+      <div id="controls">
+        <button class="ctlBtn" id="hitBtn">👈左打ち</button>
+        <button class="ctlBtn on" id="aimBtn">おまかせ照準</button>
+        <button class="ctlBtn" id="speedBtn">倍速 ×1</button>
+        <button class="ctlBtn on" id="sndBtn">音</button>
+        <button class="ctlBtn on" id="fxBtn">演出MAX</button>
+        <button class="ctlBtn" id="sheetToggle">🎒装備</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
