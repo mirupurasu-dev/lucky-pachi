@@ -1881,11 +1881,25 @@ function spawnAmbient(dt) {
 }
 
 // ---------- サウンド ----------
-let AC = null;
+let AC = null, MASTER = null;
 function ensureAudio() {
-  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      // マスターコンプレッサー: 派手な多重レイヤーでも音割れしない
+      MASTER = AC.createDynamicsCompressor();
+      MASTER.threshold.value = -16;
+      MASTER.knee.value = 18;
+      MASTER.ratio.value = 6;
+      MASTER.attack.value = 0.003;
+      MASTER.release.value = 0.22;
+      MASTER.connect(AC.destination);
+    } catch (e) {}
+  }
   if (AC && AC.state === 'suspended') AC.resume();
 }
+function sndOK() { return AC && !S.simMode && S.sndOn; }
+function OUT() { return MASTER || AC.destination; }
 let lastTick = 0;
 function beep(freq, dur, type, gain, delay) {
   if (!AC || S.simMode || !S.sndOn) return;
@@ -1894,8 +1908,107 @@ function beep(freq, dur, type, gain, delay) {
   o.type = type || 'sine'; o.frequency.value = freq;
   g.gain.setValueAtTime(gain || 0.08, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(AC.destination);
+  o.connect(g); g.connect(OUT());
   o.start(t); o.stop(t + dur + 0.02);
+}
+// ---------- 派手系シンセヘルパー ----------
+function brass(f, dur, gain, delay = 0) { // デチューン3声+フィルタが開くブラス風
+  if (!sndOK()) return;
+  const t = AC.currentTime + delay;
+  for (const det of [-7, 0, 8]) {
+    const o = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter();
+    o.type = 'sawtooth';
+    o.frequency.value = f * Math.pow(2, det / 1200);
+    fl.type = 'lowpass';
+    fl.frequency.setValueAtTime(500, t);
+    fl.frequency.exponentialRampToValueAtTime(4200, t + 0.05);
+    fl.frequency.exponentialRampToValueAtTime(900, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(fl); fl.connect(g); g.connect(OUT());
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+}
+function kick(gain = 0.22, delay = 0) { // ティンパニ/キック
+  if (!sndOK()) return;
+  const t = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(170, t);
+  o.frequency.exponentialRampToValueAtTime(42, t + 0.22);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+  o.connect(g); g.connect(OUT());
+  o.start(t); o.stop(t + 0.38);
+}
+function crash(gain = 0.13, dur = 1.4, delay = 0) { // クラッシュシンバル
+  if (!sndOK()) return;
+  if (!noiseBuf) {
+    noiseBuf = AC.createBuffer(1, (AC.sampleRate * 0.5) | 0, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t = AC.currentTime + delay;
+  const src = AC.createBufferSource();
+  src.buffer = noiseBuf; src.loop = true;
+  const f = AC.createBiquadFilter();
+  f.type = 'highpass'; f.frequency.value = 5200;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(OUT());
+  src.start(t); src.stop(t + dur);
+}
+function bellTone(f, gain = 0.05, delay = 0) { // キラキラベル(倍音付き)
+  if (!sndOK()) return;
+  const t = AC.currentTime + delay;
+  for (const [mul, gm] of [[1, 1], [2.76, 0.4]]) {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sine'; o.frequency.value = f * mul;
+    g.gain.setValueAtTime(gain * gm, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g); g.connect(OUT());
+    o.start(t); o.stop(t + 0.55);
+  }
+}
+function coinTick(delay, gain = 0.04) { // ドル箱ジャラジャラの1粒
+  if (!sndOK()) return;
+  const t = AC.currentTime + delay;
+  const f = 1700 + Math.random() * 2300;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f, t);
+  o.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.05);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  o.connect(g); g.connect(OUT());
+  o.start(t); o.stop(t + 0.08);
+}
+// 金額ティア別の大当たりファンファーレ(パチンコ級)
+function megawinSound(tierMin) {
+  if (!sndOK()) return;
+  // 駆け上がりグリス
+  for (let i = 0; i < 10; i++) beep(400 * Math.pow(2, i / 6), 0.05, 'square', 0.05, i * 0.04);
+  kick(0.26, 0.42);
+  crash(0.15, 1.6, 0.42);
+  boomNoise(0.2, 0.5);
+  // ブラスファンファーレ C→F→G→C
+  const prog = [[262, 330, 392], [349, 440, 523], [392, 494, 587], [523, 659, 784]];
+  prog.forEach((ch, i) => {
+    ch.forEach(fq => brass(fq, i === 3 ? 0.9 : 0.32, 0.05, 0.42 + i * 0.3));
+    kick(0.16, 0.42 + i * 0.3);
+  });
+  crash(0.11, 1.8, 1.32);
+  if (tierMin >= 1500) { // SUPER以上: キラキラベルの雨
+    for (let i = 0; i < 9; i++) bellTone(1568 + Math.random() * 1400, 0.045, 1.25 + i * 0.15);
+  }
+  if (tierMin >= 4000) { // FEVER: 1オクターブ上で二周目+追いクラッシュ
+    prog.forEach((ch, i) => ch.forEach(fq => brass(fq * 2, i === 3 ? 1.1 : 0.28, 0.04, 1.85 + i * 0.28)));
+    kick(0.24, 1.85); kick(0.24, 2.4);
+    crash(0.12, 2.2, 1.85);
+    for (let i = 0; i < 10; i++) bellTone(2093 + Math.random() * 1600, 0.04, 2.4 + i * 0.14);
+  }
 }
 function sfx(kind) {
   if (!AC || S.simMode || !S.sndOn) return;
@@ -1915,12 +2028,19 @@ function sfx(kind) {
     case 'two': beep(700, 0.08, 'square', 0.06); beep(1050, 0.1, 'square', 0.05, 0.06); break;
     case 'reach': for (let i = 0; i < 8; i++) beep(400 + i * 90, 0.07, 'sawtooth', 0.04, i * 0.08); break;
     case 'jackpot': {
-      [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => {
-        beep(f, 0.16, 'square', 0.07, i * 0.11); beep(f / 2, 0.16, 'triangle', 0.05, i * 0.11);
-      });
+      // 駆け上がり→ブラス2連+ティンパニ+クラッシュ
+      for (let i = 0; i < 7; i++) beep(500 * Math.pow(2, i / 7), 0.06, 'square', 0.05, i * 0.045);
+      kick(0.24, 0.32);
+      crash(0.12, 1.2, 0.32);
+      [523, 659, 784].forEach(f => brass(f, 0.45, 0.055, 0.32));
+      [659, 830, 988].forEach(f => brass(f, 0.55, 0.05, 0.64));
       break;
     }
-    case 'bigwin': [659, 880, 1174, 1568].forEach((f, i) => beep(f, 0.14, 'square', 0.07, i * 0.09)); break;
+    case 'bigwin':
+      [659, 880, 1174, 1568].forEach((f, i) => beep(f, 0.14, 'square', 0.07, i * 0.09));
+      kick(0.16, 0.05);
+      crash(0.07, 0.7, 0.05);
+      break;
     case 'shower': for (let i = 0; i < 10; i++) beep(900 + rng() * 900, 0.06, 'sine', 0.05, i * 0.09); break;
     case 'catch': beep(440, 0.05, 'square', 0.05); beep(880, 0.07, 'square', 0.045, 0.03); break;
     case 'round': beep(523, 0.1, 'square', 0.06); beep(784, 0.12, 'square', 0.055, 0.09); break;
@@ -1929,14 +2049,7 @@ function sfx(kind) {
     case 'boom': beep(90, 0.3, 'sawtooth', 0.1); boomNoise(0.14, 0.35); break;
     case 'zap': beep(2400, 0.05, 'sawtooth', 0.06); beep(1200, 0.09, 'sawtooth', 0.05, 0.03); break;
     case 'death': beep(110, 0.9, 'sawtooth', 0.1); beep(82, 1.2, 'sawtooth', 0.08, 0.15); break;
-    case 'megawin': {
-      // 和音スタブ3連+シンバル+上昇シャイン
-      [[262, 330, 392], [330, 415, 494], [523, 659, 784]].forEach((chord, i) =>
-        chord.forEach(f => { beep(f, 0.3, 'square', 0.055, i * 0.16); beep(f * 2, 0.3, 'triangle', 0.04, i * 0.16); }));
-      boomNoise(0.22, 0.7);
-      for (let i = 0; i < 10; i++) beep(1400 + i * 240, 0.09, 'sine', 0.035, 0.5 + i * 0.05);
-      break;
-    }
+    case 'megawin': megawinSound(500); break;
   }
 }
 // ノイズ爆発音(WebAudioバッファ合成)
@@ -1955,7 +2068,7 @@ function boomNoise(gain = 0.15, dur = 0.35) {
   const g = AC.createGain();
   g.gain.setValueAtTime(gain, AC.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
-  src.connect(f); f.connect(g); g.connect(AC.destination);
+  src.connect(f); f.connect(g); g.connect(OUT());
   src.start(); src.stop(AC.currentTime + dur);
 }
 // RUSH中のBGMシーケンサー + 激アツ心音(フレーム駆動の先行スケジューリング)
@@ -1982,12 +2095,14 @@ function audioTick() {
       S.hbNext += 0.85;
     }
   } else S.hbNext = 0;
-  // 祝祭カウントアップ中の払い出しチック音(進行に合わせて音程上昇)
+  // 祝祭カウントアップ中はドル箱ジャラジャラ(進むほど密度と音量が上がる)
   if (S.celebrate && S.celebrate.prog < 1) {
     if (!S.payNext || S.payNext < now) S.payNext = now + 0.02;
     while (S.payNext < now + 0.2) {
-      beep(850 + 750 * S.celebrate.prog, 0.03, 'square', 0.045, S.payNext - now);
-      S.payNext += 0.05;
+      coinTick(S.payNext - now, 0.032 + S.celebrate.prog * 0.022);
+      if (Math.random() < 0.45) coinTick(S.payNext - now + 0.013, 0.028);
+      if (Math.random() < 0.08) bellTone(1800 + Math.random() * 1200, 0.03, S.payNext - now);
+      S.payNext += 0.036;
     }
   } else S.payNext = 0;
 }
@@ -2352,6 +2467,7 @@ function celebrate(amount) {
   S.boardFlash = 1;
   fx.flashDOM();
   fx.confettiBurst(tier.coins);
+  megawinSound(tier.min);
   for (let i = 0; i < tier.fw; i++) {
     setTimeout(() => { if (!S.simMode) fx.fireworks(50 + rng() * 360, 120 + rng() * 280); }, i * 240);
   }
