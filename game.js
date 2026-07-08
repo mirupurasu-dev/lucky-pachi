@@ -912,6 +912,7 @@ function startFever() {
   fx.confettiBurst(120);
   for (let i = 0; i < 6; i++) setTimeout(() => { if (S.fever && !S.simMode) fx.fireworks(60 + rng() * 340, 100 + rng() * 300); }, i * 200);
   fountainBurst(70);
+  charCutin('hot', 2.6);
   feverStartSound();
   updateHUD();
 }
@@ -1093,7 +1094,7 @@ function spinStep(dt) {
     if (!S.simMode) {
       sfx('reach');
       document.getElementById('vignette').classList.add('on');
-      if (S.spin.hot) { fx.cutin('激アツ！！', true); sfx('atsu'); }
+      if (S.spin.hot) { fx.cutin('激アツ！！', true); sfx('atsu'); charCutin('hot', 2.4); }
     }
   }
   if (S.spin.t >= S.spin.stopAt[2]) resolveSpin();
@@ -1365,6 +1366,7 @@ function startStage(n) {
     card.querySelector('.nm').textContent = S.theme.name;
     card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
     sfx('stage');
+    charCutin('normal', 1.7); // 面開始の挨拶
   }
   updateHUD();
 }
@@ -1736,7 +1738,7 @@ function resetGame() {
     symbolPool: {},
     relics: [], parts: [], luck: CFG.luckStart, mult: 1, hesoPayPerm: 0, magnetPulse: 0, lastFiredType: 'shiro',
     allUnlock: false,
-    hold: [], spin: null, rush: null, ballsOnBoard: [], winFx: null,
+    hold: [], spin: null, rush: null, ballsOnBoard: [], winFx: null, charFx: null,
     power: 0.62, targetPower: 0.62, fireCd: 0, rightHit: false,
     shower: 0, showerCd: 0, simMode: false,
     aimBins: Array.from({ length: 8 }, () => ({ shots: 0, heso: 0 })),
@@ -2256,7 +2258,7 @@ function audioTick() {
       const f = 262 * Math.pow(2, patF[st] / 12);
       beep(f, 0.09, 'square', 0.034, S.bgmNext - now);
       beep(f / 2, 0.11, 'triangle', 0.03, S.bgmNext - now);
-      if (st % 4 === 0) kick(0.12, S.bgmNext - now);
+      if (st % 4 === 0) { kick(0.12, S.bgmNext - now); S.beatT = 1; }
       if (st % 2 === 1) coinTick(S.bgmNext - now, 0.013);
       S.bgmStep++;
       S.bgmNext += 0.095;
@@ -2268,7 +2270,7 @@ function audioTick() {
       const f = 220 * Math.pow(2, pat[S.bgmStep % 8] / 12);
       beep(f, 0.1, 'square', 0.03, S.bgmNext - now);
       beep(f / 2, 0.1, 'triangle', 0.028, S.bgmNext - now);
-      if (S.bgmStep % 4 === 0) boomNoise(0.02, 0.08);
+      if (S.bgmStep % 4 === 0) { boomNoise(0.02, 0.08); S.beatT = 1; }
       S.bgmStep++;
       S.bgmNext += 0.115;
     }
@@ -2455,12 +2457,13 @@ function createGLPresenter(canvas, srcCanvas) {
     s+=(texture2D(t,v+d*1.384).rgb+texture2D(t,v-d*1.384).rgb)*.316;
     s+=(texture2D(t,v+d*3.230).rgb+texture2D(t,v-d*3.230).rgb)*.0702;
     gl_FragColor=vec4(s,1.);}`);
-  // 合成: ベース+ブルーム+ガラス反射スイープ+上部ハイライト+彩度+ビネット
+  // 合成: ベース+ブルーム+アナモルフィックストリーク+ガラス反射スイープ+上部ハイライト+彩度+ビネット
   const P_COMP = prog(`precision mediump float;varying vec2 v;
-    uniform sampler2D t,b;uniform float time,bloom,fxon;
+    uniform sampler2D t,b,s;uniform float time,bloom,fxon,streak;
     void main(){
       vec3 base=texture2D(t,v).rgb;
       vec3 c=base+texture2D(b,v).rgb*bloom;
+      c+=texture2D(s,v).rgb*vec3(.5,.72,1.)*streak;
       float sweep=sin(time*.13)*1.6;
       float g=v.x*.8-v.y*.55+sweep;
       float band=smoothstep(.0,.25,g)*smoothstep(.5,.25,g);
@@ -2504,7 +2507,7 @@ function createGLPresenter(canvas, srcCanvas) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   let texInit = false;
   return {
-    present(time, fxMax) {
+    present(time, fxMax, boost = 0) {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, srcTex);
       if (!texInit) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas); texInit = true; }
@@ -2526,6 +2529,11 @@ function createGLPresenter(canvas, srcCanvas) {
       gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 0, 1 / BH);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[0].f);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // アナモルフィックストリーク: ブルームをさらに横方向へ大きく引き伸ばす → fbo1
+      gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
+      gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 5.5 / BW, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[1].f);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
       // 合成 → 画面
       gl.useProgram(P_COMP); bindQuad(P_COMP);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2534,11 +2542,15 @@ function createGLPresenter(canvas, srcCanvas) {
       gl.bindTexture(gl.TEXTURE_2D, srcTex);
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, fbo[1].t);
       gl.uniform1i(gl.getUniformLocation(P_COMP, 't'), 0);
       gl.uniform1i(gl.getUniformLocation(P_COMP, 'b'), 1);
+      gl.uniform1i(gl.getUniformLocation(P_COMP, 's'), 2);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'time'), time);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? 0.5 : 0.22);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'fxon'), fxMax ? 1 : 0);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.18 : 0.06) + boost * 0.4);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
   };
@@ -2808,6 +2820,7 @@ function celebrate(amount) {
     });
   }
   fountainBurst(Math.round(tier.coins * 0.5)); // 下皿からも溢れる
+  if (tier.min >= 1500) charCutin('win', Math.min(2.6, tier.dur * 0.7)); // SUPER以上でキャラ歓喜
   sfx('megawin');
 }
 // 下皿からコインが吹き上がる噴水(勝利のコイン溢れ)
@@ -2981,6 +2994,75 @@ function loadArt(key, src) {
 loadArt('cabinet', 'assets/cabinet_art.webp');
 loadArt('bezel', 'assets/bezel_art.webp');
 loadArt('backdrop', 'assets/backdrop_art.webp');
+loadArt('charN', 'assets/char_normal_art.webp'); // 幸運の女神(通常/激アツ/大当り)
+loadArt('charH', 'assets/char_hot_art.webp');
+loadArt('charW', 'assets/char_win_art.webp');
+
+// ---------- 視差(疑似3D): マウス/ジャイロで筐体と盤面背景が別々に動く ----------
+const PARA = { x: 0, y: 0, tx: 0, ty: 0 };
+window.addEventListener('mousemove', e => {
+  PARA.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+  PARA.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+function bindTilt() {
+  window.addEventListener('deviceorientation', e => {
+    if (e.gamma == null) return;
+    PARA.tx = Math.max(-1, Math.min(1, e.gamma / 28));
+    PARA.ty = Math.max(-1, Math.min(1, (e.beta - 45) / 32));
+  });
+}
+if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+  // iOS: 初回タップで許可を求める(拒否/未対応でも何も起きないだけ)
+  document.addEventListener('touchstart', () => {
+    DeviceOrientationEvent.requestPermission().then(p => { if (p === 'granted') bindTilt(); }).catch(() => {});
+  }, { once: true });
+} else if (window.DeviceOrientationEvent) bindTilt();
+
+// ---------- キャラカットイン(実機の液晶キャラ演出) ----------
+function charCutin(kind, dur = 2.2) {
+  const img = ART[{ normal: 'charN', hot: 'charH', win: 'charW' }[kind]];
+  if (!img || S.simMode) return;
+  S.charFx = { img, kind, t: 0, dur };
+}
+function drawCharFx(c, dt) {
+  const cf = S.charFx;
+  if (!cf) return;
+  cf.t += dt;
+  if (cf.t >= cf.dur) { S.charFx = null; return; }
+  const W = CFG.CW, H = CFG.CH;
+  const inT = Math.min(1, cf.t / 0.28);
+  const ease = 1 - Math.pow(1 - inT, 3);
+  const outT = Math.max(0, (cf.t - (cf.dur - 0.3)) / 0.3);
+  const ch = H * 0.62;
+  const cw = ch * (cf.img.width / cf.img.height);
+  const x = W - (cw * 0.92) * ease + (rng() - 0.5) * (cf.kind === 'hot' ? 3 : 0);
+  const y = H - ch * (1 - outT * 0.25) + Math.sin(S.time * 2.2) * 6;
+  const a = Math.min(1, inT * 2) * (1 - outT);
+  c.save();
+  c.globalAlpha = a;
+  // 背後のオーラ + 集中線
+  const auraCol = cf.kind === 'hot' ? '#ff3355' : cf.kind === 'win' ? '#ffd76a' : '#7ef0a8';
+  const gcx = x + cw / 2, gcy = y + ch * 0.4;
+  const gr = c.createRadialGradient(gcx, gcy, 10, gcx, gcy, ch * 0.62);
+  gr.addColorStop(0, auraCol + 'aa'); gr.addColorStop(1, auraCol + '00');
+  c.globalCompositeOperation = 'lighter';
+  c.fillStyle = gr;
+  c.fillRect(gcx - ch * 0.7, gcy - ch * 0.7, ch * 1.4, ch * 1.4);
+  if (S.fxMax) {
+    c.strokeStyle = auraCol + '55';
+    c.lineWidth = 2;
+    for (let i = 0; i < 16; i++) {
+      const ang = i * 0.393 + S.time * (cf.kind === 'hot' ? 1.6 : 0.5);
+      c.beginPath();
+      c.moveTo(gcx + Math.cos(ang) * ch * 0.34, gcy + Math.sin(ang) * ch * 0.34);
+      c.lineTo(gcx + Math.cos(ang) * ch * 0.85, gcy + Math.sin(ang) * ch * 0.85);
+      c.stroke();
+    }
+  }
+  c.globalCompositeOperation = 'source-over';
+  c.drawImage(cf.img, x, y, cw, ch);
+  c.restore();
+}
 
 // ---------- 筐体(キャビネット) ----------
 const cabCv = document.createElement('canvas');
@@ -3099,8 +3181,8 @@ function drawCabinetFX(c, dt) {
     else { on = ((Math.floor(S.time * 8) - i) % LEDS.length + LEDS.length) % LEDS.length < 5; col = T.accent; }
     if (!on) { c.fillStyle = '#1c2023'; c.beginPath(); c.arc(l.x, l.y, 4, 0, 7); c.fill(); continue; }
     c.fillStyle = col;
-    c.shadowColor = col; c.shadowBlur = 9;
-    c.beginPath(); c.arc(l.x, l.y, 4.2, 0, 7); c.fill();
+    c.shadowColor = col; c.shadowBlur = 9 + (S.beatT || 0) * 8; // BGMのキックで電飾が脈打つ
+    c.beginPath(); c.arc(l.x, l.y, 4.2 + (S.beatT || 0) * 0.9, 0, 7); c.fill();
     c.shadowBlur = 0;
   }
   // データカウンター(7セグ風)
@@ -3269,7 +3351,7 @@ function draw(dt) {
   cam.rot = S.shake > 0.5 ? (rng() - 0.5) * 0.0045 * S.shake : 0;
   // 筐体 → ガラス窓クリップ → カメラ変換 → 盤面
   c.clearRect(0, 0, CFG.CW, CFG.CH);
-  c.drawImage(cabCv, 0, 0);
+  c.drawImage(cabCv, PARA.x * 5, PARA.y * 4); // 視差: 筐体は手前レイヤーとして揺れる
   c.save();
   roundRectPath(c, CFG.FX - 6, CFG.FY - 6, CFG.W + 12, CFG.H + 12, 14);
   c.clip();
@@ -3281,7 +3363,8 @@ function draw(dt) {
   // 背景(テーマごとの描き込みプリレンダ)
   c.fillStyle = T.bg2;
   c.fillRect(-30, -30, CFG.W + 60, CFG.H + 60);
-  c.drawImage(bgCv, 0, 0);
+  // 視差: 背景は奥レイヤーとして逆方向に少し動く(2%オーバースキャンで端切れ防止)
+  c.drawImage(bgCv, -4.6 - PARA.x * 3, -7.8 - PARA.y * 2.5, CFG.W * 1.02, CFG.H * 1.02);
 
   // アンビエント粒子(釘の背面)
   for (const a of S.ambient) drawAmbient(c, a);
@@ -3560,6 +3643,7 @@ function draw(dt) {
   c.restore();
   drawCabinetFX(c, dt);
   drawFever(c, dt);
+  drawCharFx(c, dt);
   drawCelebration(c, dt);
   postFX(dt);
 }
@@ -3975,8 +4059,11 @@ function frame(t) {
     S.time += dt;
     spawnAmbient(dt);
   }
+  PARA.x += (PARA.tx - PARA.x) * Math.min(1, dt * 4); // 視差スムージング
+  PARA.y += (PARA.ty - PARA.y) * Math.min(1, dt * 4);
+  S.beatT = Math.max(0, (S.beatT || 0) - dt * 3.5);   // BGMビート減衰
   draw(dt);
-  if (GLP) GLP.present(S.time, S.fxMax); // WebGL最終合成(GPUブルーム/ガラス)
+  if (GLP) GLP.present(S.time, S.fxMax, (S.fever || S.celebrate) ? 1 : 0); // WebGL最終合成
 }
 
 // ---------- 入力 ----------
