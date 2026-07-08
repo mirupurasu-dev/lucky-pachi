@@ -16,7 +16,7 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [150, 340, 610, 1010, 1580, 2400, 3480, 4950, 6850, 9250], // FEVER+色共鳴玉込みでクリア率30%に調整
+  quotas: [150, 305, 545, 895, 1400, 2130, 3080, 4380, 6060, 8180], // 大型液晶で釘域が減った分ノルマ-11%補正でクリア率30%維持
   stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
   hesoPay: 4, tulipPay: 5,
   attackerPay: 18, countPerRound: 9, roundTimeout: 6,
@@ -330,11 +330,11 @@ const PARTS = {
   vchakka:   { name: 'Vチャッカー',      rarity: 'legend', icon: '🅥', type: 'vpocket', desc: '入賞した瞬間ミニRUSH 2R発動！' },
   splitter:  { name: '分裂フィールド',   rarity: 'legend', icon: '✨', type: 'splitter', desc: '通過した玉が分裂する魔空間' },
 };
+// 大型液晶(BLOCK x112-348,y96-284)を避け、かつヘソ中央の導線を潰さぬよう左右へ配置
 const PART_SLOTS = [
-  { x: 115, y: 195 }, { x: 345, y: 195 },
-  { x: 230, y: 255 },
-  { x: 78, y: 298 }, { x: 382, y: 298 },
-  { x: 230, y: 460 },
+  { x: 58, y: 342 }, { x: 402, y: 342 },
+  { x: 150, y: 352 }, { x: 310, y: 352 },
+  { x: 95, y: 430 }, { x: 365, y: 430 },
 ];
 function freeSlots() {
   return PART_SLOTS.filter(sl => !S.parts.some(p => p.x === sl.x && p.y === sl.y));
@@ -539,7 +539,9 @@ function hesoHalfW() {
 
 // ---------- 盤面ジオメトリ ----------
 const BOARD = { pins: [], windmills: [], segs: [] };
-const BLOCK = { x: 130, y: 112, w: 200, h: 170, r: 18 };
+const BLOCK = { x: 112, y: 96, w: 236, h: 188, r: 20 }; // 大型液晶(上方向+横に拡大、下端≒旧位置で下部釘域を温存)
+// リール窓メトリクス(BLOCK拡大に追従)。winW×3+gap×2 ≤ BLOCK.w
+const REEL = { winW: 72, winH: 96, gap: 8, y0off: 48, sym: 46, drum: 40 };
 const HESO = { x: 230, y: 598 };
 const TULIPS = [{ x: 50, y: 496 }, { x: 410, y: 496 }];
 const ATTACKER = { x: 230, y: 686, halfW: 56 };
@@ -1082,8 +1084,8 @@ function spinStep(dt) {
     for (let i = 0; i < 3; i++) {
       if (!S.spin.stopped[i] && S.spin.t >= S.spin.stopAt[i]) {
         S.spin.stopped[i] = true;
-        const wx = BLOCK.x + BLOCK.w / 2 + (i - 1) * 62;
-        fx.ring(wx, BLOCK.y + 71, i === 2 && (S.spin.out.kind === 3 || S.spin.out.kind === 'recipe') ? '#ffffff' : S.theme.accent);
+        const wx = BLOCK.x + BLOCK.w / 2 + (i - 1) * (REEL.winW + REEL.gap);
+        fx.ring(wx, BLOCK.y + REEL.y0off + REEL.winH / 2, i === 2 && (S.spin.out.kind === 3 || S.spin.out.kind === 'recipe') ? '#ffffff' : S.theme.accent);
         S.shake = Math.max(S.shake, i === 2 ? 5 : 3);
         sfx('reelstop');
       }
@@ -2298,7 +2300,20 @@ function audioTick() {
 }
 
 // ---------- シンボル描画(ベクター) ----------
+// 生成した和風メダル絵柄(あれば画像、無ければ手続き描画)
+const SYM_IMG = {};
+for (const id of Object.keys(SYMBOLS)) {
+  const im = new Image();
+  im.onload = () => { SYM_IMG[id] = im; };
+  im.src = `assets/sym_${id}_art.webp`;
+}
 function drawSymbol(c, id, x, y, s) {
+  const im = SYM_IMG[id];
+  if (im) { // 和風メダル画像(枠込み)。窓いっぱいに映えるようやや大きめ
+    const d = s * 1.5;
+    c.drawImage(im, x - d / 2, y - d / 2, d, d);
+    return;
+  }
   c.save();
   c.translate(x, y);
   switch (id) {
@@ -3457,11 +3472,18 @@ function draw(dt) {
     c.beginPath(); c.moveTo(RIGHT_ENTRY_SEG.x1, RIGHT_ENTRY_SEG.y1); c.lineTo(RIGHT_ENTRY_SEG.x2, RIGHT_ENTRY_SEG.y2); c.stroke();
   }
 
-  // センター役物(リール)
+  // センター役物(リール) — 液晶拡大モード時は中心から1.32倍にズーム表示
+  const zoom = S.reelZoom;
+  if (zoom) {
+    c.save();
+    const zx = BLOCK.x + BLOCK.w / 2, zy = BLOCK.y + BLOCK.h / 2;
+    c.translate(zx, zy); c.scale(1.32, 1.32); c.translate(-zx, -zy);
+  }
   drawReels(c, dt);
   if (ART.bezel) { // 金鯉の和彫り飾り枠(AIアート、リールユニットに被せる)
     c.drawImage(ART.bezel, BLOCK.x - 26, BLOCK.y - 22, BLOCK.w + 52, BLOCK.h + 48);
   }
+  if (zoom) c.restore();
 
   // 釘(金属スプライト)
   for (const p of BOARD.pins) {
@@ -3974,9 +3996,9 @@ function drawReels(c, dt) {
   // 3窓
   let ids = Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0);
   if (ids.length === 0) ids = ['seven', 'cherry', 'clover', 'bell', 'diamond'];
-  const winW = 56, winH = 74, gap = 6;
+  const winW = REEL.winW, winH = REEL.winH, gap = REEL.gap;
   const x0 = BLOCK.x + BLOCK.w / 2 - (winW * 1.5 + gap);
-  const y0 = BLOCK.y + 34;
+  const y0 = BLOCK.y + REEL.y0off;
   for (let i = 0; i < 3; i++) {
     const wx = x0 + i * (winW + gap), wy = y0;
     c.fillStyle = 'rgba(6,10,13,0.7)'; // 水中を薄く透かす液晶窓
@@ -3986,10 +4008,10 @@ function drawReels(c, dt) {
     const settled = !S.spin || S.spin.t >= S.spin.stopAt[i];
     if (!S.spin) {
       const faces = S.lastDigits || ['seven', 'seven', 'seven'];
-      drawSymbol(c, faces[i], wx + winW / 2, wy + winH / 2, 34);
+      drawSymbol(c, faces[i], wx + winW / 2, wy + winH / 2, REEL.sym);
     } else if (settled) {
       const pop = Math.max(0, 1 - (S.spin.t - S.spin.stopAt[i]) * 5);
-      drawSymbol(c, S.spin.faces[i], wx + winW / 2, wy + winH / 2, 34 + pop * 8);
+      drawSymbol(c, S.spin.faces[i], wx + winW / 2, wy + winH / 2, REEL.sym + pop * 10);
     } else {
       // 回転中: スクロールする絵柄列
       const slow = i === 2 && S.spin.reachPlayed;
@@ -4012,7 +4034,7 @@ function drawReels(c, dt) {
         c.translate(wx + winW / 2, yy);
         c.scale(1, sq);
         c.globalAlpha = (slow ? 0.95 : 0.55) * (0.4 + sq * 0.6);
-        drawSymbol(c, ids[idx], 0, 0, 30);
+        drawSymbol(c, ids[idx], 0, 0, REEL.drum);
         c.restore();
       }
       c.globalAlpha = 1;
@@ -4194,6 +4216,11 @@ document.getElementById('speedBtn').onclick = function () {
   S.speed = S.speed === 1 ? 2 : 1;
   this.classList.toggle('on', S.speed === 2);
   this.textContent = `倍速 ×${S.speed}`;
+};
+document.getElementById('zoomBtn').onclick = function () {
+  S.reelZoom = !S.reelZoom;
+  this.classList.toggle('on', S.reelZoom);
+  this.textContent = S.reelZoom ? '🔍拡大中' : '🔍液晶拡大';
 };
 document.getElementById('sndBtn').onclick = function () {
   S.sndOn = !S.sndOn;
