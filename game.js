@@ -4026,8 +4026,19 @@ function drawReels(c, dt) {
   const y0 = BLOCK.y + REEL.y0off;
   for (let i = 0; i < 3; i++) {
     const wx = x0 + i * (winW + gap), wy = y0;
-    if (S.reelCards !== false) { // 黒カード背景(トグルOFFで竜宮城に直接絵柄を乗せる)
-      c.fillStyle = 'rgba(6,10,13,0.7)'; // 水中を薄く透かす液晶窓
+    if (S.reelCards !== false) {
+      // 奥まったガラス窓: 藍色寄りの縦グラデ(中央やや明るく)+ 縁の内影で凹み感。黒塗りより自然で視認性キープ
+      const gg = c.createLinearGradient(wx, wy, wx, wy + winH);
+      gg.addColorStop(0, 'rgba(11,15,25,0.88)');
+      gg.addColorStop(0.5, 'rgba(22,30,46,0.58)');
+      gg.addColorStop(1, 'rgba(7,10,17,0.9)');
+      c.fillStyle = gg;
+      roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
+      const cxw = wx + winW / 2, cyw = wy + winH / 2;
+      const ig = c.createRadialGradient(cxw, cyw, winW * 0.18, cxw, cyw, winW * 0.72);
+      ig.addColorStop(0, 'rgba(0,0,0,0)');
+      ig.addColorStop(1, 'rgba(0,0,0,0.42)'); // 縁が奥まって見える内影
+      c.fillStyle = ig;
       roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
     }
     c.save();
