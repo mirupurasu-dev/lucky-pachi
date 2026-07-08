@@ -3447,17 +3447,23 @@ function draw(dt) {
   cam.py += (ty - cam.py) * Math.min(1, dt * 5);
   if (dt > 0) cam.punch *= Math.pow(0.03, dt);
   cam.rot = S.shake > 0.5 ? (rng() - 0.5) * 0.0045 * S.shake : 0;
-  // 筐体 → ガラス窓クリップ → カメラ変換 → 盤面
+  // 筐体アート・電飾・窓クリップ・盤面を「同一カメラ変換」で束ねる
+  //   → リーチ/RUSHズームやパンで枠(筐体)と中身(盤面)が別々に動いて分離しないようにする
   c.clearRect(0, 0, CFG.CW, CFG.CH);
-  c.drawImage(cabCv, PARA.x * 5, PARA.y * 4); // 視差: 筐体は手前レイヤーとして揺れる
-  c.save();
-  roundRectPath(c, CFG.FX - 6, CFG.FY - 6, CFG.W + 12, CFG.H + 12, 14);
-  c.clip();
+  const shx = S.shake > 0.5 ? (rng() - 0.5) * S.shake : 0;
+  const shy = S.shake > 0.5 ? (rng() - 0.5) * S.shake : 0;
+  if (S.shake > 0.5) S.shake *= 0.86;
+  c.save(); // (A) 共有カメラ(ズーム/パン/回転/手ブレ) — 筐体も盤面もこの中で描く
   c.translate(CFG.FX + CFG.W / 2, CFG.FY + CFG.H / 2);
   c.scale(cam.z, cam.z);
   c.rotate(cam.rot);
-  c.translate(-CFG.W / 2 + (S.shake > 0.5 ? (rng() - 0.5) * S.shake : 0), -cam.py + (S.shake > 0.5 ? (rng() - 0.5) * S.shake : 0));
-  if (S.shake > 0.5) S.shake *= 0.86;
+  c.translate(-(CFG.FX + CFG.W / 2) + shx, -(CFG.FY + cam.py) + shy);
+  c.drawImage(cabCv, 0, 0);  // 筐体アート(視差は廃止して枠と盤面を完全一体化)
+  drawCabinetFX(c, dt);       // 電飾・データカウンター・回転灯も同じカメラで動く
+  c.save(); // (B) 盤面: 窓クリップ(共有カメラ空間なので筐体の窓とぴったり一致)
+  roundRectPath(c, CFG.FX - 6, CFG.FY - 6, CFG.W + 12, CFG.H + 12, 14);
+  c.clip();
+  c.translate(CFG.FX, CFG.FY); // 以降は盤面フィールド座標(0..W,0..H)で描く(旧カメラと等価)
   // 背景(テーマごとの描き込みプリレンダ)
   c.fillStyle = T.bg2;
   c.fillRect(-30, -30, CFG.W + 60, CFG.H + 60);
@@ -3745,8 +3751,9 @@ function draw(dt) {
     c.globalAlpha = 1;
     S.boardFlash *= 0.9;
   }
-  c.restore();
-  drawCabinetFX(c, dt);
+  c.restore(); // (B) 盤面おわり
+  c.restore(); // (A) 共有カメラおわり
+  // 以下は画面固定オーバーレイ(ズームで動かさない): FEVER/キャラ/祝祭/ポストFX
   drawFever(c, dt);
   drawCharFx(c, dt);
   drawCelebration(c, dt);
