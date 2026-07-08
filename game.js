@@ -16,8 +16,9 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [150, 305, 545, 895, 1400, 2130, 3080, 4380, 6060, 8180], // 大型液晶で釘域が減った分ノルマ-11%補正でクリア率30%維持
+  quotas: [450, 1500, 3000, 5200, 8000, 11500, 16000, 22000, 29000, 38000], // 薄いリール前提でギリギリ調整。2面1500/3面3000がアンカー
   stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
+  payScale: 3.45,               // 払い出し全体スケール(高ノルマ調整の主ノブ。autoRunで実測調整)
   hesoPay: 4, tulipPay: 5,
   attackerPay: 18, countPerRound: 9, roundTimeout: 6,
   rushRounds7: 6, rushRoundsBar: 4,
@@ -883,6 +884,7 @@ function gainBalls(n, srcBall, applyMult = true) {
   const sm = synergyMult();
   if (sm !== 1) v = Math.round(v * sm);
   if (S.fever) v = Math.round(v * 2); // FEVER TIME: 全獲得2倍
+  v = Math.round(v * CFG.payScale); // 経済全体の底上げ(高ノルマに対する払い出しスケール)
   // 面エスカレーター: 後半の台ほど出玉が増える(ノルマ上昇に全ビルドが追いつける下駄)
   v = Math.round(v * (1 + CFG.stageCoinRamp * (S.stage - 1)));
   S.balls += v;
@@ -1137,6 +1139,24 @@ function applyRecipe(rc, ballType) {
   if (!S.rush) tryStartSpin();
   updateHUD();
 }
+// HUDの倍率/運チップを光らせる(効果が一目でわかる)
+function flashStat(id) {
+  if (S.simMode) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('up'); void el.offsetWidth; el.classList.add('up');
+}
+// 倍率UPの巨大カットイン(一目で「倍率が上がった」とわかる)
+function bigMultPopup(newMult) {
+  if (S.simMode) return;
+  fx.cutin(`倍率 ×${newMult.toFixed(2)} に UP！`, true);
+  fx.floatText(BLOCK.x + BLOCK.w / 2, BLOCK.y + BLOCK.h / 2 + 40, `× ${newMult.toFixed(2)}`, '#ffd76a');
+}
+// 当たりに乗った「自分のビルド倍率」を表示用に組む(倍率×相乗×FEVER)。1.05倍以上のとき"×N"を出す
+function winMultTag() {
+  const bm = effMult() * synergyMult() * (S.fever ? 2 : 1);
+  return bm > 1.05 ? ` ×${bm.toFixed(1)}` : '';
+}
 // ---------- 効果エグゼキュータ ----------
 function runEffect(d, srcBall, big, symId) {
   const sym = SYMBOLS[symId] || {};
@@ -1147,18 +1167,20 @@ function runEffect(d, srcBall, big, symId) {
   const BW = () => { if (big) sfx('bigwin'); };
   switch (d.t) {
     case 'coins': {
+      const tag = winMultTag(); // 倍率適用前に計算(gainBallsでmultが変わる前提はないが表示整合のため)
       const v = gainBalls(d.v, srcBall);
       if (big && S.winFx) S.winFx.amount = v;
-      F(`+${v}玉${big ? '！' : ''}`);
+      F(`+${v}玉${tag}${big ? '！' : ''}`);
       if (big) fx.coinFly(230, 200, Math.min(24, 6 + ((v / 40) | 0)));
       celebrate(v);
       BW(); break;
     }
     case 'coinsRange': {
       const raw = d.min + Math.floor(rng() * (d.max - d.min + 1));
+      const tag = winMultTag();
       const v = gainBalls(raw, srcBall);
       if (big && S.winFx) S.winFx.amount = v;
-      F(`+${v}玉！`); if (big) fx.coinFly(230, 200, 12);
+      F(`+${v}玉${tag}！`); if (big) fx.coinFly(230, 200, 12);
       celebrate(v);
       BW(); break;
     }
@@ -1172,8 +1194,8 @@ function runEffect(d, srcBall, big, symId) {
       celebrate(v);
       BW(); break;
     }
-    case 'luck': S.luck = +(S.luck + d.v).toFixed(2); F(`運 +${d.v}`); BW(); break;
-    case 'mult': S.mult = +(S.mult + d.v).toFixed(2); F(`倍率 +${d.v}`); BW(); break;
+    case 'luck': S.luck = +(S.luck + d.v).toFixed(2); F(`運UP ▲ ${effLuck().toFixed(1)}`, '#7ef0a8'); flashStat('luckChip'); BW(); break;
+    case 'mult': S.mult = +(S.mult + d.v).toFixed(2); bigMultPopup(effMult()); flashStat('multChip'); BW(); break;
     case 'shots': {
       S.shotsLeft += d.v;
       let t = `+${d.v}発`;
@@ -1666,12 +1688,14 @@ function closeShop() {
 }
 
 // ---------- 開始リール選択(スタータービルド) ----------
-// ノーマル×3 → ×3 → ×2 → ×2(同じ絵柄は不可) → レア×1 = 計11枚
+// 1枚ずつ薄く配る = 序盤はほぼ揃わない。面クリアのドラフトで同じ絵柄を重ねて「濃く」して初めて揃い出す
+// 開始7枚(各1枚)→ N=7で揃い率約5%。ドラフトで積んで最終的に計15枚前後
 const BUILD_STEPS = [
-  { rarity: 'normal', copies: 3, label: '3つの中から選べ — 選んだ絵柄が ×3枚 入る' },
-  { rarity: 'normal', copies: 3, label: '2つ目のノーマル — ×3枚' },
-  { rarity: 'normal', copies: 2, label: '3つ目のノーマル — ×2枚' },
-  { rarity: 'normal', copies: 2, label: '4つ目のノーマル — ×2枚' },
+  { rarity: 'normal', copies: 1, label: '1枚目 — 選んだ絵柄が ×1枚 入る' },
+  { rarity: 'normal', copies: 1, label: '2枚目 — ×1枚' },
+  { rarity: 'normal', copies: 1, label: '3枚目 — ×1枚' },
+  { rarity: 'normal', copies: 1, label: '4枚目 — ×1枚' },
+  { rarity: 'normal', copies: 1, label: '5枚目 — ×1枚' },
   { rarity: 'rare',   copies: 1, label: '仕上げのレア — ×1枚' },
 ];
 let buildStep = 0;

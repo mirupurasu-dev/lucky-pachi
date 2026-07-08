@@ -82,6 +82,13 @@
     background: var(--panel2); border: 1px solid var(--line); color: var(--text);
   }
   .statChip b { color: var(--accent); transition: color .8s; }
+  @keyframes statUp {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,106,.8); background: #ffd76a; color: #201400; }
+    40% { transform: scale(1.35); box-shadow: 0 0 18px 4px rgba(255,215,106,.7); background: #ffe8a0; color: #201400; }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,106,0); }
+  }
+  .statChip.up { animation: statUp .7s ease-out; }
+  .statChip.up b { color: #201400 !important; }
 
   .chipRow { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; }
   .chip {
@@ -506,9 +513,9 @@
         <h3>持ち玉</h3>
         <div id="balls">0<span>玉</span></div>
         <div id="statChips">
-          <span class="statChip">運 <b id="luckV">1.0</b></span>
-          <span class="statChip">倍率 <b id="multV">×1.0</b></span>
-          <span class="statChip">相乗 <b id="synV">×1.00</b></span>
+          <span class="statChip" id="luckChip">運 <b id="luckV">1.0</b></span>
+          <span class="statChip" id="multChip">倍率 <b id="multV">×1.0</b></span>
+          <span class="statChip" id="synChip">相乗 <b id="synV">×1.00</b></span>
         </div>
       </div>
     </div>
