@@ -126,9 +126,17 @@ const SYMBOL_UNLOCKS = {
   kagi: { stages: 48 }, buta: { stages: 55 }, hanabi: { stages: 62 }, unicorn: { stages: 70 },
   crown: { loops: 1 }, taiyo: { loops: 2 }, ryu: { loops: 3 }, ryusei: { loops: 4 }, joker: { loops: 5 },
 };
-let META = { stages: 0, loops: 0 };
+let META = { stages: 0, loops: 0, dex: {}, games: 0 };
 try { META = Object.assign(META, JSON.parse(localStorage.getItem('luckyPachiMeta') || '{}')); } catch (e) {}
+if (!META.dex) META.dex = {}; // 図鑑の発見記録(type:id → 1)
 function saveMeta() { try { localStorage.setItem('luckyPachiMeta', JSON.stringify(META)); } catch (e) {} }
+// 図鑑: アイテムを初めて入手/成立させたら記録(スルメ収集要素)
+function markDex(type, id) {
+  if (S.simMode || S.allUnlock) return; // 計測は汚さない
+  const key = `${type}:${id}`;
+  if (!META.dex[key]) { META.dex[key] = 1; saveMeta(); }
+}
+function dexHas(type, id) { return !!META.dex[`${type}:${id}`]; }
 function symbolUnlocked(id) {
   if (S.allUnlock) return true;
   const u = SYMBOL_UNLOCKS[id];
@@ -199,6 +207,7 @@ function checkSynergies(prev) {
   const now = activeSynergies();
   const news = now.filter(sy => !prev.some(p => p.id === sy.id));
   for (const sy of news) {
+    markDex('syn', sy.id);
     addLog(`🔗 シナジー成立「${sy.name}」 ×${sy.mult}`, 'hit');
     if (!S.simMode) { fx.cutin(`シナジー「${sy.name}」！`, true); sfx('bigwin'); fx.confettiBurst(40); }
   }
@@ -346,6 +355,7 @@ function installPart(id) {
   const sl = pick(slots);
   const def = PARTS[id];
   S.parts.push({ id, ...def, x: sl.x, y: sl.y, dir: rng() < 0.5 ? 1 : -1, ang: 0, flash: 0 });
+  markDex('part', id);
   refreshPins();
   addLog(`盤面に「${def.name}」を設置`, 'hit');
   return true;
@@ -1118,6 +1128,7 @@ function resolveSpin() {
 // 特殊役の成立
 function applyRecipe(rc, ballType) {
   S.stat.wins++;
+  markDex('recipe', rc.name);
   const srcBall = { type: ballType, winSym: rc.ids[0] };
   fx.flashDOM(); S.shake = Math.max(S.shake, 14); S.boardFlash = 1;
   fx.confettiBurst(70);
@@ -1393,6 +1404,7 @@ function startStage(n) {
     card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
     sfx('stage');
     charCutin('normal', 1.7); // 面開始の挨拶
+    saveRun(); // 面の頭(盤面が空)で自動セーブ → 「つづきから」で再開可能
   }
   updateHUD();
 }
@@ -1444,6 +1456,7 @@ function gameOver(reason) {
   S.phase = 'over';
   sfx('death');
   if (S.simMode) return;
+  clearRun(); // ラン終了 → セーブ破棄
   document.getElementById('fever').classList.remove('on');
   document.getElementById('gameoverText').innerHTML =
     `${S.loop > 0 ? `${S.loop + 1}周目・` : ''}${S.theme.num}「${S.theme.name}」で力尽きた。${reason}<br>` +
@@ -1453,6 +1466,7 @@ function gameOver(reason) {
 function openClear() {
   S.phase = 'clear';
   if (S.simMode) return;
+  clearRun(); // 全10面クリア → セーブ破棄(次周は新規)
   document.getElementById('fever').classList.remove('on');
   fx.confettiBurst(150);
   try {
@@ -1569,9 +1583,9 @@ function rollDraftCard(depth = 0) {
 }
 function acquire(card) {
   const prevSyn = activeSynergies().slice();
-  if (card.kind === 'ball') { S.deck.push(card.id); S.bag = []; addLog(`玉デッキに「${card.name}」追加`, 'hit'); }
-  if (card.kind === 'symbol') { S.symbolPool[card.id] = (S.symbolPool[card.id] || 0) + 1; addLog(`リールに ${SYMBOLS[card.id].glyph} 追加`, 'hit'); }
-  if (card.kind === 'relic') { S.relics.push(card.rel); modsDirty(); if (card.rel.fx.removePins) refreshPins(); addLog(`お守り「${card.name}」入手`, 'hit'); }
+  if (card.kind === 'ball') { S.deck.push(card.id); S.bag = []; markDex('ball', card.id); addLog(`玉デッキに「${card.name}」追加`, 'hit'); }
+  if (card.kind === 'symbol') { S.symbolPool[card.id] = (S.symbolPool[card.id] || 0) + 1; markDex('sym', card.id); addLog(`リールに ${SYMBOLS[card.id].glyph} 追加`, 'hit'); }
+  if (card.kind === 'relic') { S.relics.push(card.rel); markDex('relic', card.id); modsDirty(); if (card.rel.fx.removePins) refreshPins(); addLog(`お守り「${card.name}」入手`, 'hit'); }
   if (card.kind === 'part') installPart(card.id);
   if (card.kind === 'symRemoveTicket') openSymbolRemove({});
   if (card.rarity === 'legend' && !S.simMode) { // レジェンド入手はド派手に
@@ -1730,6 +1744,7 @@ function renderBuild() {
     el.onclick = () => {
       const prevSyn = activeSynergies().slice();
       S.symbolPool[id] = (S.symbolPool[id] || 0) + st.copies;
+      markDex('sym', id);
       sfx('heso');
       checkSynergies(prevSyn);
       buildStep++;
@@ -1757,8 +1772,76 @@ function renderBuildPicked() {
     .join('') || '<span style="color:var(--dim);font-size:10px;font-weight:600">まだ空のリール</span>';
 }
 
+// ---------- セーブ / ロード(途中再開) ----------
+// 面の開始時(盤面が空の瞬間)にビルド一式を保存 → 閉じても「つづきから」で同じ面の頭に戻れる
+function saveRun() {
+  if (S.simMode || S.allUnlock) return;
+  try {
+    const sv = {
+      v: 1, stage: S.stage, loop: S.loop, balls: S.balls,
+      deck: S.deck.slice(), symbolPool: { ...S.symbolPool },
+      relics: S.relics.map(r => r.id),
+      parts: S.parts.map(p => ({ id: p.id, x: p.x, y: p.y, dir: p.dir })),
+      luck: S.luck, mult: S.mult, hesoPayPerm: S.hesoPayPerm || 0,
+      feverGauge: S.feverGauge || 0, rightHit: !!S.rightHit,
+      stat: S.stat,
+    };
+    localStorage.setItem('luckyPachiSave', JSON.stringify(sv));
+  } catch (e) {}
+}
+function loadRun() { try { return JSON.parse(localStorage.getItem('luckyPachiSave') || 'null'); } catch (e) { return null; } }
+function clearRun() { try { localStorage.removeItem('luckyPachiSave'); } catch (e) {} }
+function hasSave() { const s = loadRun(); return !!(s && s.stage); }
+function continueRun() {
+  const sv = loadRun();
+  if (!sv) return false;
+  ensureAudio();
+  resetTransient();               // 一過性(演出/物理)だけ初期化
+  S.loop = sv.loop || 0;
+  S.balls = sv.balls;
+  S.deck = sv.deck.slice();
+  S.symbolPool = { ...sv.symbolPool };
+  S.relics = (sv.relics || []).map(id => RELICS.find(r => r.id === id)).filter(Boolean);
+  S.parts = (sv.parts || []).map(p => ({ id: p.id, ...PARTS[p.id], x: p.x, y: p.y, dir: p.dir, ang: 0, flash: 0 }));
+  S.luck = sv.luck; S.mult = sv.mult; S.hesoPayPerm = sv.hesoPayPerm || 0;
+  S.feverGauge = sv.feverGauge || 0; S.fever = null;
+  S.rightHit = !!sv.rightHit;
+  S.stat = sv.stat || { shots: 0, heso: 0, wins: 0, rush: 0, totalWon: 0, paid: 0 };
+  modsDirty(); synDirty();
+  buildBoard();
+  for (const id of ['titleOverlay', 'gameoverOverlay', 'clearOverlay', 'shopOverlay', 'draftOverlay', 'buildOverlay', 'removeOverlay', 'dexOverlay'])
+    document.getElementById(id).classList.remove('show');
+  const hb = document.getElementById('hitBtn');
+  hb.classList.toggle('on', S.rightHit); hb.textContent = S.rightHit ? '👉右打ち' : '👈左打ち';
+  logLines.length = 0;
+  addLog(`— つづきから：${THEMES[Math.min(sv.stage, 10) - 1].num} を再開 —`, 'hit');
+  renderCollections();
+  startStage(sv.stage);          // その面の頭からやり直し
+  return true;
+}
+// 一過性の状態だけ初期化(ビルドは触らない)。resetGameとcontinueRunで共有
+function resetTransient() {
+  Object.assign(S, {
+    phase: 'play', simMode: false, allUnlock: false,
+    bag: [], magnetPulse: 0, lastFiredType: 'shiro',
+    hold: [], spin: null, rush: null, ballsOnBoard: [], winFx: null, charFx: null,
+    power: 0.62, targetPower: 0.62, fireCd: 0,
+    shower: 0, showerCd: 0,
+    aimBins: Array.from({ length: 8 }, () => ({ shots: 0, heso: 0 })),
+    particles: [], floats: [], rings: [], coins: [], confetti: [], ambient: [], rockets: [],
+    coinRain: [], celebrate: null, rushWon: 0,
+    shake: 0, boardFlash: 0, lastDigits: null,
+    timeScale: 1, tsTimer: 0, aberr: 0, glitchT: 0,
+    cam: { z: 1, py: 390, punch: 0, rot: 0 },
+  });
+  document.getElementById('fever').classList.remove('on');
+  removeCtx = null;
+}
+
 // ---------- リセット ----------
 function resetGame() {
+  clearRun();                     // 新規開始は旧セーブを破棄
+  META.games = (META.games || 0) + 1; saveMeta();
   Object.assign(S, {
     phase: 'play', stage: 1, theme: THEMES[0],
     balls: CFG.startBalls, quota: 0, shotsLeft: 0,
@@ -1785,7 +1868,7 @@ function resetGame() {
   buildBoard();
   renderCollections();
   updateHUD();
-  for (const id of ['titleOverlay', 'gameoverOverlay', 'clearOverlay', 'shopOverlay', 'draftOverlay', 'buildOverlay', 'removeOverlay'])
+  for (const id of ['titleOverlay', 'gameoverOverlay', 'clearOverlay', 'shopOverlay', 'draftOverlay', 'buildOverlay', 'removeOverlay', 'dexOverlay'])
     document.getElementById(id).classList.remove('show');
   removeCtx = null;
   const hb = document.getElementById('hitBtn');
@@ -4367,6 +4450,90 @@ document.getElementById('hitBtn').onclick = function () {
     if (e.code === 'ArrowRight') adjustPower(+0.05);
   });
 }
+// ---------- スタートメニュー / 図鑑(スルメ収集要素) ----------
+const DEX_TABS = [
+  { key: 'sym', label: '絵柄', all: () => Object.keys(SYMBOLS) },
+  { key: 'ball', label: '玉', all: () => Object.keys(BALLS) },
+  { key: 'relic', label: 'お守り', all: () => RELICS.map(r => r.id) },
+  { key: 'part', label: '役物', all: () => Object.keys(PARTS) },
+  { key: 'recipe', label: '特殊役', all: () => RECIPES.map(r => r.name) },
+  { key: 'syn', label: 'シナジー', all: () => SYNERGIES.map(s => s.id) },
+];
+let dexTab = 'sym';
+function dexDiscovered(key, id) {
+  if (key === 'ball' && id === 'shiro') return true; // 白玉は最初から所持
+  return dexHas(key, id);
+}
+function dexTabCount(key) {
+  const t = DEX_TABS.find(t => t.key === key);
+  const ids = t.all();
+  return { got: ids.filter(id => dexDiscovered(key, id)).length, total: ids.length };
+}
+function dexTotals() {
+  let got = 0, total = 0;
+  for (const t of DEX_TABS) { const c = dexTabCount(t.key); got += c.got; total += c.total; }
+  return { got, total };
+}
+function dexCardHTML(key, id) {
+  const seen = dexDiscovered(key, id);
+  let rar = 'normal', icon = '？', name = '？？？', desc = '未発見';
+  if (key === 'sym') {
+    const s = SYMBOLS[id]; rar = s.rarity;
+    icon = seen ? `<img class="dg" src="assets/sym_${id}_art.webp" alt="">` : '<span class="dg">？</span>';
+    if (seen) { name = s.name; desc = s.desc.split(' / ')[0].replace('3揃い: ', ''); }
+    else if (!symbolUnlocked(id)) { name = '🔒 未解禁'; desc = SYMBOL_UNLOCKS[id] && SYMBOL_UNLOCKS[id].stages != null ? `${SYMBOL_UNLOCKS[id].stages}面クリアで解禁` : '周回クリアで解禁'; }
+  } else if (key === 'ball') {
+    const b = BALLS[id]; rar = b.rarity;
+    icon = seen ? `<span class="dg" style="width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,${b.color})"></span>` : '<span class="dg">？</span>';
+    if (seen) { name = b.name; desc = b.desc; }
+  } else if (key === 'relic') {
+    const r = RELICS.find(x => x.id === id); rar = r.rarity;
+    icon = seen ? `<span class="dg">${r.icon}</span>` : '<span class="dg">？</span>';
+    if (seen) { name = r.name; desc = r.desc; }
+  } else if (key === 'part') {
+    const p = PARTS[id]; rar = p.rarity;
+    icon = seen ? `<span class="dg">${p.icon}</span>` : '<span class="dg">？</span>';
+    if (seen) { name = p.name; desc = p.desc; }
+  } else if (key === 'recipe') {
+    const rc = RECIPES.find(r => r.name === id); rar = 'rare';
+    icon = seen ? `<span class="dg">${rc.ids.map(x => SYMBOLS[x] ? SYMBOLS[x].glyph : '').join('')}</span>` : '<span class="dg">？</span>';
+    if (seen) { name = rc.name; desc = rc.desc; }
+  } else if (key === 'syn') {
+    const sy = SYNERGIES.find(s => s.id === id); rar = 'legend';
+    icon = seen ? '<span class="dg">🔗</span>' : '<span class="dg">？</span>';
+    if (seen) { name = sy.name; desc = sy.desc; }
+  }
+  return `<div class="dexCard ${rar} ${seen ? '' : 'locked'}">${icon}<div class="dn">${name}</div><div class="dd">${desc}</div></div>`;
+}
+function renderDex() {
+  const tot = dexTotals();
+  document.getElementById('dexSummary').innerHTML =
+    `発見 <b style="color:var(--accent)">${tot.got}</b> / ${tot.total} 種（${Math.round(tot.got / tot.total * 100)}%）　集めて図鑑をコンプせよ`;
+  document.getElementById('dexTabs').innerHTML = DEX_TABS.map(t => {
+    const c = dexTabCount(t.key);
+    return `<button class="dexTab ${t.key === dexTab ? 'on' : ''}" data-tab="${t.key}">${t.label} ${c.got}/${c.total}</button>`;
+  }).join('');
+  document.querySelectorAll('#dexTabs .dexTab').forEach(b => b.onclick = () => { dexTab = b.dataset.tab; renderDex(); });
+  const t = DEX_TABS.find(t => t.key === dexTab);
+  document.getElementById('dexGrid').innerHTML = t.all().map(id => dexCardHTML(dexTab, id)).join('');
+}
+function openDex() { renderDex(); document.getElementById('dexOverlay').classList.add('show'); }
+function refreshMenu() {
+  const cb = document.getElementById('continueBtn');
+  cb.style.display = hasSave() ? 'block' : 'none';
+  const tot = dexTotals();
+  const parts = [];
+  if (META.loops > 0) parts.push(`🏆 最高 ${META.loops}周`);
+  const lockedN = Object.keys(SYMBOL_UNLOCKS).filter(id => !symbolUnlocked(id)).length;
+  parts.push(`絵柄解禁 ${Object.keys(SYMBOLS).length - lockedN}/${Object.keys(SYMBOLS).length}`);
+  parts.push(`図鑑 ${tot.got}/${tot.total}`);
+  if (META.games) parts.push(`プレイ ${META.games}回`);
+  document.getElementById('titleStats').textContent = parts.join('　／　');
+}
+document.getElementById('continueBtn').onclick = () => { ensureAudio(); continueRun(); };
+document.getElementById('dexBtn').onclick = () => openDex();
+document.getElementById('dexClose').onclick = () => document.getElementById('dexOverlay').classList.remove('show');
+
 document.getElementById('startBtn').onclick = () => { ensureAudio(); resetGame(); };
 document.getElementById('retryBtn').onclick = () => resetGame(); // 同じ周回で再挑戦
 document.getElementById('nextLoopBtn').onclick = () => { S.loop++; resetGame(); };
@@ -4604,15 +4771,5 @@ updateHUD();
 requestAnimationFrame(frame);
 // Webフォント読込後に筐体を再描画(ネームプレート等のフォント反映)
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => buildCabinet());
-// 周回ベスト記録＋解禁状況の表示
-try {
-  const lockedN = Object.keys(SYMBOL_UNLOCKS).filter(id => !symbolUnlocked(id)).length;
-  const parts = [];
-  if (META.loops > 0) parts.push(`🏆 最高記録: ${META.loops}周クリア`);
-  if (META.stages > 0 || META.loops > 0) parts.push(`絵柄 ${Object.keys(SYMBOLS).length - lockedN}/${Object.keys(SYMBOLS).length} 解禁`);
-  if (parts.length) {
-    const el = document.getElementById('bestLoop');
-    el.style.display = 'block';
-    el.textContent = parts.join('　');
-  }
-} catch (e) {}
+// スタートメニュー(つづきから表示・図鑑進捗・記録)を初期化
+try { refreshMenu(); } catch (e) {}

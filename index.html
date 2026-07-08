@@ -159,6 +159,32 @@
     cursor: pointer; font-family: inherit;
   }
   .ghostBtn:hover { color: var(--text); border-color: var(--dim); }
+  .menuCol { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 18px; }
+  .menuCol .bigBtn, .menuCol .ghostBtn { margin-top: 6px; width: 240px; }
+
+  /* ================= 図鑑 ================= */
+  .dexTabs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 12px 0 10px; }
+  .dexTab {
+    background: var(--panel2); border: 1px solid var(--line); color: var(--dim);
+    padding: 6px 11px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; font-family: inherit;
+  }
+  .dexTab.on { background: var(--accent); color: #04140b; border-color: var(--accent); }
+  .dexGrid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    max-height: 46dvh; overflow-y: auto; padding: 2px; text-align: left;
+  }
+  .dexCard {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 6px;
+    display: flex; flex-direction: column; align-items: center; text-align: center; min-height: 78px;
+  }
+  .dexCard.locked { opacity: .5; }
+  .dexCard.rare { border-color: color-mix(in srgb, #38c8ff 45%, var(--line)); }
+  .dexCard.legend { border-color: color-mix(in srgb, #ff4dff 50%, var(--line)); }
+  .dexCard .dg { font-size: 22px; line-height: 1.1; }
+  .dexCard img.dg { width: 30px; height: 30px; object-fit: contain; }
+  .dexCard .dn { font-size: 10px; font-weight: 900; margin-top: 3px; }
+  .dexCard .dd { font-size: 8.5px; color: var(--dim); font-weight: 600; line-height: 1.35; margin-top: 2px; }
+  .dexCard.locked .dg { filter: grayscale(1) brightness(.4); }
 
   /* ================= ドラフト/ショップ ================= */
   #draftCards { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
@@ -440,7 +466,22 @@
         <h1><span class="green">幸運の</span><br>パチンコ</h1>
         <p>玉を集め、リールを組み替え、台を改造しながら<br>全10面の<b>納品ノルマ</b>を打ち抜く放置系パチンコローグライク。<br>発射は全自動。あなたはビルドを組むだけ。</p>
         <p id="bestLoop" style="margin-top:6px;color:var(--accent);font-weight:900;display:none"></p>
-        <button class="bigBtn" id="startBtn">開店</button>
+        <div class="menuCol">
+          <button class="bigBtn" id="continueBtn" style="display:none">つづきから</button>
+          <button class="bigBtn" id="startBtn">開店（新規）</button>
+          <button class="ghostBtn" id="dexBtn">📖 図鑑</button>
+        </div>
+        <p id="titleStats" style="margin-top:12px;font-size:10.5px;color:var(--dim);font-weight:700"></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="dexOverlay">
+      <div class="inner" style="max-width:520px">
+        <h1 style="font-size:26px">📖 <span class="green">図鑑</span></h1>
+        <p id="dexSummary" style="margin-top:4px"></p>
+        <div id="dexTabs" class="dexTabs"></div>
+        <div id="dexGrid" class="dexGrid"></div>
+        <button class="ghostBtn" id="dexClose">とじる</button>
       </div>
     </div>
 
