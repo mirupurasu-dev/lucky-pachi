@@ -16,12 +16,12 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [150, 280, 475, 765, 1180, 1780, 2550, 3600, 4950, 6650],
+  quotas: [150, 340, 610, 1010, 1580, 2400, 3480, 4950, 6850, 9250], // FEVER+色共鳴玉込みでクリア率30%に調整
   stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
   hesoPay: 4, tulipPay: 5,
-  attackerPay: 14, countPerRound: 9, roundTimeout: 6,
+  attackerPay: 18, countPerRound: 9, roundTimeout: 6,
   rushRounds7: 6, rushRoundsBar: 4,
-  renchanBase: 0.5,             // RUSH継続率
+  renchanBase: 0.55,            // RUSH継続率(ノルマ改定に合わせ+5%)
   holdMax: 6,
   hesoHalfW: 10, hesoBoostInRush: 1.4,
   luckStart: 1.0,
@@ -102,6 +102,17 @@ const SYMBOLS = {
   taiyo:   { glyph: '🌞', name: '太陽',       color: '#ffcc80', rarity: 'legend', three: { t: 'multi', list: [{ t: 'mult', v: 0.6 }, { t: 'coins', v: 80 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.1 }, { t: 'coins', v: 12 }] }, desc: '3揃い: 倍率+0.6＆+80玉 / 2揃い: +0.1＆+12玉' },
   ryusei:  { glyph: '💫', name: '流星群',     color: '#b3e5fc', rarity: 'legend', three: { t: 'shower', v: 25 }, two: { t: 'shower', v: 3 }, desc: '3揃い: 玉シャワー25発 / 2揃い: シャワー3発' },
   joker:   { glyph: '🃏', name: 'ジョーカー', color: '#ff4dff', rarity: 'legend', three: { t: 'joker' }, two: { t: 'coins', v: 30 }, desc: '3揃い: ランダムなレジェンド級効果 / 2揃い: +30玉' },
+};
+
+// ---------- 絵柄の色系統(色共鳴玉とのビルド相乗に使う) ----------
+const SYMBOL_FAMILY = {
+  cherry: 'red', suika: 'red', seven: 'red', mato: 'red', hanabi: 'red',
+  bell: 'gold', lemon: 'gold', coin: 'gold', fortune: 'gold', kinbukuro: 'gold', star: 'gold', kagi: 'gold', crown: 'gold', taiyo: 'gold',
+  clover: 'green', mitsuba: 'green', house: 'green',
+  grape: 'purple', moon: 'purple', suisho: 'purple', joker: 'purple',
+  diamond: 'blue', inazuma: 'blue', ryusei: 'blue', ryu: 'blue',
+  sakura: 'pink', fuusen: 'pink', buta: 'pink', unicorn: 'pink', present: 'pink',
+  nijiiro: 'rainbow', // 虹は全系統にマッチ
 };
 
 // ---------- 絵柄アンロック(メタ進行・スルメ要素) ----------
@@ -202,19 +213,20 @@ const BALLS = {
   jishaku:  { name: '磁石玉',   color: '#5eb0ff', trail: '#5eb0ff66', rarity: 'normal', desc: 'ヘソに吸い寄せられる。', fx: { magnet: 2.2 } },
   futago:   { name: '双子玉',   color: '#ff9ecb', trail: '#ff9ecb55', rarity: 'normal', desc: '最初の釘ヒットで2つに分裂する。', fx: { splitOnPin: 1 } },
   bakudan:  { name: '爆弾玉',   color: '#ff7043', trail: '#ff704355', rarity: 'normal', desc: 'アウトで爆発: +12玉＆周囲を吹き飛ばす。', fx: { drainCoins: 12, drainBlast: 1 } },
-  omori:    { name: '重玉',     color: '#9aa4b3', trail: '#9aa4b344', rarity: 'normal', desc: '重くて跳ねない。狙い通りに落ちる。', fx: { gMul: 1.25, jit: 0.3 } },
   hoshi:    { name: '星玉',     color: '#fde047', trail: '#fde04755', rarity: 'normal', desc: 'チューリップ賞球3倍。星を撒く。', fx: { tulipMult: 3, sparkle: 1 } },
   yuki:     { name: '雪玉',     color: '#e0f2fe', trail: '#e0f2fe66', rarity: 'normal', desc: '釘に当たるたび+1玉(最大12)。', fx: { pinCoinCap: 12 } },
-  tetsu:    { name: '鉄玉',     color: '#b0b8bd', trail: '#b0b8bd44', rarity: 'normal', desc: 'やや重く、ブレにくい。', fx: { gMul: 1.12, jit: 0.6 } },
-  gomu:     { name: 'ゴム玉',   color: '#ffb3ab', trail: '#ffb3ab44', rarity: 'normal', desc: 'よく跳ねる。荒ぶる。', fx: { rest: 1.35 } },
-  kodama:   { name: '小玉',     color: '#d9fff0', trail: '#d9fff044', rarity: 'normal', desc: '一回り小さく、釘の隙間を抜ける。', fx: { r: 4.4 } },
-  oodama:   { name: '大玉',     color: '#c9d6ff', trail: '#c9d6ff44', rarity: 'normal', desc: '一回り大きい。存在感で釘を弾く。', fx: { r: 6.8 } },
   akagane:  { name: '銅玉',     color: '#e8a87c', trail: '#e8a87c44', rarity: 'normal', desc: 'ヘソ賞球+2玉。', fx: { hesoCoins: 2 } },
   kokedama: { name: '苔玉',     color: '#9ccc65', trail: '#9ccc6544', rarity: 'normal', desc: 'チューリップ賞球2倍。', fx: { tulipMult: 2 } },
-  awadama:  { name: '泡玉',     color: '#c5f6ff', trail: '#c5f6ff44', rarity: 'normal', desc: 'ふわふわとゆっくり落ちる。', fx: { gMul: 0.78 } },
   biidama:  { name: 'ビー玉',   color: '#80deea', trail: '#80deea55', rarity: 'normal', desc: 'きれい。ちょっとだけ運がいい。', fx: { spinLuck: 1.1 } },
-  tsuyadama:{ name: 'つや玉',   color: '#f0e6ff', trail: '#f0e6ff44', rarity: 'normal', desc: '大人しく素直な弾道。', fx: { jit: 0.5, rest: 0.85 } },
   koban:    { name: '小判玉',   color: '#e6c96e', trail: '#e6c96e44', rarity: 'normal', desc: 'どこに消えても+2玉。', fx: { drainCoins: 2 } },
+  // ---- 色共鳴玉: 同じ色系統の絵柄で当たると、その当たりに倍率が乗る(ビルド相乗の軸) ----
+  guren:    { name: '紅蓮玉',   color: '#ff6b6b', trail: '#ff6b6b55', rarity: 'normal', desc: '赤系絵柄(🍒🍉７🎯🎇)の当たり×1.55。', fx: { colorSyn: 'red', colorMult: 1.55 } },
+  yamabuki: { name: '山吹玉',   color: '#f6c945', trail: '#f6c94555', rarity: 'normal', desc: '金系絵柄(🔔🍋🪙🥠💰⭐🔑👑🌞)の当たり×1.45。', fx: { colorSyn: 'gold', colorMult: 1.45 } },
+  hisui:    { name: '翡翠玉',   color: '#6fdd8b', trail: '#6fdd8b55', rarity: 'normal', desc: '緑系絵柄(🍀☘️🏠)の当たり×1.7。', fx: { colorSyn: 'green', colorMult: 1.7 } },
+  shion:    { name: '紫苑玉',   color: '#b98af0', trail: '#b98af055', rarity: 'normal', desc: '紫系絵柄(🍇🌙🔮🃏)の当たり×1.65。', fx: { colorSyn: 'purple', colorMult: 1.65 } },
+  soukai:   { name: '蒼海玉',   color: '#58c7f0', trail: '#58c7f055', rarity: 'normal', desc: '青系絵柄(💎⚡💫🐉)の当たり×1.7。', fx: { colorSyn: 'blue', colorMult: 1.7 } },
+  touka:    { name: '桃花玉',   color: '#ffa6c9', trail: '#ffa6c955', rarity: 'normal', desc: '桃系絵柄(🌸🎈🐷🦄🎁)の当たり×1.55。', fx: { colorSyn: 'pink', colorMult: 1.55 } },
+  prism:    { name: 'プリズム玉', color: '#e8f4ff', trail: '#e8f4ff66', rarity: 'normal', desc: 'どの色系統の絵柄でも当たり×1.25。', fx: { colorSyn: 'any', colorMult: 1.25 } },
   // ---- レア ----
   kin:      { name: '金玉',     color: '#f5c542', trail: '#f5c54266', rarity: 'rare', desc: 'この玉が起こした獲得が2倍。', fx: { payMult: 2 } },
   niji:     { name: '虹玉',     color: '#c084fc', trail: '#c084fc66', rarity: 'rare', desc: 'この玉の抽選は運2倍。虹の尾。', fx: { spinLuck: 2, rainbow: 1 } },
@@ -342,7 +354,8 @@ function refreshPins() {
   applyRemovedPins();
   for (const pt of S.parts) {
     for (const p of BOARD.pins) {
-      if (!p.key && dist(p.x, p.y, pt.x, pt.y) < 26) p.alive = false;
+      // バンパーr12/風車r14と釘の間に玉(径11px)が挟まらないクリアランス
+      if (!p.key && dist(p.x, p.y, pt.x, pt.y) < 31) p.alive = false;
     }
   }
 }
@@ -441,10 +454,15 @@ function handleParts(b, dt, m) {
       }
       case 'jumper': {
         if (Math.abs(dx) < 16 && dy > -2 && dy < 10 && b.vy > 0) {
-          b.vy = -270;
-          b.vx = Math.sign(230 - pt.x) * (90 + rng() * 60);
-          pt.flash = 1;
-          sfx('tick');
+          b.jumps = (b.jumps || 0) + 1;
+          if (b.jumps <= 5) { // 6回目以降は反応しない(無限ジャンプ保険)
+            // 中央スロット(x=230)だとsignが0になり真上ループするので左右ランダムに逃がす
+            const jdir = Math.abs(230 - pt.x) < 4 ? (rng() < 0.5 ? -1 : 1) : Math.sign(230 - pt.x);
+            b.vy = -270;
+            b.vx = jdir * (90 + rng() * 60);
+            pt.flash = 1;
+            sfx('tick');
+          }
         }
         break;
       }
@@ -476,6 +494,7 @@ const S = {
   aimBins: Array.from({ length: 8 }, () => ({ shots: 0, heso: 0 })),
   particles: [], floats: [], rings: [], coins: [], confetti: [], ambient: [], rockets: [],
   coinRain: [], celebrate: null, rushWon: 0,
+  fever: null, feverGauge: 0,      // FEVER TIME(脳汁ゲージ)
   shake: 0, boardFlash: 0,
   fxMax: true, timeScale: 1, tsTimer: 0, aberr: 0, glitchT: 0,
   cam: { z: 1, py: 390, punch: 0, rot: 0 },
@@ -514,6 +533,7 @@ function effMult() { return S.mult + mods().multAdd; }
 function hesoHalfW() {
   let w = CFG.hesoHalfW * mods().hesoMult * Math.pow(0.985, S.loop);
   if (S.rush) w *= CFG.hesoBoostInRush;
+  if (S.fever) w *= 1.35; // FEVER TIME: ヘソ拡大
   return Math.min(w, 30);
 }
 
@@ -558,7 +578,7 @@ function buildBoard() {
     for (let x = 30 + off; x <= 430; x += 34) {
       if (y < 135 && x > 110 && x < 350) continue; // 役物の屋根と重なる釘は置かない(玉詰まり防止)
       if (nearBlock(x, y, 12)) continue;
-      if (BOARD.windmills.some(w => dist(x, y, w.x, w.y) < w.r + 13)) continue;
+      if (BOARD.windmills.some(w => dist(x, y, w.x, w.y) < w.r + 17)) continue; // 風車面+釘面の隙間が玉径11px超になる距離
       if (TULIPS.some(t => dist(x, y, t.x, t.y) < 30)) continue;
       if (y > 500 && guideNails.some(g => dist(x, y, g.x, g.y) < 19)) continue; // 道釘の起点と挟まって玉詰まりする釘は間引く
       BOARD.pins.push({ x, y, alive: true, key: false });
@@ -615,6 +635,7 @@ function fireBall(power, opts = {}) {
     if (!(m.freeBallChance > 0 && rng() < m.freeBallChance)) S.balls--; // 永久機関
     if (S.shotsLeft > 0) S.shotsLeft--;
     S.stat.shots++;
+    if (S.fever) { S.fever.shots--; if (S.fever.shots <= 0) endFever(); } // FEVERは発数で消化
   }
   const type = opts.type || drawFromBag();
   const bfx = (BALLS[type] || BALLS.shiro).fx;
@@ -843,15 +864,61 @@ function gainBalls(n, srcBall, applyMult = true) {
   if (applyMult) v = Math.round(v * effMult());
   const bfx = srcBall && BALLS[srcBall.type] ? BALLS[srcBall.type].fx : null;
   if (bfx && bfx.payMult) v = Math.round(v * bfx.payMult);
+  // 色共鳴: 玉の色系統と揃った絵柄の色系統が一致すると倍率
+  if (bfx && bfx.colorSyn && srcBall.winSym) {
+    const fam = SYMBOL_FAMILY[srcBall.winSym];
+    if (fam && (bfx.colorSyn === 'any' || fam === bfx.colorSyn || fam === 'rainbow')) {
+      v = Math.round(v * bfx.colorMult);
+      if (!S.simMode && !srcBall.resonated) {
+        fx.floatText(BLOCK.x + BLOCK.w / 2, BLOCK.y + BLOCK.h / 2 + 76, `色共鳴！×${bfx.colorMult}`, BALLS[srcBall.type].color);
+        sfx('zap');
+      }
+      srcBall.resonated = true;
+    }
+  }
   if (m.allGainMult !== 1) v = Math.round(v * m.allGainMult);
   // シナジー相乗倍率(相性ビルドの気持ちよさの本体)
   const sm = synergyMult();
   if (sm !== 1) v = Math.round(v * sm);
+  if (S.fever) v = Math.round(v * 2); // FEVER TIME: 全獲得2倍
   // 面エスカレーター: 後半の台ほど出玉が増える(ノルマ上昇に全ビルドが追いつける下駄)
   v = Math.round(v * (1 + CFG.stageCoinRamp * (S.stage - 1)));
   S.balls += v;
   S.stat.totalWon += v;
+  // FEVERゲージ: リール当選(3揃い/2揃い/役)の獲得で貯まる
+  // ※ヘソ/チューリップの拾い玉では貯めない(垂れ流し防止)。RUSHは半分レート(onAttackerCatch側)
+  if (srcBall && srcBall.winSym) chargeFever(v);
   return v;
+}
+let FEVER_COUNT = 0; // 計測用(累計)
+function chargeFever(amount) {
+  if (S.fever || S.feverOff || S.phase !== 'play') return;
+  S.feverGauge = (S.feverGauge || 0) + amount;
+  if (S.feverGauge >= feverReq()) startFever();
+}
+// ---------- FEVER TIME(脳汁ゲージ) ----------
+function feverReq() { return Math.max(380, Math.round(quotaFor(S.stage) * 2.0)); }
+function startFever() {
+  S.fever = { shots: 24, total: 24 };
+  S.feverGauge = 0;
+  S.stat.fever = (S.stat.fever || 0) + 1;
+  FEVER_COUNT++;
+  addLog('🌈 FEVER TIME！！ 24発のあいだ 全獲得×2＆ヘソ拡大＆高速連射', 'hit');
+  if (S.simMode) return;
+  hitStop(0.18, 0.8);
+  S.cam.punch = 0.2; S.aberr = 2.4; S.boardFlash = 1;
+  fx.flashDOM();
+  fx.cutin('FEVER TIME！！', true);
+  fx.confettiBurst(120);
+  for (let i = 0; i < 6; i++) setTimeout(() => { if (S.fever && !S.simMode) fx.fireworks(60 + rng() * 340, 100 + rng() * 300); }, i * 200);
+  fountainBurst(70);
+  feverStartSound();
+  updateHUD();
+}
+function endFever() {
+  S.fever = null;
+  addLog('FEVER終了 — ゲージふたたび蓄積中', '');
+  if (!S.simMode) feverEndSound();
 }
 function onHeso(b) {
   const m = mods();
@@ -906,6 +973,7 @@ function onAttackerCatch(b) {
   const got = gainBalls(CFG.attackerPay + m.attackerPay, b, false);
   S.rushWon += got;
   S.rush.catches++;
+  chargeFever(got * 0.5); // RUSHビルドにもFEVERへの道を(半分レート)
   fx.spark(ATTACKER.x, ATTACKER.y, S.theme.accent, 8);
   fx.coinFly(b.x, ATTACKER.y, 3);
   fx.floatText(ATTACKER.x + (rng() - 0.5) * 70, ATTACKER.y - 12, `+${got}`, '#fff');
@@ -1044,7 +1112,7 @@ function resolveSpin() {
 // 特殊役の成立
 function applyRecipe(rc, ballType) {
   S.stat.wins++;
-  const srcBall = { type: ballType };
+  const srcBall = { type: ballType, winSym: rc.ids[0] };
   fx.flashDOM(); S.shake = Math.max(S.shake, 14); S.boardFlash = 1;
   fx.confettiBurst(70);
   fx.ring(BLOCK.x + BLOCK.w / 2, BLOCK.y + BLOCK.h / 2, '#ff4dff');
@@ -1058,6 +1126,7 @@ function applyRecipe(rc, ballType) {
     sfx('jackpot');
   }
   addLog(`🎴 特殊役「${rc.name}」成立！`, 'hit');
+  symbolWinSound(rc.ids[0]); // 役の主役絵柄のジングルを重ねる
   runEffect(rc.eff, srcBall, false, rc.ids[0]);
   const m = mods();
   if (m.bonusPerWin) gainBalls(m.bonusPerWin, null, false);
@@ -1172,14 +1241,14 @@ function runEffect(d, srcBall, big, symId) {
   }
 }
 function applyTwo(id, ballType) {
-  runEffect(SYMBOLS[id].two, { type: ballType }, false, id);
+  runEffect(SYMBOLS[id].two, { type: ballType, winSym: id }, false, id);
   sfx('two');
   tryStartSpin();
   updateHUD();
 }
 function applyThree(id, ballType) {
   S.stat.wins++;
-  const srcBall = { type: ballType };
+  const srcBall = { type: ballType, winSym: id };
   const sym = SYMBOLS[id];
   const m = mods();
   fx.flashDOM(); S.shake = Math.max(S.shake, 12); S.boardFlash = 1;
@@ -1193,6 +1262,7 @@ function applyThree(id, ballType) {
     if (S.theme.ambient === 'glitch') S.glitchT = Math.max(S.glitchT, 0.25);
   }
   addLog(`🎰 ${sym.name} 3揃い！`, 'hit');
+  symbolWinSound(id); // 揃った絵柄「らしい」専用ジングル
   runEffect(sym.three, srcBall, true, id);
   if (m.bonusPerWin) gainBalls(m.bonusPerWin, null, false); // ネオン管
   const bfx = (BALLS[ballType] || BALLS.shiro).fx;
@@ -1672,6 +1742,7 @@ function resetGame() {
     aimBins: Array.from({ length: 8 }, () => ({ shots: 0, heso: 0 })),
     particles: [], floats: [], rings: [], coins: [], confetti: [], ambient: [], rockets: [],
     coinRain: [], celebrate: null, rushWon: 0,
+    fever: null, feverGauge: 0,
     shake: 0, boardFlash: 0, lastDigits: null,
     timeScale: 1, tsTimer: 0, aberr: 0, glitchT: 0,
     cam: { z: 1, py: 390, punch: 0, rot: 0 },
@@ -1991,6 +2062,100 @@ function coinTick(delay, gain = 0.04) { // ドル箱ジャラジャラの1粒
   o.connect(g); g.connect(OUT());
   o.start(t); o.stop(t + 0.08);
 }
+function glide(f1, f2, dur, type = 'sine', gain = 0.06, delay = 0) { // ピッチが滑る単音
+  if (!sndOK()) return;
+  const t = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f1, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.02);
+  o.connect(g); g.connect(OUT());
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function noiseSweep(f1, f2, dur, gain = 0.08, delay = 0, q = 2) { // 風切り・シュッ系のフィルタノイズ
+  if (!sndOK()) return;
+  if (!noiseBuf) {
+    noiseBuf = AC.createBuffer(1, (AC.sampleRate * 0.5) | 0, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t = AC.currentTime + delay;
+  const src = AC.createBufferSource();
+  src.buffer = noiseBuf; src.loop = true;
+  const f = AC.createBiquadFilter();
+  f.type = 'bandpass'; f.Q.value = q;
+  f.frequency.setValueAtTime(f1, t);
+  f.frequency.exponentialRampToValueAtTime(Math.max(40, f2), t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(OUT());
+  src.start(t); src.stop(t + dur + 0.02);
+}
+// ---------- 絵柄別の当選ジングル(3揃いの瞬間、その絵柄「らしい」音が鳴る) ----------
+const SYMBOL_JINGLES = {
+  // ノーマル
+  cherry()   { glide(620, 930, 0.07, 'square', 0.07); glide(680, 1020, 0.07, 'square', 0.07, 0.09); glide(760, 1140, 0.09, 'square', 0.06, 0.18); }, // ぷりっと3粒ポップ
+  clover()   { [523, 659, 784, 880].forEach((f, i) => beep(f, 0.09, 'triangle', 0.07, i * 0.07)); bellTone(1760, 0.04, 0.3); }, // ラッキー上昇アルペジオ
+  bell()     { bellTone(1047, 0.09, 0); bellTone(784, 0.08, 0.16); bellTone(1047, 0.1, 0.32); }, // 本物の鐘: キンコンカン
+  house()    { beep(130, 0.07, 'square', 0.09); beep(130, 0.07, 'square', 0.09, 0.12); beep(659, 0.12, 'triangle', 0.06, 0.26); beep(523, 0.18, 'triangle', 0.06, 0.36); }, // ノック2回+ドアチャイム
+  lemon()    { glide(780, 1650, 0.1, 'sawtooth', 0.05); bellTone(2093, 0.045, 0.12); }, // 酸っぱいキュッ
+  grape()    { [880, 830, 780, 730, 680].forEach((f, i) => glide(f, f * 1.3, 0.05, 'sine', 0.06, i * 0.055)); }, // 粒がはじける泡ポコポコ
+  suika()    { kick(0.2); noiseSweep(900, 250, 0.22, 0.09, 0.03); }, // ずっしり+果汁スプラッシュ
+  coin()     { for (let i = 0; i < 8; i++) coinTick(i * 0.05, 0.05); beep(1568, 0.12, 'sine', 0.06, 0.3); }, // 小銭ジャラ
+  fuusen()   { glide(320, 950, 0.32, 'sine', 0.06); noiseSweep(2600, 1500, 0.06, 0.13, 0.34); beep(420, 0.05, 'square', 0.07, 0.34); }, // ふくらんで→パン!
+  sakura()   { [440, 523, 587, 784].forEach((f, i) => { beep(f, 0.22, 'triangle', 0.065, i * 0.11); beep(f * 2, 0.1, 'sine', 0.02, i * 0.11); }); }, // 和風の琴
+  mitsuba()  { [523, 659, 784].forEach((f, i) => beep(f, 0.08, 'triangle', 0.07, i * 0.06)); bellTone(1568, 0.04, 0.22); }, // 三枚葉の3音
+  fortune()  { glide(1300, 620, 0.3, 'sine', 0.045); glide(430, 860, 0.16, 'sine', 0.06, 0.34); }, // 神秘の下降→「なに？」の上がり
+  kozutsumi(){ beep(150, 0.08, 'triangle', 0.09); noiseSweep(500, 2400, 0.18, 0.07, 0.1); }, // 段ボールどさ+テープびりっ
+  mato()     { noiseSweep(2400, 700, 0.14, 0.08); kick(0.18, 0.15); bellTone(1319, 0.06, 0.2); }, // ヒュン→ドスッ→当たり鐘
+  // レア
+  seven()    { kick(0.2); [523, 659, 784].forEach(f => brass(f, 0.35, 0.06)); glide(620, 1240, 0.45, 'sawtooth', 0.035, 0.1); }, // ブラス直撃+サイレン上昇
+  bar()      { [196, 196, 262].forEach((f, i) => { brass(f, 0.16, 0.07, i * 0.14); kick(0.15, i * 0.14); }); }, // 重低音3連スタブ
+  moon()     { [523, 659].forEach(f => glide(f * 0.985, f, 0.85, 'sine', 0.05)); bellTone(1319, 0.035, 0.4); }, // 夢見る月光パッド
+  diamond()  { [1568, 2093, 2637, 3136].forEach((f, i) => bellTone(f, 0.055, i * 0.09)); crash(0.04, 0.6, 0.2); }, // 結晶カスケード
+  star()     { for (let i = 0; i < 5; i++) bellTone(1760 + i * 260 + Math.random() * 120, 0.05, i * 0.08); }, // キラキラ星
+  kinbukuro(){ kick(0.2); for (let i = 0; i < 14; i++) coinTick(0.05 + i * 0.04, 0.05); beep(1319, 0.14, 'sine', 0.06, 0.55); }, // 金貨ぶちまけ
+  suisho()   { for (const det of [-12, 12]) glide(392 * Math.pow(2, det / 1200), 587, 0.7, 'sawtooth', 0.022); bellTone(2349, 0.05, 0.55); }, // 霊気の唸り→透明音
+  saikoro()  { for (let i = 0; i < 6; i++) noiseSweep(3200, 2500, 0.03, 0.06, i * 0.05); beep(310, 0.06, 'square', 0.09, 0.34); }, // カラカラ→ピタッ
+  inazuma()  { glide(3200, 420, 0.13, 'sawtooth', 0.07); glide(2600, 380, 0.16, 'sawtooth', 0.06, 0.1); crash(0.05, 0.35, 0.05); }, // バリバリ放電
+  nijiiro()  { [523, 587, 659, 698, 784, 880, 988].forEach((f, i) => beep(f, 0.08, 'triangle', 0.06, i * 0.055)); bellTone(2093, 0.05, 0.42); }, // 7色の駆け上がり
+  present()  { noiseSweep(600, 2600, 0.16, 0.07); [523, 659].forEach(f => brass(f, 0.3, 0.05, 0.2)); bellTone(1760, 0.05, 0.24); }, // リボンしゅる→ジャーン
+  kagi()     { for (let i = 0; i < 4; i++) coinTick(i * 0.045, 0.045); beep(2100, 0.03, 'square', 0.07, 0.2); glide(180, 330, 0.25, 'sawtooth', 0.03, 0.26); }, // 鍵束+カチャ+扉ギィ
+  buta()     { glide(310, 175, 0.11, 'sawtooth', 0.075); glide(340, 185, 0.13, 'sawtooth', 0.075, 0.16); coinTick(0.34, 0.05); }, // ブヒブヒ+チャリン
+  hanabi()   { glide(420, 1250, 0.45, 'sine', 0.045); boomNoise(0.22, 0.4, 0.45); for (let i = 0; i < 6; i++) bellTone(1568 + Math.random() * 1200, 0.04, 0.55 + i * 0.07); }, // ヒュ〜…ドーン!パラパラ
+  unicorn()  { [784, 988, 1175, 1397, 1568, 1760].forEach((f, i) => bellTone(f, 0.045, i * 0.06)); glide(880, 1760, 0.25, 'sine', 0.04, 0.42); }, // ハープグリス+いななき
+  // レジェンド
+  crown()    { brass(392, 0.18, 0.06); brass(523, 0.18, 0.06, 0.16); [659, 784].forEach(f => brass(f, 0.5, 0.055, 0.32)); kick(0.2, 0.32); bellTone(2093, 0.05, 0.6); }, // 戴冠ファンファーレ
+  ryu()      { glide(160, 75, 0.55, 'sawtooth', 0.11); boomNoise(0.18, 0.5, 0.05); bellTone(220, 0.09, 0.5); bellTone(110, 0.07, 0.5); }, // 咆哮+銅鑼
+  taiyo()    { [523, 659, 784].forEach(f => brass(f, 0.7, 0.05)); for (let i = 0; i < 5; i++) bellTone(1568 + i * 330, 0.04, 0.25 + i * 0.09); }, // 陽光の長和音+燦々
+  ryusei()   { for (let i = 0; i < 3; i++) noiseSweep(2800, 500, 0.3, 0.07, i * 0.18); for (let i = 0; i < 5; i++) bellTone(1760 + Math.random() * 1400, 0.045, 0.6 + i * 0.08); }, // 流星3連+着弾キラ
+  joker()    { [466, 494, 523, 554].forEach((f, i) => beep(f, 0.07, 'square', 0.06, i * 0.08)); glide(660, 520, 0.1, 'sawtooth', 0.05, 0.36); glide(640, 500, 0.1, 'sawtooth', 0.05, 0.5); }, // 忍び足+ケケケ
+};
+function symbolWinSound(id) {
+  if (!sndOK()) return;
+  const j = SYMBOL_JINGLES[id];
+  if (j) j();
+}
+// FEVER突入: キックロール→サイレン2連→ブラス駆け上がり→ベルの雨+群衆スウェル
+function feverStartSound() {
+  if (!sndOK()) return;
+  for (let i = 0; i < 4; i++) kick(0.22, i * 0.11);
+  glide(500, 1050, 0.5, 'sawtooth', 0.05);
+  glide(500, 1050, 0.5, 'sawtooth', 0.05, 0.25);
+  noiseSweep(300, 1400, 0.9, 0.05, 0, 1);
+  [523, 659, 784, 1047].forEach((f, i) => brass(f, i === 3 ? 0.85 : 0.22, 0.06, 0.45 + i * 0.13));
+  crash(0.13, 1.6, 0.45);
+  for (let i = 0; i < 8; i++) bellTone(1568 + Math.random() * 1500, 0.045, 0.8 + i * 0.09);
+}
+function feverEndSound() {
+  if (!sndOK()) return;
+  [784, 659, 523].forEach((f, i) => brass(f, 0.28, 0.05, i * 0.16));
+  bellTone(1047, 0.06, 0.5);
+  crash(0.05, 0.8, 0.45);
+}
 // 金額ティア別の大当たりファンファーレ(パチンコ級)
 function megawinSound(tierMin) {
   if (!sndOK()) return;
@@ -2060,28 +2225,43 @@ function sfx(kind) {
 }
 // ノイズ爆発音(WebAudioバッファ合成)
 let noiseBuf = null;
-function boomNoise(gain = 0.15, dur = 0.35) {
+function boomNoise(gain = 0.15, dur = 0.35, delay = 0) {
   if (!AC || S.simMode || !S.sndOn) return;
   if (!noiseBuf) {
     noiseBuf = AC.createBuffer(1, (AC.sampleRate * 0.5) | 0, AC.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
+  const t = AC.currentTime + delay;
   const src = AC.createBufferSource();
   src.buffer = noiseBuf;
   const f = AC.createBiquadFilter();
   f.type = 'lowpass'; f.frequency.value = 850;
   const g = AC.createGain();
-  g.gain.setValueAtTime(gain, AC.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.connect(f); f.connect(g); g.connect(OUT());
-  src.start(); src.stop(AC.currentTime + dur);
+  src.start(t); src.stop(t + dur);
 }
 // RUSH中のBGMシーケンサー + 激アツ心音(フレーム駆動の先行スケジューリング)
 function audioTick() {
   if (!AC || !S.sndOn || S.simMode) return;
   const now = AC.currentTime;
-  if (S.rush && S.phase === 'play') {
+  if (S.fever && S.phase === 'play') {
+    // FEVER専用BGM: メジャーキーの16分アップテンポ+4つ打ちキック+裏拍チャリン
+    if (!S.bgmNext || S.bgmNext < now) { S.bgmNext = now + 0.05; S.bgmStep = 0; }
+    const patF = [0, 4, 7, 12, 4, 7, 12, 16, 5, 9, 14, 17, 7, 12, 16, 19];
+    while (S.bgmNext < now + 0.25) {
+      const st = S.bgmStep % 16;
+      const f = 262 * Math.pow(2, patF[st] / 12);
+      beep(f, 0.09, 'square', 0.034, S.bgmNext - now);
+      beep(f / 2, 0.11, 'triangle', 0.03, S.bgmNext - now);
+      if (st % 4 === 0) kick(0.12, S.bgmNext - now);
+      if (st % 2 === 1) coinTick(S.bgmNext - now, 0.013);
+      S.bgmStep++;
+      S.bgmNext += 0.095;
+    }
+  } else if (S.rush && S.phase === 'play') {
     if (!S.bgmNext || S.bgmNext < now) { S.bgmNext = now + 0.05; S.bgmStep = 0; }
     const pat = [0, 7, 12, 7, 3, 10, 15, 12];
     while (S.bgmNext < now + 0.25) {
@@ -2486,11 +2666,24 @@ function celebrate(amount) {
       ph: rng() * 7, size: 14 + rng() * 14,
     });
   }
+  fountainBurst(Math.round(tier.coins * 0.5)); // 下皿からも溢れる
   sfx('megawin');
+}
+// 下皿からコインが吹き上がる噴水(勝利のコイン溢れ)
+function fountainBurst(n, spread = 150) {
+  if (S.simMode) return;
+  for (let i = 0; i < n; i++) {
+    S.coinRain.push({
+      x: CFG.CW / 2 + (rng() - 0.5) * spread, y: CFG.CH - 46 - rng() * 22,
+      vy: -(360 + rng() * 400), vx: (rng() - 0.5) * 260, g: 760 + rng() * 260,
+      rot: rng() * 7, vr: (rng() - 0.5) * 12, ph: rng() * 7, size: 13 + rng() * 12,
+    });
+  }
 }
 function drawCoinRain(c, dt) {
   if (!S.coinRain.length) return;
   for (const cn of S.coinRain) {
+    if (cn.g) cn.vy += cn.g * dt; // 噴水コインは重力で落ちて画面外へ溢れる
     cn.y += cn.vy * dt; cn.x += cn.vx * dt; cn.rot += cn.vr * dt; cn.ph += dt * 7;
     const flip = Math.max(0.08, Math.abs(Math.cos(cn.ph)));
     c.save();
@@ -2571,6 +2764,65 @@ function drawCelebration(c, dt) {
   c.fillText('― 玉 GET ―', cx, cy + 108);
   c.restore();
   c.globalAlpha = 1;
+}
+
+// ---------- FEVER TIME演出(虹ストロボ+バナー+ゲージ) ----------
+function drawFever(c, dt) {
+  // FEVERゲージ: リールユニット下端のバー(蓄積中は虹がじわじわ満ちる)
+  if (S.phase === 'play') {
+    const gx = CFG.FX + BLOCK.x + 16, gw = BLOCK.w - 32;
+    const gy = CFG.FY + BLOCK.y + BLOCK.h - 13, gh = 7;
+    const pct = S.fever ? S.fever.shots / S.fever.total : Math.min(1, (S.feverGauge || 0) / feverReq());
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,.55)';
+    c.fillRect(gx - 1, gy - 1, gw + 2, gh + 2);
+    if (pct > 0) {
+      const hue = (S.time * (S.fever ? 300 : 40)) % 360;
+      const gr = c.createLinearGradient(gx, 0, gx + gw, 0);
+      gr.addColorStop(0, `hsl(${hue},95%,60%)`);
+      gr.addColorStop(1, `hsl(${(hue + 90) % 360},95%,62%)`);
+      c.fillStyle = gr;
+      const pulse = pct > 0.8 && !S.fever ? 1 + Math.sin(S.time * 10) * 0.5 : 1;
+      c.globalAlpha = Math.min(1, 0.75 * pulse);
+      c.fillRect(gx, gy, gw * pct, gh);
+      c.globalAlpha = 1;
+    }
+    c.font = '800 8px Orbitron, monospace';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = pct > 0.8 || S.fever ? '#fff' : 'rgba(255,255,255,.5)';
+    c.fillText(S.fever ? `FEVER ${S.fever.shots}` : 'FEVER', gx + gw / 2, gy + gh / 2 + 0.5);
+    c.restore();
+  }
+  if (!S.fever || S.simMode) return;
+  // 下皿からコインがちょろちょろ溢れ続ける
+  if (rng() < dt * 20) fountainBurst(2, 220);
+  const hue = (S.time * 260) % 360;
+  c.save();
+  c.globalCompositeOperation = 'lighter';
+  // 虹の額縁ストロボ(4辺)
+  const bw = 10 + Math.sin(S.time * 9) * 4;
+  const edge = (x, y, w, h, hOff) => {
+    c.fillStyle = `hsla(${(hue + hOff) % 360},95%,58%,${0.34 + Math.sin(S.time * 12 + hOff) * 0.14})`;
+    c.fillRect(x, y, w, h);
+  };
+  edge(0, 0, CFG.CW, bw, 0);
+  edge(0, CFG.CH - bw, CFG.CW, bw, 90);
+  edge(0, 0, bw, CFG.CH, 180);
+  edge(CFG.CW - bw, 0, bw, CFG.CH, 270);
+  // FEVERバナー(盤面上部で脈動)
+  const bob = 1 + Math.sin(S.time * 8) * 0.06;
+  c.translate(CFG.CW / 2, CFG.FY + 78);
+  c.scale(bob, bob);
+  c.font = '900 34px Orbitron, monospace';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 7; c.lineJoin = 'round';
+  c.strokeStyle = 'rgba(0,0,0,.7)';
+  c.strokeText('FEVER TIME', 0, 0);
+  c.fillStyle = `hsl(${hue},100%,66%)`;
+  c.shadowColor = `hsl(${hue},100%,60%)`; c.shadowBlur = 26;
+  c.fillText('FEVER TIME', 0, 0);
+  c.shadowBlur = 0;
+  c.restore();
 }
 
 // ---------- 筐体(キャビネット) ----------
@@ -2677,7 +2929,8 @@ function drawCabinetFX(c, dt) {
   for (let i = 0; i < LEDS.length; i++) {
     const l = LEDS[i];
     let on, col;
-    if (S.celebrate) { on = (Math.floor(S.time * 20) + i) % 3 < 2; col = i % 2 ? '#ffd76a' : '#ffffff'; }
+    if (S.fever) { on = (Math.floor(S.time * 24) + i) % 4 !== 0; col = `hsl(${(S.time * 320 + i * 24) % 360},95%,62%)`; }
+    else if (S.celebrate) { on = (Math.floor(S.time * 20) + i) % 3 < 2; col = i % 2 ? '#ffd76a' : '#ffffff'; }
     else if (S.rush) { on = (Math.floor(S.time * 14) + i) % 2 === 0; col = on && i % 4 < 2 ? '#ff5252' : '#ffffff'; }
     else if (hot) { on = Math.sin(S.time * 12) > 0; col = '#ff3355'; }
     else { on = ((Math.floor(S.time * 8) - i) % LEDS.length + LEDS.length) % LEDS.length < 5; col = T.accent; }
@@ -3140,6 +3393,7 @@ function draw(dt) {
   }
   c.restore();
   drawCabinetFX(c, dt);
+  drawFever(c, dt);
   drawCelebration(c, dt);
   postFX(dt);
 }
@@ -3532,7 +3786,7 @@ function frame(t) {
     if (S.fireCd <= 0 && (S.shotsLeft > 0 || S.rush) && S.balls > 0) {
       if (fireBall(S.power)) {
         const quick = (BALLS[S.lastFiredType] || BALLS.shiro).fx.quickNext;
-        S.fireCd = quick ? 0.08 : CFG.fireInterval * mods().fireFast;
+        S.fireCd = quick ? 0.08 : CFG.fireInterval * mods().fireFast * (S.fever ? 0.45 : 1);
       }
     }
     // 玉シャワー(スター3揃い)の消化 — ゲーム内時間駆動
@@ -3694,6 +3948,8 @@ document.getElementById('removeCancel').onclick = () => {
 // ---------- 検証ハーネス ----------
 window.__game = {
   S, CFG, THEMES, SYMBOLS, BALLS, RELICS,
+  feverCount() { return FEVER_COUNT; },
+  feverReset() { FEVER_COUNT = 0; },
   mods, hesoHalfW, decideOutcome, poolTotal,
   seed: setSeed,
   reset: resetGame,
@@ -3726,6 +3982,7 @@ window.__game = {
     const savedBuild = persist ? null : JSON.stringify({
       luck: S.luck, mult: S.mult, quota: S.quota, hesoPayPerm: S.hesoPayPerm,
       deck: S.deck, symbolPool: S.symbolPool,
+      fever: S.fever, feverGauge: S.feverGauge, // 単発計測はFEVER状態を汚さない(persist時は持ち越す)
     });
     const savedRelics = persist ? null : S.relics.slice();
     // 実行中の実プレイ状態を退避(参照ごと)
@@ -3817,9 +4074,9 @@ window.__game = {
     S.quota = quotaFor(1);
     const RAR_SCORE = { normal: 1, rare: 2.2, legend: 3.5 };
     const prefs = {
-      coin:  { syms: ['cherry','suika','grape','lemon','diamond','kinbukuro','ryu','buta','saikoro','fortune'], balls: ['kin','gin','kotei'], relics: ['uraROM','kamiwaza','manekineko','shiori'] },
+      coin:  { syms: ['cherry','suika','grape','lemon','diamond','kinbukuro','ryu','buta','saikoro','fortune'], balls: ['kin','gin','kotei','yamabuki','guren','prism'], relics: ['uraROM','kamiwaza','manekineko','shiori'] },
       rush:  { syms: ['seven','bar','crown'], balls: ['nanahikari','horyudama'], relics: ['renchan','roundplus','tenjo','tamashii','valve','dedama','overkill','shippu','gunte','yuujou'] },
-      scale: { syms: ['clover','sakura','mitsuba','moon','taiyo','nijiiro','unicorn'], balls: ['niji','kenja','biidama'], relics: ['shiori','mangetsu','uraROM','kamiwaza','ema','manekineko','fuseki'] },
+      scale: { syms: ['clover','sakura','mitsuba','moon','taiyo','nijiiro','unicorn'], balls: ['niji','kenja','biidama','hisui','shion'], relics: ['shiori','mangetsu','uraROM','kamiwaza','ema','manekineko','fuseki'] },
       balanced: { syms: [], balls: [], relics: [] },
     };
     const pf = prefs[arch] || prefs.balanced;
