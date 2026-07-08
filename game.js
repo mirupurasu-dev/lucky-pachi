@@ -1373,9 +1373,17 @@ function endRound() {
 }
 
 // ---------- 面の進行 ----------
+// 周回ノルマ倍率: 周が進むほど"どんどん"急になる加速曲線(各周の上げ幅が増える)
+// loop1≈×1.24 / loop2≈×1.57 / loop3≈×2.05 / loop5≈×3.8 / loop10≈×27
+function loopMultAt(loop) {
+  let m = 1;
+  for (let k = 1; k <= loop; k++) m *= (1.20 + 0.035 * k);
+  return m;
+}
+function loopMult() { return loopMultAt(S.loop); }
 function quotaFor(stage) {
   const base = CFG.quotas[Math.min(stage - 1, CFG.quotas.length - 1)];
-  return Math.max(50, Math.round(base * mods().quotaMult * Math.pow(1.18, S.loop)));
+  return Math.max(50, Math.round(base * mods().quotaMult * loopMult()));
 }
 function stageShots(m) {
   return Math.max(90, CFG.shotsPerStage + m.shotsAdd - S.loop * 4);
@@ -1484,7 +1492,10 @@ function openClear() {
   document.getElementById('clearText').innerHTML =
     `<b>${S.loop + 1}周目</b> 全10面、計 <b>${S.stat.paid}玉</b> を納品しきった。<br>` +
     `3揃い <b>${S.stat.wins}回</b> ／ RUSH <b>${S.stat.rush}回</b> ／ 総獲得 <b>${S.stat.totalWon}玉</b> ／ 発射 <b>${S.stat.shots}発</b>`;
-  document.getElementById('nextLoopBtn').textContent = `${S.loop + 2}周目に挑む（ノルマ+18%・釘シブめ・発射-4発）`;
+  {
+    const up = Math.round((loopMultAt(S.loop + 1) / loopMultAt(S.loop) - 1) * 100);
+    document.getElementById('nextLoopBtn').textContent = `${S.loop + 2}周目に挑む（ノルマ+${up}%・釘シブめ・発射-4発）`;
+  }
   document.getElementById('clearOverlay').classList.add('show');
 }
 

@@ -161,6 +161,28 @@
   .ghostBtn:hover { color: var(--text); border-color: var(--dim); }
   .menuCol { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 18px; }
   .menuCol .bigBtn, .menuCol .ghostBtn { margin-top: 6px; width: 240px; }
+  /* ===== タイトル装飾(金鯉×桜×花火の生成背景) ===== */
+  #titleOverlay {
+    background:
+      radial-gradient(ellipse 62% 42% at 50% 44%, rgba(3,6,5,.86), rgba(3,6,5,.5) 60%, transparent),
+      linear-gradient(180deg, rgba(3,6,5,.55), rgba(3,6,5,.35) 40%, rgba(3,6,5,.78)),
+      url('assets/title_bg_art.webp') center/cover no-repeat, #05080a;
+    backdrop-filter: none;
+  }
+  #titleOverlay .inner { position: relative; }
+  #titleOverlay h1 {
+    font-size: 46px; text-shadow: 0 2px 18px rgba(0,0,0,.9), 0 0 30px rgba(255,200,90,.35);
+    animation: titleGlow 3.2s ease-in-out infinite;
+  }
+  #titleOverlay h1 .kin {
+    background: linear-gradient(180deg, #fff6d0 0%, #ffd76a 45%, #f5a623 60%, #fff2b8 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 6px rgba(180,120,10,.5));
+  }
+  @keyframes titleGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.12)} }
+  #titleOverlay p { text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+  #titleOverlay .menuCol .bigBtn { box-shadow: 0 0 26px rgba(120,240,168,.5), 0 4px 14px rgba(0,0,0,.6); }
+  #titleOverlay .ghostBtn { background: rgba(6,10,8,.55); }
 
   /* ================= 図鑑 ================= */
   .dexTabs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 12px 0 10px; }
@@ -463,7 +485,7 @@
 
     <div class="overlay show" id="titleOverlay">
       <div class="inner">
-        <h1><span class="green">幸運の</span><br>パチンコ</h1>
+        <h1><span class="green">幸運の</span><br><span class="kin">パチンコ</span></h1>
         <p>玉を集め、リールを組み替え、台を改造しながら<br>全10面の<b>納品ノルマ</b>を打ち抜く放置系パチンコローグライク。<br>発射は全自動。あなたはビルドを組むだけ。</p>
         <p id="bestLoop" style="margin-top:6px;color:var(--accent);font-weight:900;display:none"></p>
         <div class="menuCol">
