@@ -2940,7 +2940,8 @@ function drawCelebration(c, dt) {
 // ---------- FEVER TIME演出(虹ストロボ+バナー+ゲージ) ----------
 function drawFever(c, dt) {
   // FEVERゲージ: リールユニット下端のバー(蓄積中は虹がじわじわ満ちる)
-  if (S.phase === 'play') {
+  // スピン/リーチ中はリール窓・リーチ文字と重なるので隠す
+  if (S.phase === 'play' && !S.spin) {
     const gx = CFG.FX + BLOCK.x + 16, gw = BLOCK.w - 32;
     const gy = CFG.FY + BLOCK.y + BLOCK.h - 13, gh = 7;
     const pct = S.fever ? S.fever.shots / S.fever.total : Math.min(1, (S.feverGauge || 0) / feverReq());
@@ -4001,8 +4002,10 @@ function drawReels(c, dt) {
   const y0 = BLOCK.y + REEL.y0off;
   for (let i = 0; i < 3; i++) {
     const wx = x0 + i * (winW + gap), wy = y0;
-    c.fillStyle = 'rgba(6,10,13,0.7)'; // 水中を薄く透かす液晶窓
-    roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
+    if (S.reelCards !== false) { // 黒カード背景(トグルOFFで竜宮城に直接絵柄を乗せる)
+      c.fillStyle = 'rgba(6,10,13,0.7)'; // 水中を薄く透かす液晶窓
+      roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
+    }
     c.save();
     roundRectPath(c, wx, wy, winW, winH, 7); c.clip();
     const settled = !S.spin || S.spin.t >= S.spin.stopAt[i];
@@ -4221,6 +4224,11 @@ document.getElementById('zoomBtn').onclick = function () {
   S.reelZoom = !S.reelZoom;
   this.classList.toggle('on', S.reelZoom);
   this.textContent = S.reelZoom ? '🔍拡大中' : '🔍液晶拡大';
+};
+document.getElementById('cardBtn').onclick = function () {
+  S.reelCards = S.reelCards === false; // OFF→ON / ON→OFF
+  this.classList.toggle('on', S.reelCards !== false);
+  this.textContent = S.reelCards !== false ? '🎴カード背景' : '🎴背景なし';
 };
 document.getElementById('sndBtn').onclick = function () {
   S.sndOn = !S.sndOn;
