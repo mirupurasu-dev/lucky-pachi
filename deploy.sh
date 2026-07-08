@@ -3,6 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 cp ../lucky-pachi/index.html ../lucky-pachi/game.js .
+mkdir -p assets && cp ../lucky-pachi/assets/*_art.webp assets/ # 本番用に加工済みのアートだけ配布(生成元は含めない)
 git add -A
 git commit -m "update game" || echo "no changes"
 git push

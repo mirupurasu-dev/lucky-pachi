@@ -8,8 +8,8 @@
 // ---------- コンフィグ ----------
 const CFG = {
   W: 460, H: 780,               // 盤面(フィールド)サイズ
-  CW: 600, CH: 910,             // キャンバス全体(筐体込み)
-  FX: 70, FY: 60,               // 盤面のオフセット(筐体枠のぶん)
+  CW: 600, CH: 1110,            // キャンバス全体(筐体込み・実機比率)
+  FX: 70, FY: 175,              // 盤面のオフセット(AI筐体アートの窓位置に一致)
   ballR: 5.5, pinR: 3.4,
   gravity: 1500,
   restPin: 0.52, restWall: 0.38,
@@ -2424,7 +2424,130 @@ function drawSymbol(c, id, x, y, s) {
 
 // ---------- ポストプロセス(無駄な技術ゾーン) ----------
 const cv = document.getElementById('board');
-const c2 = cv.getContext('2d');
+// ---------- WebGL最終合成 ----------
+// 対応環境: 2Dはオフスクリーンに描き、可視canvasへGPUシェーダ(本物のブルーム/ガラス映り込み/ビネット)で提示。
+// 非対応環境: 従来どおり可視canvasに2D直描画。
+function createGLPresenter(canvas, srcCanvas) {
+  const gl = canvas.getContext('webgl', { alpha: false, antialias: false });
+  if (!gl) return null;
+  const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
+  const compile = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  };
+  const prog = fs => {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, VS));
+    gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    return p;
+  };
+  // 明部抽出(1/4解像度)
+  const P_BRIGHT = prog(`precision mediump float;varying vec2 v;uniform sampler2D t;
+    void main(){vec3 c=texture2D(t,v).rgb;float l=dot(c,vec3(.299,.587,.114));
+    gl_FragColor=vec4(c*smoothstep(.6,.9,l),1.);}`);
+  // 9タップガウス(方向可変・2パス)
+  const P_BLUR = prog(`precision mediump float;varying vec2 v;uniform sampler2D t;uniform vec2 d;
+    void main(){vec3 s=texture2D(t,v).rgb*.227;
+    s+=(texture2D(t,v+d*1.384).rgb+texture2D(t,v-d*1.384).rgb)*.316;
+    s+=(texture2D(t,v+d*3.230).rgb+texture2D(t,v-d*3.230).rgb)*.0702;
+    gl_FragColor=vec4(s,1.);}`);
+  // 合成: ベース+ブルーム+ガラス反射スイープ+上部ハイライト+彩度+ビネット
+  const P_COMP = prog(`precision mediump float;varying vec2 v;
+    uniform sampler2D t,b;uniform float time,bloom,fxon;
+    void main(){
+      vec3 base=texture2D(t,v).rgb;
+      vec3 c=base+texture2D(b,v).rgb*bloom;
+      float sweep=sin(time*.13)*1.6;
+      float g=v.x*.8-v.y*.55+sweep;
+      float band=smoothstep(.0,.25,g)*smoothstep(.5,.25,g);
+      float band2=smoothstep(.55,.72,g)*smoothstep(.9,.72,g);
+      c+=vec3(1.,1.,1.06)*(band*.05+band2*.022)*fxon;
+      c+=vec3(.9,1.,.95)*smoothstep(.62,1.,v.y)*.03*fxon;
+      float lum=dot(c,vec3(.299,.587,.114));
+      c=mix(vec3(lum),c,1.09);
+      vec2 q=v-.5;
+      c*=1.-dot(q,q)*.34;
+      gl_FragColor=vec4(c,1.);
+    }`);
+  const quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const bindQuad = p => {
+    const loc = gl.getAttribLocation(p, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  };
+  const mkTex = (w, h) => {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if (w) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    return t;
+  };
+  const srcTex = mkTex();
+  const BW = (CFG.CW / 4) | 0, BH = (CFG.CH / 4) | 0;
+  const fbo = [0, 1].map(() => {
+    const t = mkTex(BW, BH);
+    const f = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    return { f, t };
+  });
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  let texInit = false;
+  return {
+    present(time, fxMax) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, srcTex);
+      if (!texInit) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas); texInit = true; }
+      else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
+      // 明部抽出 → fbo0
+      gl.useProgram(P_BRIGHT); bindQuad(P_BRIGHT);
+      gl.uniform1i(gl.getUniformLocation(P_BRIGHT, 't'), 0);
+      gl.viewport(0, 0, BW, BH);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[0].f);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // ブラーH → fbo1 → ブラーV → fbo0
+      gl.useProgram(P_BLUR); bindQuad(P_BLUR);
+      gl.uniform1i(gl.getUniformLocation(P_BLUR, 't'), 0);
+      gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
+      gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 1 / BW, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[1].f);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.bindTexture(gl.TEXTURE_2D, fbo[1].t);
+      gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 0, 1 / BH);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[0].f);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // 合成 → 画面
+      gl.useProgram(P_COMP); bindQuad(P_COMP);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, srcTex);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
+      gl.uniform1i(gl.getUniformLocation(P_COMP, 't'), 0);
+      gl.uniform1i(gl.getUniformLocation(P_COMP, 'b'), 1);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'time'), time);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? 0.5 : 0.22);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'fxon'), fxMax ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    },
+  };
+}
+const srcCv = document.createElement('canvas');
+srcCv.width = CFG.CW; srcCv.height = CFG.CH;
+let GLP = null;
+try { GLP = createGLPresenter(cv, srcCv); } catch (e) { GLP = null; }
+const c2 = GLP ? srcCv.getContext('2d') : cv.getContext('2d');
 const bloomCv = document.createElement('canvas');
 bloomCv.width = CFG.CW / 4; bloomCv.height = CFG.CH / 4;
 const bloomCx = bloomCv.getContext('2d');
@@ -2521,10 +2644,28 @@ bgCv.width = CFG.W; bgCv.height = CFG.H;
 function buildBackdrop() {
   const g = bgCv.getContext('2d');
   const T = S.theme, W = CFG.W, H = CFG.H;
-  const base = g.createLinearGradient(0, 0, 0, H);
-  base.addColorStop(0, T.bg1); base.addColorStop(1, T.bg2);
-  g.fillStyle = base;
-  g.fillRect(0, 0, W, H);
+  if (ART.backdrop) {
+    // AIアートを基層に(cover-fit)。釘と玉の視認性のため暗めに整え、テーマ色へ寄せる
+    const img = ART.backdrop;
+    const sc = Math.max(W / img.width, H / img.height);
+    const dw = img.width * sc, dh = img.height * sc;
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+    g.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    g.fillStyle = 'rgba(4,9,7,0.52)';
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'color';
+    g.globalAlpha = 0.15;
+    g.fillStyle = T.accent;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+  } else {
+    const base = g.createLinearGradient(0, 0, 0, H);
+    base.addColorStop(0, T.bg1); base.addColorStop(1, T.bg2);
+    g.fillStyle = base;
+    g.fillRect(0, 0, W, H);
+  }
   const glowAt = (x, y, r, col, a) => {
     const gr = g.createRadialGradient(x, y, 1, x, y, r);
     gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
@@ -2825,11 +2966,27 @@ function drawFever(c, dt) {
   c.restore();
 }
 
+// ---------- AIアート資産(実機級グラフィック。無ければ手続き描画のまま) ----------
+// 生成: gpt-image-2 / 役物枠はPILで事前クロマキー抜き済み(assets/内の *_art.webp が本番用)
+const ART = { cabinet: null, bezel: null, backdrop: null };
+function loadArt(key, src) {
+  const img = new Image();
+  img.onload = () => {
+    ART[key] = img;
+    if (key === 'backdrop') buildBackdrop();
+    else buildCabinet();
+  };
+  img.src = src; // 404なら onerror → 手続き描画のまま
+}
+loadArt('cabinet', 'assets/cabinet_art.webp');
+loadArt('bezel', 'assets/bezel_art.webp');
+loadArt('backdrop', 'assets/backdrop_art.webp');
+
 // ---------- 筐体(キャビネット) ----------
 const cabCv = document.createElement('canvas');
 cabCv.width = CFG.CW; cabCv.height = CFG.CH;
 const LEDS = [];
-for (let y = 100; y <= 800; y += 38) { LEDS.push({ x: 35, y }); LEDS.push({ x: CFG.CW - 16, y }); }
+for (let y = 100; y <= CFG.CH - 120; y += 38) { LEDS.push({ x: 35, y }); LEDS.push({ x: CFG.CW - 16, y }); }
 for (let x = 150; x <= CFG.CW - 150; x += 38) LEDS.push({ x, y: 14 });
 
 function buildCabinet() {
@@ -2919,6 +3076,12 @@ function buildCabinet() {
   // LEDソケット
   c.fillStyle = '#050607';
   for (const l of LEDS) { c.beginPath(); c.arc(l.x, l.y, 7, 0, 7); c.fill(); }
+  // AIアート筐体: アートの黒窓(実測 x12.60-87.21%, y16.60-85.61%)を盤面矩形に正確に一致させて無歪み描画
+  if (ART.cabinet) {
+    const wx0 = 0.126, wx1 = 0.8721, wy0 = 0.166, wy1 = 0.8561;
+    const dw = CFG.W / (wx1 - wx0), dh = CFG.H / (wy1 - wy0);
+    c.drawImage(ART.cabinet, CFG.FX - wx0 * dw, CFG.FY - wy0 * dh, dw, dh);
+  }
 }
 
 // 動的な筐体演出(毎フレーム)
@@ -3045,10 +3208,10 @@ function postFX(dt) {
   if (!S.fxMax) return;
   const c = c2;
   const needCopy = S.aberr > 0.02 || S.glitchT > 0;
-  if (needCopy) { copyCx.clearRect(0, 0, CFG.CW, CFG.CH); copyCx.drawImage(cv, 0, 0); }
+  if (needCopy) { copyCx.clearRect(0, 0, CFG.CW, CFG.CH); copyCx.drawImage(c2.canvas, 0, 0); }
   // ブルーム: 1/4縮小をぼかして加算合成
   bloomCx.clearRect(0, 0, bloomCv.width, bloomCv.height);
-  bloomCx.drawImage(cv, 0, 0, bloomCv.width, bloomCv.height);
+  bloomCx.drawImage(c2.canvas, 0, 0, bloomCv.width, bloomCv.height);
   c.save();
   c.globalCompositeOperation = 'lighter';
   c.globalAlpha = 0.15 + S.boardFlash * 0.25 + (S.rush ? 0.1 : 0);
@@ -3155,6 +3318,9 @@ function draw(dt) {
 
   // センター役物(リール)
   drawReels(c, dt);
+  if (ART.bezel) { // 金鯉の和彫り飾り枠(AIアート、リールユニットに被せる)
+    c.drawImage(ART.bezel, BLOCK.x - 26, BLOCK.y - 22, BLOCK.w + 52, BLOCK.h + 48);
+  }
 
   // 釘(金属スプライト)
   for (const p of BOARD.pins) {
@@ -3810,6 +3976,7 @@ function frame(t) {
     spawnAmbient(dt);
   }
   draw(dt);
+  if (GLP) GLP.present(S.time, S.fxMax); // WebGL最終合成(GPUブルーム/ガラス)
 }
 
 // ---------- 入力 ----------
