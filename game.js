@@ -137,6 +137,17 @@ function markDex(type, id) {
   if (!META.dex[key]) { META.dex[key] = 1; saveMeta(); }
 }
 function dexHas(type, id) { return !!META.dex[`${type}:${id}`]; }
+// ---------- 難易度(ノルマ倍率) ----------
+const DIFFS = [
+  { key: 'easy',   label: 'やさしい', mult: 0.62, color: '#7ef0a8', note: '納品ノルマ -38%' },
+  { key: 'normal', label: 'ふつう',   mult: 1.0,  color: '#ffd76a', note: '標準バランス（クリア率約20%）' },
+  { key: 'hard',   label: 'むずかしい', mult: 1.5, color: '#ff8a3d', note: '納品ノルマ +50%' },
+  { key: 'oni',    label: '鬼',       mult: 2.3,  color: '#ff5252', note: '納品ノルマ +130%・玄人向け' },
+];
+let diffIdx = 1;
+try { const d = localStorage.getItem('luckyPachiDiff'); if (d != null && DIFFS[+d]) diffIdx = +d; } catch (e) {}
+function curDiff() { return DIFFS[diffIdx]; }
+function setDiff(i) { diffIdx = ((i % DIFFS.length) + DIFFS.length) % DIFFS.length; try { localStorage.setItem('luckyPachiDiff', diffIdx); } catch (e) {} }
 function symbolUnlocked(id) {
   if (S.allUnlock) return true;
   const u = SYMBOL_UNLOCKS[id];
@@ -1383,15 +1394,23 @@ function loopMultAt(loop) {
 function loopMult() { return loopMultAt(S.loop); }
 function quotaFor(stage) {
   const base = CFG.quotas[Math.min(stage - 1, CFG.quotas.length - 1)];
-  return Math.max(50, Math.round(base * mods().quotaMult * loopMult()));
+  const diff = (S.simMode || S.allUnlock) ? 1 : curDiff().mult; // 計測(autoRun)は常にふつう基準
+  return Math.max(50, Math.round(base * mods().quotaMult * loopMult() * diff));
 }
 function stageShots(m) {
   return Math.max(90, CFG.shotsPerStage + m.shotsAdd - S.loop * 4);
 }
 function startStage(n) {
   S.stage = n;
-  S.theme = THEMES[Math.min(Math.max(n, 1), THEMES.length) - 1];
-  S.quota = quotaFor(n);
+  if (S.free) {
+    // フリーモード: テーマは選んだ面に固定、ノルマは軽め、玉は常に潤沢=死なずに演出を楽しむ
+    S.theme = THEMES[Math.min(Math.max(S.freeTheme, 1), THEMES.length) - 1];
+    S.quota = 800;
+    S.balls = Math.max(S.balls, 25000);
+  } else {
+    S.theme = THEMES[Math.min(Math.max(n, 1), THEMES.length) - 1];
+    S.quota = quotaFor(n);
+  }
   const m = mods();
   S.shotsLeft = stageShots(m);
   if (m.periodBalls > 0) {
@@ -1407,7 +1426,7 @@ function startStage(n) {
   addLog(`—— ${S.theme.num}「${S.theme.name}」 納品 ${S.quota}玉 ——`);
   if (!S.simMode) {
     const card = document.getElementById('stageCard');
-    card.querySelector('.num').textContent = `${S.theme.num}　${n} / 10`;
+    card.querySelector('.num').textContent = S.free ? '🎬 フリーモード' : `${S.theme.num}　${n} / 10`;
     card.querySelector('.nm').textContent = S.theme.name;
     card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
     sfx('stage');
@@ -1427,7 +1446,10 @@ function trySettle() {
   if (S.phase !== 'play') return;
   if (S.ballsOnBoard.length > 0 || S.spin || S.hold.length > 0 || S.rush || S.shower > 0) return;
   if (S.shotsLeft <= 0) { settle(); return; }
-  if (S.balls <= 0) gameOver('持ち玉が尽きた。');
+  if (S.balls <= 0) {
+    if (S.free) { S.balls = 25000; return; } // フリーは尽きない
+    gameOver('持ち玉が尽きた。');
+  }
 }
 function settle() {
   if (S.balls >= S.quota) {
@@ -1452,10 +1474,14 @@ function settle() {
       fx.confettiBurst(70); sfx('pay');
       fx.fireworks(120, 250); fx.fireworks(340, 300, '#ffffff'); // 納品祝いの打ち上げ
     }
-    if (S.stage >= 10) { openClear(); return; }
+    if (!S.free && S.stage >= 10) { openClear(); return; }
     S.phase = 'settle';
     if (S.simMode) { openDraft(); return; }
-    setTimeout(openDraft, 1100);
+    setTimeout(openDraft, 1100); // フリーでも無料ドラフト→屋台で積み増しでき、同テーマで無限に続く
+  } else if (S.free) {
+    // フリーモードは死なない: 玉を補充してそのまま続行
+    S.balls = 25000; S.shotsLeft = stageShots(mods());
+    addLog('🎬 フリー: 玉を補充して続行', 'hit');
   } else {
     gameOver(`納品 ${S.quota}玉 に対し、持ち玉 ${S.balls}玉。`);
   }
@@ -1667,7 +1693,7 @@ function openShop() {
 }
 function renderShop() {
   document.getElementById('shopSub').textContent =
-    `持ち玉 ${S.balls}玉 ／ 次の納品 ${quotaFor(S.stage + 1)}玉`;
+    `持ち玉 ${S.balls}玉 ／ 次の納品 ${S.free ? 800 : quotaFor(S.stage + 1)}玉`;
   const box = document.getElementById('shopItems');
   box.innerHTML = '';
   for (const item of shopStock) {
@@ -1709,7 +1735,7 @@ function renderShop() {
 function closeShop() {
   shopStock.forEach(i => delete i.bought);
   document.getElementById('shopOverlay').classList.remove('show');
-  startStage(S.stage + 1);
+  startStage(S.free ? 1 : S.stage + 1); // フリーは同じテーマで無限ループ
 }
 
 // ---------- 開始リール選択(スタータービルド) ----------
@@ -1815,6 +1841,7 @@ function continueRun() {
   S.relics = (sv.relics || []).map(id => RELICS.find(r => r.id === id)).filter(Boolean);
   S.parts = (sv.parts || []).map(p => ({ id: p.id, ...PARTS[p.id], x: p.x, y: p.y, dir: p.dir, ang: 0, flash: 0 }));
   S.luck = sv.luck; S.mult = sv.mult; S.hesoPayPerm = sv.hesoPayPerm || 0;
+  S.free = false; document.getElementById('homeBtn').style.display = 'none';
   S.feverGauge = sv.feverGauge || 0; S.fever = null;
   S.rightHit = !!sv.rightHit;
   S.stat = sv.stat || { shots: 0, heso: 0, wins: 0, rush: 0, totalWon: 0, paid: 0 };
@@ -1833,7 +1860,7 @@ function continueRun() {
 // 一過性の状態だけ初期化(ビルドは触らない)。resetGameとcontinueRunで共有
 function resetTransient() {
   Object.assign(S, {
-    phase: 'play', simMode: false, allUnlock: false,
+    phase: 'play', simMode: false, allUnlock: false, free: false,
     bag: [], magnetPulse: 0, lastFiredType: 'shiro',
     hold: [], spin: null, rush: null, ballsOnBoard: [], winFx: null, charFx: null,
     power: 0.62, targetPower: 0.62, fireCd: 0,
@@ -1850,12 +1877,13 @@ function resetTransient() {
 }
 
 // ---------- リセット ----------
-function resetGame() {
+function resetGame(opts = {}) {
   clearRun();                     // 新規開始は旧セーブを破棄
   META.games = (META.games || 0) + 1; saveMeta();
+  const free = !!opts.free;
   Object.assign(S, {
     phase: 'play', stage: 1, theme: THEMES[0],
-    balls: CFG.startBalls, quota: 0, shotsLeft: 0,
+    balls: free ? 30000 : CFG.startBalls, quota: 0, shotsLeft: 0,
     deck: ['shiro', 'shiro', 'shiro', 'shiro', 'shiro', 'shiro'], bag: [],
     symbolPool: {},
     relics: [], parts: [], luck: CFG.luckStart, mult: 1, hesoPayPerm: 0, magnetPulse: 0, lastFiredType: 'shiro',
@@ -1872,14 +1900,19 @@ function resetGame() {
     cam: { z: 1, py: 390, punch: 0, rot: 0 },
     stat: { shots: 0, heso: 0, wins: 0, rush: 0, totalWon: 0, paid: 0 },
   });
+  // フリーモード: openBuildの前にフラグを立てる(renderBuildが全解禁で描かれるように)
+  S.free = free;
+  S.freeTheme = opts.theme || 1;
+  S.allUnlock = free; // 全絵柄を選べる(メタ進行は汚さない)
   document.getElementById('fever').classList.remove('on');
+  document.getElementById('homeBtn').style.display = free ? 'inline-block' : 'none';
   logLines.length = 0;
   modsDirty();
   synDirty();
   buildBoard();
   renderCollections();
   updateHUD();
-  for (const id of ['titleOverlay', 'gameoverOverlay', 'clearOverlay', 'shopOverlay', 'draftOverlay', 'buildOverlay', 'removeOverlay', 'dexOverlay'])
+  for (const id of ['titleOverlay', 'gameoverOverlay', 'clearOverlay', 'shopOverlay', 'draftOverlay', 'buildOverlay', 'removeOverlay', 'dexOverlay', 'freeOverlay'])
     document.getElementById(id).classList.remove('show');
   removeCtx = null;
   const hb = document.getElementById('hitBtn');
@@ -1899,8 +1932,9 @@ function addLog(msg, cls) {
 }
 function updateHUD() {
   if (S.simMode) return;
-  document.getElementById('stageLabel').textContent =
-    `${S.loop > 0 ? `${S.loop + 1}周目 ` : ''}${S.theme.num}「${S.theme.name}」 ${S.stage} / 10`;
+  document.getElementById('stageLabel').textContent = S.free
+    ? `🎬 フリー「${S.theme.name}」`
+    : `${S.loop > 0 ? `${S.loop + 1}周目 ` : ''}${S.theme.num}「${S.theme.name}」 ${S.stage} / 10`;
   document.getElementById('quotaAmount').innerHTML = `${S.quota}<span>玉</span>`;
   document.getElementById('shotsLeft').textContent = Math.max(0, S.shotsLeft);
   const total = stageShots(mods());
@@ -3142,7 +3176,7 @@ for (let s = 1; s <= 10; s++) {
   im.onload = ((idx) => () => { LCD_STAGE_BG[idx] = im; })(s);
   im.src = `assets/lcd_${s}_art.webp`;
 }
-function stageLcdBg() { return LCD_STAGE_BG[S.stage] || ART.lcdBg; } // その面の背景(無ければ既定)
+function stageLcdBg() { return LCD_STAGE_BG[S.free ? S.freeTheme : S.stage] || ART.lcdBg; } // その面の背景(フリーは選択テーマ)
 for (let i = 0; i < 6; i++) { // 泳ぐ生き物(金鯉/紅白鯉/カメ/フグ/タコ/招き猫魚)
   const im = new Image();
   im.onload = () => { LCD_CREATURES[i] = im; if (swimmers.length === 0) seedSwimmers(); };
@@ -4538,9 +4572,18 @@ function renderDex() {
   document.getElementById('dexGrid').innerHTML = t.all().map(id => dexCardHTML(dexTab, id)).join('');
 }
 function openDex() { renderDex(); document.getElementById('dexOverlay').classList.add('show'); }
+function updateDiffBtn() {
+  const b = document.getElementById('diffBtn');
+  const d = curDiff();
+  b.textContent = `難易度: ${d.label}`;
+  b.style.color = d.color;
+  b.style.borderColor = 'color-mix(in srgb, ' + d.color + ' 45%, var(--line))';
+  b.title = d.note;
+}
 function refreshMenu() {
   const cb = document.getElementById('continueBtn');
   cb.style.display = hasSave() ? 'block' : 'none';
+  updateDiffBtn();
   const tot = dexTotals();
   const parts = [];
   if (META.loops > 0) parts.push(`🏆 最高 ${META.loops}周`);
@@ -4550,9 +4593,31 @@ function refreshMenu() {
   if (META.games) parts.push(`プレイ ${META.games}回`);
   document.getElementById('titleStats').textContent = parts.join('　／　');
 }
+// ---------- フリーモード: テーマ(面)選択 ----------
+function renderFreeGrid() {
+  const grid = document.getElementById('freeGrid');
+  grid.innerHTML = THEMES.map((t, i) => {
+    const seen = i < 1 || META.stages >= i * 3 || META.loops > 0; // 参考: 到達目安。フリーは全部選べる
+    return `<button class="freeCard" data-t="${i + 1}" style="border-color:color-mix(in srgb, ${t.accent} 40%, var(--line))">
+      <span class="fbar" style="background:${t.accent}"></span>
+      <span class="fnum" style="color:${t.accent}">${t.num}</span>
+      <span class="fname">${t.name}</span></button>`;
+  }).join('');
+  grid.querySelectorAll('.freeCard').forEach(b => b.onclick = () => { ensureAudio(); resetGame({ free: true, theme: +b.dataset.t }); });
+}
+function openFree() { renderFreeGrid(); document.getElementById('freeOverlay').classList.add('show'); }
 document.getElementById('continueBtn').onclick = () => { ensureAudio(); continueRun(); };
 document.getElementById('dexBtn').onclick = () => openDex();
 document.getElementById('dexClose').onclick = () => document.getElementById('dexOverlay').classList.remove('show');
+document.getElementById('diffBtn').onclick = () => { setDiff(diffIdx + 1); updateDiffBtn(); sfx('tick'); };
+document.getElementById('freeBtn').onclick = () => openFree();
+document.getElementById('freeClose').onclick = () => document.getElementById('freeOverlay').classList.remove('show');
+document.getElementById('homeBtn').onclick = () => { // フリーモードからメニューへ戻る
+  S.free = false; S.phase = 'title';
+  document.getElementById('homeBtn').style.display = 'none';
+  document.getElementById('titleOverlay').classList.add('show');
+  refreshMenu();
+};
 
 document.getElementById('startBtn').onclick = () => { ensureAudio(); resetGame(); };
 document.getElementById('retryBtn').onclick = () => resetGame(); // 同じ周回で再挑戦

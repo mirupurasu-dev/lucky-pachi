@@ -209,6 +209,20 @@
   @keyframes titleGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.13)} }
   #titleOverlay p { text-shadow: 0 1px 8px rgba(0,0,0,.9); }
 
+  /* ================= フリーモード ================= */
+  .freeGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 14px 0 12px; text-align: left; }
+  .freeCard {
+    position: relative; overflow: hidden; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--line); border-radius: 11px; padding: 12px 12px; min-height: 60px;
+    background: linear-gradient(180deg, rgba(20,26,22,.7), rgba(8,11,9,.85));
+    display: flex; flex-direction: column; justify-content: center;
+    transition: transform .12s, border-color .2s, box-shadow .2s;
+  }
+  .freeCard:hover { transform: translateY(-2px); }
+  .freeCard .fnum { font-size: 9px; font-weight: 800; letter-spacing: .1em; opacity: .8; }
+  .freeCard .fname { font-size: 17px; font-weight: 900; margin-top: 2px; font-family: var(--f-disp); }
+  .freeCard .fbar { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+
   /* ================= 図鑑 ================= */
   .dexTabs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 12px 0 10px; }
   .dexTab {
@@ -516,9 +530,20 @@
         <div class="menuCol">
           <button class="bigBtn gold" id="continueBtn" style="display:none">つづきから</button>
           <button class="bigBtn" id="startBtn">開店（新規）</button>
+          <button class="ghostBtn" id="diffBtn">難易度: ふつう</button>
+          <button class="ghostBtn" id="freeBtn">🎬 フリーモード</button>
           <button class="ghostBtn" id="dexBtn">📖 図鑑</button>
         </div>
         <p id="titleStats" style="margin-top:12px;font-size:10.5px;color:var(--dim);font-weight:700"></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="freeOverlay">
+      <div class="inner" style="max-width:500px">
+        <h1 style="font-size:26px">🎬 <span class="green">フリーモード</span></h1>
+        <p style="margin-top:4px">好きな面の<b>演出</b>を選んで遊べる。全絵柄が使え、玉は尽きず、ノルマは軽め。<br>ビルドを自由に組んで、その面の背景・当たり・RUSH・FEVERを心ゆくまで。</p>
+        <div id="freeGrid" class="freeGrid"></div>
+        <button class="ghostBtn" id="freeClose">もどる</button>
       </div>
     </div>
 
@@ -647,6 +672,7 @@
       </div>
 
       <div id="controls">
+        <button class="ctlBtn" id="homeBtn" style="display:none">🏠 メニュー</button>
         <button class="ctlBtn" id="hitBtn">👈左打ち</button>
         <button class="ctlBtn on" id="aimBtn">おまかせ照準</button>
         <button class="ctlBtn" id="speedBtn">倍速 ×1</button>
