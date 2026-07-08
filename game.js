@@ -83,7 +83,7 @@ const SYMBOLS = {
   mato:    { glyph: '🎯', name: '的',         color: '#ef5350', rarity: 'normal', three: { t: 'hesoPayPerm', v: 1 }, two: { t: 'coins', v: 10 }, desc: '3揃い: ヘソ賞球+1(永続) / 2揃い: +10玉' },
   // ---- レア ----
   seven:   { glyph: '７',  name: 'セブン',     color: '#ff5d5d', rarity: 'rare', three: { t: 'rush', v: 6 }, two: { t: 'coins', v: 40 }, desc: '3揃い: RUSH 6R / 2揃い: +40玉' },
-  bar:     { glyph: 'BAR', name: 'バー',       color: '#e8e8e8', rarity: 'rare', three: { t: 'rush', v: 4 }, two: { t: 'coins', v: 32 }, desc: '3揃い: ミニRUSH 4R / 2揃い: +32玉' },
+  bar:     { glyph: 'BAR', name: 'バー',       color: '#e8e8e8', rarity: 'rare', three: { t: 'rush', v: 3 }, two: { t: 'coins', v: 26 }, desc: '3揃い: ミニRUSH 3R / 2揃い: +26玉' },
   moon:    { glyph: '🌙', name: 'ムーン',     color: '#c4b5fd', rarity: 'rare', three: { t: 'multi', list: [{ t: 'mult', v: 0.3 }, { t: 'coins', v: 40 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.05 }, { t: 'coins', v: 6 }] }, desc: '3揃い: 倍率+0.3＆+40玉 / 2揃い: +0.05＆+6玉' },
   diamond: { glyph: '💎', name: 'ダイヤ',     color: '#67e8f9', rarity: 'rare', three: { t: 'coins', v: 450 }, two: { t: 'coins', v: 60 }, desc: '3揃い: +450玉×倍率 / 2揃い: +60玉' },
   star:    { glyph: '⭐', name: 'スター',     color: '#fde68a', rarity: 'rare', three: { t: 'shower', v: 14 }, two: { t: 'coins', v: 10 }, desc: '3揃い: 玉シャワー14発 / 2揃い: +10玉' },
@@ -3134,7 +3134,15 @@ loadArt('backdrop', 'assets/backdrop_art.webp');
 loadArt('charN', 'assets/char_normal_art.webp'); // 幸運の女神(通常/激アツ/大当り)
 loadArt('charH', 'assets/char_hot_art.webp');
 loadArt('charW', 'assets/char_win_art.webp');
-loadArt('lcdBg', 'assets/lcd_bg_art.webp'); // 液晶=竜宮城の水中
+loadArt('lcdBg', 'assets/lcd_bg_art.webp'); // 液晶の既定背景(竜宮城)。面別が無い時のフォールバック
+// 面ごとの液晶背景(場末/桜/深海/夏祭/銀河/雷雲/紅蓮/氷牢/電脳/天上) — S.stageで切替
+const LCD_STAGE_BG = [];
+for (let s = 1; s <= 10; s++) {
+  const im = new Image();
+  im.onload = ((idx) => () => { LCD_STAGE_BG[idx] = im; })(s);
+  im.src = `assets/lcd_${s}_art.webp`;
+}
+function stageLcdBg() { return LCD_STAGE_BG[S.stage] || ART.lcdBg; } // その面の背景(無ければ既定)
 for (let i = 0; i < 6; i++) { // 泳ぐ生き物(金鯉/紅白鯉/カメ/フグ/タコ/招き猫魚)
   const im = new Image();
   im.onload = () => { LCD_CREATURES[i] = im; if (swimmers.length === 0) seedSwimmers(); };
@@ -4063,9 +4071,10 @@ function drawReels(c, dt) {
   c.save();
   roundRectPath(c, BLOCK.x, BLOCK.y, BLOCK.w, BLOCK.h, BLOCK.r);
   c.clip();
-  if (ART.lcdBg) {
-    // 背景をcover-fit+ゆっくり横スクロールで水流感
-    const img = ART.lcdBg;
+  const lcdImg = stageLcdBg();
+  if (lcdImg) {
+    // その面のテーマ背景をcover-fit+ゆっくり横スクロールで動きを出す
+    const img = lcdImg;
     const sc = Math.max(BLOCK.w / img.width, (BLOCK.h + 8) / img.height) * 1.08;
     const dw = img.width * sc, dh = img.height * sc;
     const dx = BLOCK.x + (BLOCK.w - dw) / 2 + Math.sin(S.time * 0.15) * 6;
