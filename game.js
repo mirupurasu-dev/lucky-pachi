@@ -16,7 +16,7 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [450, 1500, 3000, 5200, 8000, 11500, 16000, 22000, 29000, 38000], // 薄いリール前提でギリギリ調整。2面1500/3面3000がアンカー
+  quotas: [1050, 1500, 2200, 3350, 4950, 8600, 13400, 21500, 29000, 47000], // 500ラン計測で累積生存90/80/71/../20%に正常化(percentile法+反復調整)
   stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
   payScale: 3.45,               // 払い出し全体スケール(高ノルマ調整の主ノブ。autoRunで実測調整)
   hesoPay: 4, tulipPay: 5,
@@ -4544,7 +4544,10 @@ window.__game = {
       const r = this.simulate(shots, opts.power || 0.9, true);
       S.balls += r.net;
       if (r.quotaEnd != null) S.quota = r.quotaEnd;
-      const rec = { st, net: r.net, wins: r.wins, rush: r.rush, quota: S.quota, after: 0 };
+      const bank = S.balls; // 決算時の持ち玉(ノルマ差引き前)
+      const rec = { st, net: r.net, wins: r.wins, rush: r.rush, quota: S.quota,
+                    bank, margin: bank - S.quota, marginPct: +((bank - S.quota) / S.quota).toFixed(3),
+                    pass: bank >= S.quota, after: 0 };
       if (S.balls < S.quota) { died = st; rec.after = S.balls - S.quota; stages.push(rec); break; }
       S.balls -= S.quota;
       if (m.interest) S.balls += Math.round(S.balls * m.interest);
