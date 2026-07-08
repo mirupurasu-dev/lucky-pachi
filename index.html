@@ -148,17 +148,44 @@
   .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
   .overlay p b { color: var(--text); }
   .bigBtn {
-    margin-top: 18px; padding: 13px 40px; font-size: 15px; font-weight: 900; letter-spacing: .12em;
-    background: var(--accent); color: #04140b; border: none; border-radius: 10px; cursor: pointer; font-family: inherit;
-    box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+    position: relative; overflow: hidden; margin-top: 18px; padding: 14px 42px;
+    font-size: 15px; font-weight: 900; letter-spacing: .12em; color: #04140b; cursor: pointer; font-family: inherit;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, #fff 25%); border-radius: 12px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 78%, #fff) 0%, var(--accent) 46%, color-mix(in srgb, var(--accent) 74%, #000) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 7px rgba(0,0,0,.24),
+      0 4px 14px rgba(0,0,0,.5), 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+    transition: transform .12s, filter .12s, box-shadow .2s;
   }
-  .bigBtn:hover { filter: brightness(1.15); }
+  .bigBtn::before { /* ハイライトの走査(hoverで一閃) */
+    content: ''; position: absolute; top: 0; left: -70%; width: 45%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: skewX(-18deg); transition: left .55s ease;
+  }
+  .bigBtn:hover { transform: translateY(-1px); filter: brightness(1.07);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 7px rgba(0,0,0,.24),
+      0 6px 18px rgba(0,0,0,.55), 0 0 34px color-mix(in srgb, var(--accent) 65%, transparent); }
+  .bigBtn:hover::before { left: 125%; }
+  .bigBtn:active { transform: translateY(1px); filter: brightness(.95); }
+  /* 金トリムの華やか版(タイトルのメインCTA用) */
+  .bigBtn.gold {
+    color: #2a1a00; border-color: #ffe9a8;
+    background: linear-gradient(180deg, #fff6d6 0%, #ffd76a 42%, #f4a41e 62%, #ffe08a 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -3px 8px rgba(120,70,0,.35),
+      0 4px 16px rgba(0,0,0,.55), 0 0 26px rgba(255,190,70,.55);
+  }
+  .bigBtn.gold:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -3px 8px rgba(120,70,0,.35),
+      0 7px 20px rgba(0,0,0,.6), 0 0 40px rgba(255,190,70,.8); }
   .ghostBtn {
-    margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--dim);
-    padding: 9px 26px; border-radius: 9px; font-size: 12px; font-weight: 800; letter-spacing: .1em;
-    cursor: pointer; font-family: inherit;
+    position: relative; margin-top: 10px; cursor: pointer; font-family: inherit;
+    background: linear-gradient(180deg, rgba(34,42,38,.6), rgba(12,16,14,.72));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); color: var(--text);
+    padding: 10px 26px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: .1em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 2px 8px rgba(0,0,0,.42);
+    transition: border-color .2s, color .2s, transform .12s, box-shadow .2s;
   }
-  .ghostBtn:hover { color: var(--text); border-color: var(--dim); }
+  .ghostBtn:hover { border-color: var(--accent); color: #fff; transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 3px 12px rgba(0,0,0,.5), 0 0 16px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .ghostBtn:active { transform: translateY(1px); }
   .menuCol { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 18px; }
   .menuCol .bigBtn, .menuCol .ghostBtn { margin-top: 6px; width: 240px; }
   /* ===== タイトル装飾(金鯉×桜×花火の生成背景) ===== */
@@ -171,18 +198,16 @@
   }
   #titleOverlay .inner { position: relative; }
   #titleOverlay h1 {
-    font-size: 46px; text-shadow: 0 2px 18px rgba(0,0,0,.9), 0 0 30px rgba(255,200,90,.35);
+    font-size: 46px; text-shadow: 0 2px 18px rgba(0,0,0,.9), 0 0 30px rgba(255,200,90,.4);
     animation: titleGlow 3.2s ease-in-out infinite;
   }
-  #titleOverlay h1 .kin {
-    background: linear-gradient(180deg, #fff6d0 0%, #ffd76a 45%, #f5a623 60%, #fff2b8 100%);
+  #titleOverlay h1 .kin { /* 幸運のパチンコ = 金文字 */
+    background: linear-gradient(180deg, #fff6d0 0%, #ffe07a 40%, #f0a316 62%, #fff2b8 100%);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 6px rgba(180,120,10,.5));
+    filter: drop-shadow(0 2px 7px rgba(140,90,0,.6));
   }
-  @keyframes titleGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.12)} }
+  @keyframes titleGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.13)} }
   #titleOverlay p { text-shadow: 0 1px 8px rgba(0,0,0,.9); }
-  #titleOverlay .menuCol .bigBtn { box-shadow: 0 0 26px rgba(120,240,168,.5), 0 4px 14px rgba(0,0,0,.6); }
-  #titleOverlay .ghostBtn { background: rgba(6,10,8,.55); }
 
   /* ================= 図鑑 ================= */
   .dexTabs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 12px 0 10px; }
@@ -485,11 +510,11 @@
 
     <div class="overlay show" id="titleOverlay">
       <div class="inner">
-        <h1><span class="green">幸運の</span><br><span class="kin">パチンコ</span></h1>
+        <h1><span class="kin">幸運の</span><br><span class="kin">パチンコ</span></h1>
         <p>玉を集め、リールを組み替え、台を改造しながら<br>全10面の<b>納品ノルマ</b>を打ち抜く放置系パチンコローグライク。<br>発射は全自動。あなたはビルドを組むだけ。</p>
         <p id="bestLoop" style="margin-top:6px;color:var(--accent);font-weight:900;display:none"></p>
         <div class="menuCol">
-          <button class="bigBtn" id="continueBtn" style="display:none">つづきから</button>
+          <button class="bigBtn gold" id="continueBtn" style="display:none">つづきから</button>
           <button class="bigBtn" id="startBtn">開店（新規）</button>
           <button class="ghostBtn" id="dexBtn">📖 図鑑</button>
         </div>
