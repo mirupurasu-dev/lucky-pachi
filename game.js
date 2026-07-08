@@ -541,8 +541,8 @@ function hesoHalfW() {
 // ---------- 盤面ジオメトリ ----------
 const BOARD = { pins: [], windmills: [], segs: [] };
 const BLOCK = { x: 112, y: 96, w: 236, h: 188, r: 20 }; // 大型液晶(上方向+横に拡大、下端≒旧位置で下部釘域を温存)
-// リール窓メトリクス(BLOCK拡大に追従)。winW×3+gap×2 ≤ BLOCK.w
-const REEL = { winW: 72, winH: 96, gap: 8, y0off: 48, sym: 46, drum: 40 };
+// リール窓メトリクス。3窓の総幅(winW×3+gap×2=174)はベゼル金枠の透明開口(横135〜324px=幅189)に収める
+const REEL = { winW: 54, winH: 82, gap: 6, y0off: 46, sym: 35, drum: 31 };
 const HESO = { x: 230, y: 598 };
 const TULIPS = [{ x: 50, y: 496 }, { x: 410, y: 496 }];
 const ATTACKER = { x: 230, y: 686, halfW: 56 };
