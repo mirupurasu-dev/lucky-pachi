@@ -1094,6 +1094,7 @@ function spinStep(dt) {
     if (!S.simMode) {
       sfx('reach');
       document.getElementById('vignette').classList.add('on');
+      lcdSchoolT = S.spin.hot ? 2.2 : 1.2; // 鯉の群予告(激アツほど大群)
       if (S.spin.hot) { fx.cutin('激アツ！！', true); sfx('atsu'); charCutin('hot', 2.4); }
     }
   }
@@ -1263,6 +1264,7 @@ function applyThree(id, ballType) {
     if (S.theme.ambient === 'glitch') S.glitchT = Math.max(S.glitchT, 0.25);
   }
   addLog(`🎰 ${sym.name} 3揃い！`, 'hit');
+  cheerSwimmers(); // 液晶の生き物が歓喜ジャンプ
   symbolWinSound(id); // 揃った絵柄「らしい」専用ジングル
   runEffect(sym.three, srcBall, true, id);
   if (m.bonusPerWin) gainBalls(m.bonusPerWin, null, false); // ネオン管
@@ -2981,13 +2983,14 @@ function drawFever(c, dt) {
 
 // ---------- AIアート資産(実機級グラフィック。無ければ手続き描画のまま) ----------
 // 生成: gpt-image-2 / 役物枠はPILで事前クロマキー抜き済み(assets/内の *_art.webp が本番用)
-const ART = { cabinet: null, bezel: null, backdrop: null };
+const ART = { cabinet: null, bezel: null, backdrop: null, lcdBg: null };
+const LCD_CREATURES = []; // 液晶内を泳ぐ生き物スプライト(6種)
 function loadArt(key, src) {
   const img = new Image();
   img.onload = () => {
     ART[key] = img;
     if (key === 'backdrop') buildBackdrop();
-    else buildCabinet();
+    else if (key !== 'lcdBg' && !key.startsWith('char')) buildCabinet();
   };
   img.src = src; // 404なら onerror → 手続き描画のまま
 }
@@ -2997,6 +3000,61 @@ loadArt('backdrop', 'assets/backdrop_art.webp');
 loadArt('charN', 'assets/char_normal_art.webp'); // 幸運の女神(通常/激アツ/大当り)
 loadArt('charH', 'assets/char_hot_art.webp');
 loadArt('charW', 'assets/char_win_art.webp');
+loadArt('lcdBg', 'assets/lcd_bg_art.webp'); // 液晶=竜宮城の水中
+for (let i = 0; i < 6; i++) { // 泳ぐ生き物(金鯉/紅白鯉/カメ/フグ/タコ/招き猫魚)
+  const im = new Image();
+  im.onload = () => { LCD_CREATURES[i] = im; if (swimmers.length === 0) seedSwimmers(); };
+  im.src = `assets/creature_${i}_art.webp`;
+}
+// ---------- 液晶の泳ぐ生き物システム ----------
+const swimmers = []; // {sp, x, y, vx, scale, bob, flip}
+let lcdSchoolT = 0;   // 群予告の残り時間
+function spawnSwimmer(sp, opts = {}) {
+  const rightward = opts.dir != null ? opts.dir > 0 : rng() < 0.5;
+  const sc = opts.scale != null ? opts.scale : 0.34 + rng() * 0.2;
+  swimmers.push({
+    sp,
+    x: opts.x != null ? opts.x : (rightward ? -0.15 : 1.15),
+    y: opts.y != null ? opts.y : 0.18 + rng() * 0.62,
+    vx: (rightward ? 1 : -1) * (opts.speed != null ? opts.speed : 0.06 + rng() * 0.06),
+    scale: sc, bob: rng() * 7, bobAmp: 0.01 + rng() * 0.02,
+    flip: !rightward, // スプライトは右向き基準。左進行なら反転
+    life: opts.life != null ? opts.life : 999,
+    cheer: 0,
+  });
+}
+function seedSwimmers() { // 平常時の常駐回遊(3匹)
+  swimmers.length = 0;
+  if (!LCD_CREATURES.length) return;
+  for (let i = 0; i < 3; i++) {
+    spawnSwimmer((i * 2) % LCD_CREATURES.length, { x: 0.15 + rng() * 0.7 });
+  }
+}
+function updateSwimmers(dt) {
+  // 平常時は3匹前後を維持
+  if (!S.spin && !S.rush && !S.celebrate && swimmers.filter(s => s.life > 900).length < 3 && LCD_CREATURES.length && rng() < dt * 0.6) {
+    spawnSwimmer((rng() * LCD_CREATURES.length) | 0);
+  }
+  // リーチ突入で「鯉群予告」(激アツほど大群)
+  if (lcdSchoolT > 0) {
+    lcdSchoolT -= dt;
+    if (LCD_CREATURES.length && rng() < dt * (S.spin && S.spin.hot ? 26 : 12)) {
+      spawnSwimmer(rng() < 0.5 ? 0 : 1, { dir: 1, y: 0.15 + rng() * 0.66, speed: 0.28 + rng() * 0.22, scale: 0.26 + rng() * 0.14, life: 4 });
+    }
+  }
+  for (const s of swimmers) {
+    s.x += s.vx * dt;
+    s.bob += dt * 2.2;
+    if (s.life < 900) s.life -= dt;
+    if (s.cheer > 0) s.cheer -= dt;
+  }
+  // 画面外/寿命切れを除去
+  for (let i = swimmers.length - 1; i >= 0; i--) {
+    const s = swimmers[i];
+    if (s.x < -0.3 || s.x > 1.3 || s.life <= 0) swimmers.splice(i, 1);
+  }
+}
+function cheerSwimmers() { for (const s of swimmers) s.cheer = 1.2; }
 
 // ---------- 視差(疑似3D): マウス/ジャイロで筐体と盤面背景が別々に動く ----------
 const PARA = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -3853,9 +3911,54 @@ function drawReels(c, dt) {
       c.beginPath(); c.arc(lx, ly, 4.6, 0, 7); c.stroke();
     }
   }
-  c.fillStyle = '#000000cc';
+  // ===== 液晶パネル(竜宮城の水中+泳ぐ生き物) =====
+  c.save();
   roundRectPath(c, BLOCK.x, BLOCK.y, BLOCK.w, BLOCK.h, BLOCK.r);
-  c.fill();
+  c.clip();
+  if (ART.lcdBg) {
+    // 背景をcover-fit+ゆっくり横スクロールで水流感
+    const img = ART.lcdBg;
+    const sc = Math.max(BLOCK.w / img.width, (BLOCK.h + 8) / img.height) * 1.08;
+    const dw = img.width * sc, dh = img.height * sc;
+    const dx = BLOCK.x + (BLOCK.w - dw) / 2 + Math.sin(S.time * 0.15) * 6;
+    const dy = BLOCK.y + (BLOCK.h - dh) / 2;
+    c.drawImage(img, dx, dy, dw, dh);
+    // エミッシブ加算: 液晶を「自発光する明るい画面」にしてブルームを乗せる
+    c.globalCompositeOperation = 'lighter';
+    c.globalAlpha = 0.28;
+    c.drawImage(img, dx, dy, dw, dh);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = 'source-over';
+    // リーチ/RUSH中は水中を暗転させて緊張感(生き物と数字を目立たせる)
+    if (S.spin && S.spin.reachPlayed) { c.fillStyle = S.spin.hot ? 'rgba(40,0,10,0.4)' : 'rgba(0,10,20,0.3)'; c.fillRect(BLOCK.x, BLOCK.y, BLOCK.w, BLOCK.h); }
+  } else {
+    c.fillStyle = '#04121f'; c.fillRect(BLOCK.x, BLOCK.y, BLOCK.w, BLOCK.h);
+  }
+  // 泳ぐ生き物(BLOCK相対座標→絶対座標)
+  for (const s of swimmers) {
+    const sp = LCD_CREATURES[s.sp];
+    if (!sp) continue;
+    const px = BLOCK.x + s.x * BLOCK.w;
+    let py = BLOCK.y + s.y * BLOCK.h + Math.sin(s.bob) * BLOCK.h * s.bobAmp;
+    const cheer = s.cheer > 0 ? Math.abs(Math.sin(s.cheer * 12)) : 0;
+    py -= cheer * 10; // 歓喜バウンス
+    const h = BLOCK.h * s.scale, w = h * (sp.width / sp.height);
+    c.save();
+    c.translate(px, py);
+    if (s.flip) c.scale(-1, 1);
+    c.drawImage(sp, -w / 2, -h / 2, w, h);
+    c.restore();
+  }
+  // 泡(常時ゆらぐ)
+  c.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 7; i++) {
+    const bx = BLOCK.x + ((i * 37 + S.time * 9) % BLOCK.w);
+    const by = BLOCK.y + BLOCK.h - ((S.time * 22 + i * 53) % BLOCK.h);
+    c.fillStyle = 'rgba(200,240,255,0.14)';
+    c.beginPath(); c.arc(bx, by, 2 + (i % 3), 0, 7); c.fill();
+  }
+  c.globalCompositeOperation = 'source-over';
+  c.restore();
   const glow = S.rush ? 18 : S.spin && S.spin.reachPlayed ? 22 : 8;
   c.strokeStyle = S.spin && S.spin.reachPlayed && S.spin.hot ? '#ff3355' : T.accent;
   c.lineWidth = S.rush ? 3 : 2;
@@ -3876,7 +3979,7 @@ function drawReels(c, dt) {
   const y0 = BLOCK.y + 34;
   for (let i = 0; i < 3; i++) {
     const wx = x0 + i * (winW + gap), wy = y0;
-    c.fillStyle = '#0a0d0b';
+    c.fillStyle = 'rgba(6,10,13,0.7)'; // 水中を薄く透かす液晶窓
     roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
     c.save();
     roundRectPath(c, wx, wy, winW, winH, 7); c.clip();
@@ -4062,6 +4165,7 @@ function frame(t) {
   PARA.x += (PARA.tx - PARA.x) * Math.min(1, dt * 4); // 視差スムージング
   PARA.y += (PARA.ty - PARA.y) * Math.min(1, dt * 4);
   S.beatT = Math.max(0, (S.beatT || 0) - dt * 3.5);   // BGMビート減衰
+  if (!S.simMode) updateSwimmers(dt);                 // 液晶の生き物
   draw(dt);
   if (GLP) GLP.present(S.time, S.fxMax, (S.fever || S.celebrate) ? 1 : 0); // WebGL最終合成
 }
