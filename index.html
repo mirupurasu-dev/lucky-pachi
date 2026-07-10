@@ -147,6 +147,78 @@
   .overlay h1 .red { color: var(--danger); }
   .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
   .overlay p b { color: var(--text); }
+  /* 選択の確認ダイアログ */
+  #confirmOverlay { z-index: 80; }
+  .cf-inner { max-width: 340px; background: linear-gradient(180deg,#171b16,#0e120d); border: 1px solid var(--line); border-radius: 16px; padding: 22px 22px 18px; }
+  .cf-kind { font-size: 10px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
+  .cf-icon { font-size: 46px; line-height: 1.1; margin: 8px 0 2px; min-height: 50px; }
+  .cf-icon .dot2 { display: inline-block; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 16px currentColor; vertical-align: middle; }
+  .cf-name { font-size: 18px; font-weight: 900; }
+  .cf-name .cfrar { font-size: 11px; font-weight: 900; }
+  .cf-desc { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; margin-top: 8px; }
+  .cf-hint { font-size: 11px; color: var(--accent); font-weight: 800; margin-top: 8px; }
+  .cf-price { margin-top: 12px; font-size: 13px; color: var(--text); font-weight: 700; }
+  .cf-price b { color: var(--accent); font-size: 15px; }
+  .cf-btns { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 16px; }
+  .cf-btns .bigBtn { margin-top: 0; padding: 12px 28px; font-size: 13px; }
+  .cf-btns .ghostBtn { margin-top: 0; }
+  /* 盤面役物: 設置場所を選ぶモード */
+  #placeOverlay { position: absolute; inset: 0; z-index: 70; display: none; }
+  #placeOverlay.show { display: block; }
+  #placeOverlay .pl-banner { position: absolute; top: 0; left: 0; right: 0; z-index: 2; text-align: center; padding: 12px 10px 16px; background: linear-gradient(180deg,rgba(0,0,0,.72),transparent); pointer-events: none; }
+  #placeOverlay .pl-ttl { font-size: 17px; font-weight: 900; color: var(--accent); text-shadow: 0 2px 8px #000; }
+  #placeOverlay .pl-name { font-size: 12.5px; color: var(--text); font-weight: 700; margin-top: 3px; }
+  #placeOverlay .pl-cancel { pointer-events: auto; margin-top: 9px; }
+  #placeSlots { position: absolute; inset: 0; }
+  .placeSlot { position: absolute; transform: translate(-50%,-50%); width: 46px; height: 46px; border-radius: 50%; border: 2px dashed var(--accent); background: radial-gradient(circle, color-mix(in srgb,var(--accent) 32%, transparent), transparent 72%); color: var(--accent); font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; animation: plPulse 1.05s ease-in-out infinite; }
+  .placeSlot:hover { background: var(--accent); color: #04170c; transform: translate(-50%,-50%) scale(1.14); animation: none; }
+  .placeSlot .ps-plus { font-size: 22px; font-weight: 900; }
+  .placeSlot .ps-ic { position: absolute; font-size: 22px; }
+  .placeSlot .ps-ic.ghost { opacity: 0; }
+  .placeSlot:hover .ps-plus { display: none; }
+  .placeSlot:hover .ps-ic.ghost { opacity: 1; }
+  .placeSlot.occ { border: 2px solid #ffffff26; background: rgba(0,0,0,.45); cursor: default; animation: none; opacity: .6; }
+  .placeSlot.occ .ps-ic { opacity: .85; }
+  @keyframes plPulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+  /* 役ガイド */
+  #guideOverlay { z-index: 82; }
+  #tutOverlay { z-index: 85; }
+  .guideLegend { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 4px; }
+  .guideLegend .lg { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+  .tier-gomi { background: #2b2620; color: #b7a88f; }
+  .tier-chu { background: #16303f; color: #83c8ff; }
+  .tier-bang { background: #3d260f; color: #ffbf6b; }
+  .tier-mult { background: #331a44; color: #e2a6ff; }
+  .guideBody { max-height: 54vh; overflow-y: auto; text-align: left; margin: 8px 0 12px; padding-right: 4px; }
+  .gFam { margin-top: 14px; }
+  .gFam:first-child { margin-top: 2px; }
+  .gFamH { font-size: 13px; font-weight: 900; color: var(--text); position: sticky; top: 0; background: linear-gradient(180deg,#0e120d,#0e120dcc); padding: 5px 2px; z-index: 1; border-bottom: 1px solid var(--line); }
+  .gFamH .n { color: var(--dim); font-weight: 700; font-size: 11px; margin-left: 6px; }
+  .gRow { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #ffffff0d; }
+  .gRow.ready { background: linear-gradient(90deg, color-mix(in srgb,var(--accent) 14%, transparent), transparent); }
+  .gRow .gg { font-size: 18px; letter-spacing: 1px; white-space: nowrap; min-width: 62px; }
+  .gRow .gtx { flex: 1; min-width: 0; }
+  .gRow .gnm { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .gRow .gnm .rd { font-size: 9px; color: var(--accent); font-weight: 900; border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; }
+  .gRow .gpat { font-size: 12px; color: var(--text); font-weight: 700; margin-top: 3px; line-height: 1.4; }
+  .gRow .gpat .garrow { color: var(--accent2, #ffcf5a); font-weight: 900; margin: 0 3px; }
+  .gRow .gds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 1px; }
+  .gRow .gt { font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .roleTags .rt.cat b { color: var(--accent); }
+  /* チュートリアル */
+  .tutPage { text-align: center; min-height: 260px; }
+  .tutPage .tico { font-size: 46px; line-height: 1.1; }
+  .tutPage h2 { font-size: 21px; font-weight: 900; margin: 8px 0 4px; color: var(--accent); }
+  .tutPage p { font-size: 13px; color: var(--text); line-height: 1.85; font-weight: 600; margin: 8px 0; }
+  .tutPage .ex { display: inline-flex; gap: 6px; align-items: center; background: #1a140d; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; margin: 6px 0; font-size: 15px; }
+  .tutPage .ex b { color: var(--accent); font-size: 12px; font-weight: 900; }
+  .tutPage .flow4 { display: flex; flex-direction: column; gap: 6px; margin: 10px auto; max-width: 330px; text-align: left; }
+  .tutPage .flow4 .f { font-size: 12px; font-weight: 700; color: var(--dim); background: #14110c; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; }
+  .tutPage .flow4 .f b { color: var(--text); }
+  .tutNav { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 10px; }
+  .tutDots { display: flex; gap: 6px; }
+  .tutDots .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .tutDots .dot.on { background: var(--accent); }
   .bigBtn {
     position: relative; overflow: hidden; margin-top: 18px; padding: 14px 42px;
     font-size: 15px; font-weight: 900; letter-spacing: .12em; color: #04140b; cursor: pointer; font-family: inherit;
@@ -274,20 +346,79 @@
   .draftCard .ds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 5px; line-height: 1.5; min-height: 44px; }
 
   /* 開始リール選択 */
-  #buildGrid, #removeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 12px; }
+  #buildGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  #removeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 12px; }
   .buildCard {
     background: linear-gradient(170deg, #1b201d, #101312);
     border: 1px solid var(--line); border-radius: 10px;
-    padding: 9px 4px 7px; cursor: pointer; font-family: inherit; color: var(--text);
+    padding: 9px 6px 8px; cursor: pointer; font-family: inherit; color: var(--text);
     text-align: center; transition: transform .12s, border-color .12s;
   }
   .buildCard:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--accent); }
   .buildCard:disabled { opacity: .28; cursor: default; }
   .buildCard .g { font-size: 24px; line-height: 1.3; }
   .buildCard .n { font-size: 10.5px; font-weight: 900; margin-top: 2px; }
-  .buildCard .d { font-size: 8.5px; color: var(--dim); font-weight: 600; margin-top: 3px; line-height: 1.35; min-height: 22px; }
+  .buildCard .d { font-size: 9px; color: var(--dim); font-weight: 600; margin-top: 3px; line-height: 1.35; min-height: 20px; }
   .buildCard.rare { border-color: #38c8ff55; }
   .buildCard.rare:hover:not(:disabled) { border-color: #38c8ff; box-shadow: 0 6px 18px #38c8ff33; }
+  /* 選択カードに載せる「この絵柄で狙える役/シナジー」一覧 */
+  .roleTags { margin-top: 7px; padding-top: 6px; border-top: 1px dashed var(--line); text-align: left; display: flex; flex-direction: column; gap: 3px; }
+  .roleTags .rth { font-size: 8px; letter-spacing: .12em; color: var(--dim); font-weight: 900; margin-bottom: 1px; }
+  .roleTags .rt { font-size: 9px; line-height: 1.3; font-weight: 600; color: color-mix(in srgb, var(--text) 62%, transparent); }
+  .roleTags .rt b { font-weight: 900; }
+  .roleTags .rt.rec b { color: var(--accent2, #ffcf5a); }
+  .roleTags .rt.syn b { color: #ff8aff; }
+  .roleTags .rt .rc { font-size: 10px; }
+  .shopItem .roleTags { margin-top: 5px; }
+  /* 手持ちと組んで成立するシナジー(選ぶ瞬間の指針) */
+  .synGain { margin-top: 6px; font-size: 9.5px; font-weight: 900; line-height: 1.35; color: #ff8aff;
+    background: linear-gradient(90deg, #ff8aff22, transparent); border: 1px solid #ff8aff55; border-radius: 7px; padding: 4px 7px; text-align: left; }
+  .synGain.full { margin-top: 12px; font-size: 12px; padding: 9px 11px; }
+  .synGain .sgh { font-size: 10px; letter-spacing: .06em; margin-bottom: 5px; }
+  .synGain .sgr { margin-top: 5px; color: var(--text); font-weight: 700; }
+  .synGain .sgr:first-of-type { margin-top: 0; }
+  .synGain .sgr b { color: #ffa6ff; font-size: 13px; }
+  .synGain .sgr .m { color: #ff8aff; font-weight: 900; margin-left: 8px; font-size: 11px; }
+  .synGain .sgr .sgd { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 1px; }
+  /* 役成立バナー(役名を液晶に大きく掲示) */
+  #roleBanner {
+    position: absolute; left: 50%; top: 63%; transform: translate(-50%, 0) scale(.6);
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 8px 26px; border-radius: 12px; opacity: 0; pointer-events: none; z-index: 56; white-space: nowrap;
+    background: linear-gradient(180deg, rgba(18,10,3,.96), rgba(40,25,5,.92));
+    border: 2px solid #ffcf5a; box-shadow: 0 8px 34px rgba(0,0,0,.7), 0 0 30px rgba(255,207,90,.5);
+  }
+  #roleBanner.show { animation: roleBan 2.6s cubic-bezier(.2,1.1,.3,1) forwards; }
+  #roleBanner .rb-k { font-size: 9.5px; letter-spacing: .34em; color: #ffcf5a; font-weight: 900; }
+  #roleBanner .rb-n { font-size: 27px; font-weight: 900; line-height: 1.15;
+    background: linear-gradient(180deg,#fff4cf,#ffca4d);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #ffd76a;
+    text-shadow: 0 2px 12px rgba(0,0,0,.5); filter: drop-shadow(0 0 10px rgba(255,207,90,.5)); }
+  @keyframes roleBan {
+    0% { opacity: 0; transform: translate(-50%, 8px) scale(.55); }
+    11% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+    19% { transform: translate(-50%, 0) scale(1); }
+    83% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -12px) scale(.97); }
+  }
+  /* 用語集(HUDの語タップで開く) */
+  #glossaryOverlay { z-index: 82; }
+  .glBody { max-height: 62vh; overflow-y: auto; text-align: left; margin: 10px 0 12px; padding-right: 4px; }
+  .glSec { margin-top: 16px; }
+  .glSec:first-child { margin-top: 2px; }
+  .glSecH { font-size: 12px; font-weight: 900; color: var(--accent); letter-spacing: .06em; padding: 5px 2px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: linear-gradient(180deg,#0e120d,#0e120dcc); z-index: 1; }
+  .glItem { padding: 9px 8px; border-bottom: 1px solid #ffffff0d; border-radius: 8px; transition: background .3s; }
+  .glItem .glT { font-size: 13.5px; font-weight: 900; color: var(--text); }
+  .glItem .glD { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.65; margin-top: 3px; }
+  .glItem.hl { background: color-mix(in srgb, var(--accent) 22%, transparent); animation: glHl 1.6s ease-out; }
+  @keyframes glHl { 0% { background: color-mix(in srgb, var(--accent) 45%, transparent); } 100% { background: color-mix(in srgb, var(--accent) 8%, transparent); } }
+  /* タップで説明が出る語の見た目 */
+  h3.gh { cursor: pointer; }
+  h3.gh::after { content: 'ⓘ'; font-size: 10px; color: var(--dim); margin-left: 5px; vertical-align: top; font-weight: 700; }
+  h3.gh:hover::after { color: var(--accent); }
+  .glLink { cursor: pointer; }
+  .statChip.glLink { position: relative; }
+  .statChip.glLink::after { content: 'ⓘ'; font-size: 7px; color: var(--dim); position: absolute; top: 1px; right: 2px; }
 
   #shopItems { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
   .shopItem {
@@ -519,6 +650,7 @@
       <div id="cutin"><div class="stripes"></div><span id="cutinText">RUSH</span></div>
       <div id="stamp">納品完了</div>
       <div id="flash"></div>
+      <div id="roleBanner"></div>
     </div>
     <div id="stageCard"><div class="num">第一面</div><div class="nm">場末</div></div>
 
@@ -532,6 +664,9 @@
           <button class="bigBtn" id="startBtn">開店（新規）</button>
           <button class="ghostBtn" id="diffBtn">難易度: ふつう</button>
           <button class="ghostBtn" id="freeBtn">🎬 フリーモード</button>
+          <button class="ghostBtn" id="tutBtn">❓ 遊び方</button>
+          <button class="ghostBtn" id="glossaryBtn">📚 用語集</button>
+          <button class="ghostBtn" id="guideBtn">🎴 役ガイド</button>
           <button class="ghostBtn" id="dexBtn">📖 図鑑</button>
         </div>
         <p id="titleStats" style="margin-top:12px;font-size:10.5px;color:var(--dim);font-weight:700"></p>
@@ -554,6 +689,37 @@
         <div id="dexTabs" class="dexTabs"></div>
         <div id="dexGrid" class="dexGrid"></div>
         <button class="ghostBtn" id="dexClose">とじる</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="guideOverlay">
+      <div class="inner" style="max-width:560px">
+        <h1 style="font-size:24px">🎴 <span class="green">役ガイド</span></h1>
+        <p style="margin-top:4px"><b>カテゴリ役</b>(果物×3など誰でも狙える)＋<b>レア固定役</b>(🌙🌙🔮など)。単体はゴミ、揃えて倍率を積み重ねて脳汁を出せ。</p>
+        <div id="guideLegend" class="guideLegend"></div>
+        <div id="guideTabs" class="dexTabs"></div>
+        <div id="guideBody" class="guideBody"></div>
+        <button class="ghostBtn" id="guideClose">とじる</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="tutOverlay">
+      <div class="inner" style="max-width:440px">
+        <div id="tutPage" class="tutPage"></div>
+        <div class="tutNav">
+          <button class="ghostBtn" id="tutSkip">スキップ</button>
+          <div id="tutDots" class="tutDots"></div>
+          <button class="bigBtn" id="tutNext" style="margin-top:0;padding:11px 30px;font-size:13px">次へ ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="glossaryOverlay">
+      <div class="inner" style="max-width:500px">
+        <h1 style="font-size:24px">📚 <span class="green">用語集</span></h1>
+        <p style="margin-top:4px">ゲームの言葉の意味。<b>プレイ中は運・倍率・玉デッキなどの表示をタップ</b>しても、その説明がここで開く。</p>
+        <div id="glossaryBody" class="glBody"></div>
+        <button class="ghostBtn" id="glossaryClose">とじる</button>
       </div>
     </div>
 
@@ -610,25 +776,48 @@
         <button class="ghostBtn" id="removeCancel">やめる</button>
       </div>
     </div>
+
+    <div class="overlay" id="confirmOverlay">
+      <div class="inner cf-inner">
+        <div class="cf-kind" id="cfKind"></div>
+        <div class="cf-icon" id="cfIcon"></div>
+        <div class="cf-name" id="cfName"></div>
+        <div class="cf-desc" id="cfDesc"></div>
+        <div class="cf-price" id="cfPrice"></div>
+        <div class="cf-btns">
+          <button class="ghostBtn" id="cfCancel">やめる</button>
+          <button class="bigBtn" id="cfOk">これにする</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="placeOverlay">
+      <div class="pl-banner">
+        <div class="pl-ttl">設置場所を選べ</div>
+        <div class="pl-name" id="plName"></div>
+        <button class="ghostBtn pl-cancel" id="plCancel">やめる</button>
+      </div>
+      <div id="placeSlots"></div>
+    </div>
   </div>
 
   <div id="side">
     <div id="topBar">
       <div class="card" id="deadlineCard">
-        <h3>納品ノルマ</h3>
+        <h3 class="gh" data-gl="norma">納品ノルマ</h3>
         <div id="stageLabel"></div>
         <div id="quotaAmount">0<span>玉</span></div>
         <div id="shotsBarWrap"><div id="shotsBar"></div></div>
-        <div id="shotsLabel">この面の残り <b id="shotsLeft">0</b> 発</div>
+        <div id="shotsLabel" class="glLink" data-gl="hassha">この面の残り <b id="shotsLeft">0</b> 発</div>
       </div>
 
       <div class="card" id="ballsCard">
-        <h3>持ち玉</h3>
+        <h3 class="gh" data-gl="mochidama">持ち玉</h3>
         <div id="balls">0<span>玉</span></div>
         <div id="statChips">
-          <span class="statChip" id="luckChip">運 <b id="luckV">1.0</b></span>
-          <span class="statChip" id="multChip">倍率 <b id="multV">×1.0</b></span>
-          <span class="statChip" id="synChip">相乗 <b id="synV">×1.00</b></span>
+          <span class="statChip glLink" id="luckChip" data-gl="un">運 <b id="luckV">1.0</b></span>
+          <span class="statChip glLink" id="multChip" data-gl="bairitsu">倍率 <b id="multV">×1.0</b></span>
+          <span class="statChip glLink" id="synChip" data-gl="soujou">相乗 <b id="synV">×1.00</b></span>
         </div>
       </div>
     </div>
@@ -636,27 +825,27 @@
     <div id="sheetBackdrop"></div>
     <div id="sheetCards">
       <div class="card">
-        <h3>玉デッキ</h3>
+        <h3 class="gh" data-gl="deck">玉デッキ</h3>
         <div class="chipRow" id="deckChips"></div>
       </div>
 
       <div class="card">
-        <h3>リール構成（揃うと発動）</h3>
+        <h3 class="gh" data-gl="reel">リール構成（揃うと発動）</h3>
         <div class="chipRow" id="symChips"></div>
       </div>
 
       <div class="card">
-        <h3>お守り</h3>
+        <h3 class="gh" data-gl="omamori">お守り</h3>
         <div class="chipRow" id="relicChips"></div>
       </div>
 
       <div class="card">
-        <h3>盤面役物（6スロット）</h3>
+        <h3 class="gh" data-gl="yakumono">盤面役物（6スロット）</h3>
         <div class="chipRow" id="partChips"></div>
       </div>
 
       <div class="card">
-        <h3>シナジー・特殊役</h3>
+        <h3 class="gh" data-gl="synergy">シナジー・特殊役</h3>
         <div class="chipRow" id="synChips"></div>
         <div class="chipRow" id="recipeChips" style="margin-top:6px"></div>
       </div>
@@ -677,6 +866,7 @@
         <button class="ctlBtn on" id="aimBtn">おまかせ照準</button>
         <button class="ctlBtn" id="speedBtn">倍速 ×1</button>
         <button class="ctlBtn" id="zoomBtn">🔍液晶拡大</button>
+        <button class="ctlBtn" id="guideBtnBar">📖役ガイド</button>
         <button class="ctlBtn on" id="cardBtn">🎴カード背景</button>
         <button class="ctlBtn on" id="sndBtn">音</button>
         <button class="ctlBtn on" id="fxBtn">演出MAX</button>

@@ -16,7 +16,7 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [1050, 1500, 2200, 3350, 4950, 8600, 13400, 21500, 29000, 47000], // 500ラン計測で累積生存90/80/71/../20%に正常化(percentile法+反復調整)
+  quotas: [500, 650, 850, 1500, 2800, 5000, 9000, 15000, 24000, 40000], // ゴミ経済: 1-3面は低くフラット(積む期間)、4面以降で雪だるま前提に急ランプ
   stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
   payScale: 3.45,               // 払い出し全体スケール(高ノルマ調整の主ノブ。autoRunで実測調整)
   hesoPay: 4, tulipPay: 5,
@@ -26,7 +26,7 @@ const CFG = {
   holdMax: 6,
   hesoHalfW: 10, hesoBoostInRush: 1.4,
   luckStart: 1.0,
-  winL: 1.3,                    // 3揃い率 = Σ(c/N)^3 × (winL + 運×1.2) ※初期11枚の集中プール前提
+  winL: 0.85,                   // 3揃い率 = Σ(c/N)^3×格 × (winL + 運×1.2)。低めで序盤ゴミ、積むほど揃う
   recipeL: 2.2,                 // 特殊役(レシピ)の成立係数
   twoMatchP: 0.34,
   shopPriceGrow: 1.12,
@@ -66,43 +66,56 @@ const THEMES = [
 // 効果type: coins/coinsRange/luck/mult/shots/quotaCut/shower/rush/thinDeck/
 //           hesoPayPerm/rewriteHold/magnetPulse/deckBall/relicGift/ballsPct/multi/joker
 const SYMBOLS = {
-  // ---- ノーマル ----
-  cherry:  { glyph: '🍒', name: 'チェリー',   color: '#ff6b81', rarity: 'normal', three: { t: 'coins', v: 180 }, two: { t: 'coins', v: 30 }, desc: '3揃い: +180玉×倍率 / 2揃い: +30玉' },
-  clover:  { glyph: '🍀', name: 'クローバー', color: '#4ade80', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.6 }, { t: 'coins', v: 65 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.1 }, { t: 'coins', v: 10 }] }, desc: '3揃い: 運+0.6＆+65玉 / 2揃い: 運+0.1＆+10玉' },
-  bell:    { glyph: '🔔', name: 'ベル',       color: '#fbbf24', rarity: 'normal', three: { t: 'shots', v: 12, c: 60 }, two: { t: 'shots', v: 3, c: 15 }, desc: '3揃い: +60玉＆発射+12 / 2揃い: +15玉＆発射+3' },
-  house:   { glyph: '🏠', name: 'ハウス',     color: '#86efac', rarity: 'normal', three: { t: 'multi', list: [{ t: 'quotaCut', v: 0.12 }, { t: 'coins', v: 30 }] }, two: { t: 'multi', list: [{ t: 'quotaCut', v: 0.02 }, { t: 'coins', v: 5 }] }, desc: '3揃い: 納品-12%＆+30玉 / 2揃い: -2%＆+5玉' },
-  lemon:   { glyph: '🍋', name: 'レモン',     color: '#fff176', rarity: 'normal', three: { t: 'coins', v: 120 }, two: { t: 'coins', v: 20 }, desc: '3揃い: +120玉×倍率 / 2揃い: +20玉' },
-  grape:   { glyph: '🍇', name: 'ブドウ',     color: '#b39ddb', rarity: 'normal', three: { t: 'coins', v: 140 }, two: { t: 'coins', v: 25 }, desc: '3揃い: +140玉×倍率 / 2揃い: +25玉' },
-  suika:   { glyph: '🍉', name: 'スイカ',     color: '#ef9a9a', rarity: 'normal', three: { t: 'coins', v: 160 }, two: { t: 'coins', v: 28 }, desc: '3揃い: +160玉×倍率 / 2揃い: +28玉' },
-  coin:    { glyph: '🪙', name: 'コイン',     color: '#ffcc80', rarity: 'normal', three: { t: 'shots', v: 5, c: 100 }, two: { t: 'coins', v: 15 }, desc: '3揃い: +100玉＆発射+5 / 2揃い: +15玉' },
-  fuusen:  { glyph: '🎈', name: '風船',       color: '#ff8a80', rarity: 'normal', three: { t: 'shower', v: 6 }, two: { t: 'coins', v: 8 }, desc: '3揃い: 玉シャワー6発 / 2揃い: +8玉' },
-  sakura:  { glyph: '🌸', name: 'サクラ',     color: '#f8bbd0', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.3 }, { t: 'coins', v: 60 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.05 }, { t: 'coins', v: 9 }] }, desc: '3揃い: 運+0.3＆+60玉 / 2揃い: 運+0.05＆+9玉' },
-  mitsuba: { glyph: '☘️', name: '三つ葉',     color: '#81c784', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.4 }, { t: 'coins', v: 55 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.05 }, { t: 'coins', v: 8 }] }, desc: '3揃い: 運+0.4＆+55玉 / 2揃い: 運+0.05＆+8玉' },
-  fortune: { glyph: '🥠', name: 'おみくじ',   color: '#ffe0b2', rarity: 'normal', three: { t: 'coinsRange', min: 80, max: 320 }, two: { t: 'coins', v: 20 }, desc: '3揃い: +80〜320玉(運試し) / 2揃い: +20玉' },
-  kozutsumi:{ glyph: '📦', name: '小包',      color: '#bcaaa4', rarity: 'normal', three: { t: 'thinDeck', c: 50 }, two: { t: 'coins', v: 10 }, desc: '3揃い: 白玉を1つ回収して+50玉 / 2揃い: +10玉' },
-  mato:    { glyph: '🎯', name: '的',         color: '#ef5350', rarity: 'normal', three: { t: 'hesoPayPerm', v: 1 }, two: { t: 'coins', v: 10 }, desc: '3揃い: ヘソ賞球+1(永続) / 2揃い: +10玉' },
-  // ---- レア ----
-  seven:   { glyph: '７',  name: 'セブン',     color: '#ff5d5d', rarity: 'rare', three: { t: 'rush', v: 6 }, two: { t: 'coins', v: 40 }, desc: '3揃い: RUSH 6R / 2揃い: +40玉' },
-  bar:     { glyph: 'BAR', name: 'バー',       color: '#e8e8e8', rarity: 'rare', three: { t: 'rush', v: 3 }, two: { t: 'coins', v: 26 }, desc: '3揃い: ミニRUSH 3R / 2揃い: +26玉' },
-  moon:    { glyph: '🌙', name: 'ムーン',     color: '#c4b5fd', rarity: 'rare', three: { t: 'multi', list: [{ t: 'mult', v: 0.3 }, { t: 'coins', v: 40 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.05 }, { t: 'coins', v: 6 }] }, desc: '3揃い: 倍率+0.3＆+40玉 / 2揃い: +0.05＆+6玉' },
-  diamond: { glyph: '💎', name: 'ダイヤ',     color: '#67e8f9', rarity: 'rare', three: { t: 'coins', v: 450 }, two: { t: 'coins', v: 60 }, desc: '3揃い: +450玉×倍率 / 2揃い: +60玉' },
-  star:    { glyph: '⭐', name: 'スター',     color: '#fde68a', rarity: 'rare', three: { t: 'shower', v: 14 }, two: { t: 'coins', v: 10 }, desc: '3揃い: 玉シャワー14発 / 2揃い: +10玉' },
-  kinbukuro:{ glyph: '💰', name: '金袋',      color: '#ffd54f', rarity: 'rare', three: { t: 'coins', v: 350 }, two: { t: 'coins', v: 50 }, desc: '3揃い: +350玉×倍率 / 2揃い: +50玉' },
-  suisho:  { glyph: '🔮', name: '水晶',       color: '#ce93d8', rarity: 'rare', three: { t: 'rewriteHold', c: 30 }, two: { t: 'coins', v: 30 }, desc: '3揃い: 保留1つを当たりに書き換える / 2揃い: +30玉' },
-  saikoro: { glyph: '🎲', name: 'サイコロ',   color: '#e0e0e0', rarity: 'rare', three: { t: 'coinsRange', min: 50, max: 500 }, two: { t: 'coins', v: 15 }, desc: '3揃い: +50〜500玉の大博打 / 2揃い: +15玉' },
-  inazuma: { glyph: '⚡', name: 'イナズマ',   color: '#84ffff', rarity: 'rare', three: { t: 'magnetPulse' }, two: { t: 'coins', v: 20 }, desc: '3揃い: 全玉がヘソへ吸引される(2.5秒) / 2揃い: +20玉' },
+  // ---- ノーマル(単体はゴミ。稼ぎは倍率スタックで育てる) ----
+  cherry:  { glyph: '🍒', name: 'チェリー',   color: '#ff6b81', rarity: 'normal', three: { t: 'coins', v: 10 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +10玉×倍率 / 2揃い: +3玉' },
+  clover:  { glyph: '🍀', name: 'クローバー', color: '#4ade80', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.35 }, { t: 'coins', v: 8 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.06 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 運+0.35＆+8玉 / 2揃い: 運+0.06＆+2玉' },
+  bell:    { glyph: '🔔', name: 'ベル',       color: '#fbbf24', rarity: 'normal', three: { t: 'shots', v: 6, c: 10 }, two: { t: 'shots', v: 1, c: 3 }, desc: '3揃い: +10玉＆発射+6 / 2揃い: +3玉＆発射+1' },
+  house:   { glyph: '🏠', name: 'ハウス',     color: '#86efac', rarity: 'normal', three: { t: 'multi', list: [{ t: 'quotaCut', v: 0.08 }, { t: 'coins', v: 6 }] }, two: { t: 'multi', list: [{ t: 'quotaCut', v: 0.01 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 納品-8%＆+6玉 / 2揃い: -1%＆+1玉' },
+  lemon:   { glyph: '🍋', name: 'レモン',     color: '#fff176', rarity: 'normal', three: { t: 'coins', v: 10 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +10玉×倍率 / 2揃い: +3玉' },
+  grape:   { glyph: '🍇', name: 'ブドウ',     color: '#b39ddb', rarity: 'normal', three: { t: 'coins', v: 10 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +10玉×倍率 / 2揃い: +3玉' },
+  suika:   { glyph: '🍉', name: 'スイカ',     color: '#ef9a9a', rarity: 'normal', three: { t: 'coins', v: 10 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +10玉×倍率 / 2揃い: +3玉' },
+  coin:    { glyph: '🪙', name: 'コイン',     color: '#ffcc80', rarity: 'normal', three: { t: 'shots', v: 1, c: 14 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +14玉＆発射+1 / 2揃い: +3玉' },
+  fuusen:  { glyph: '🎈', name: '風船',       color: '#ff8a80', rarity: 'normal', three: { t: 'shower', v: 3 }, two: { t: 'coins', v: 2 }, desc: '3揃い: 玉シャワー3発 / 2揃い: +2玉' },
+  sakura:  { glyph: '🌸', name: 'サクラ',     color: '#f8bbd0', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.2 }, { t: 'coins', v: 7 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.03 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 運+0.2＆+7玉 / 2揃い: 運+0.03＆+2玉' },
+  mitsuba: { glyph: '☘️', name: '三つ葉',     color: '#81c784', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.25 }, { t: 'coins', v: 7 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.03 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 運+0.25＆+7玉 / 2揃い: 運+0.03＆+2玉' },
+  fortune: { glyph: '🥠', name: 'おみくじ',   color: '#ffe0b2', rarity: 'normal', three: { t: 'coinsRange', min: 6, max: 42 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +6〜42玉(運試し) / 2揃い: +3玉' },
+  kozutsumi:{ glyph: '📦', name: '小包',      color: '#bcaaa4', rarity: 'normal', three: { t: 'thinDeck', c: 9 }, two: { t: 'coins', v: 2 }, desc: '3揃い: 白玉を1つ回収して+9玉 / 2揃い: +2玉' },
+  mato:    { glyph: '🎯', name: '的',         color: '#ef5350', rarity: 'normal', three: { t: 'hesoPayPerm', v: 1 }, two: { t: 'coins', v: 2 }, desc: '3揃い: ヘソ賞球+1(永続) / 2揃い: +2玉' },
+  // ---- レア(効果は据置。ただし"格"で揃いにくい=積んで初めて出る) ----
+  seven:   { glyph: '７',  name: 'セブン',     color: '#ff5d5d', rarity: 'rare', three: { t: 'rush', v: 6 }, two: { t: 'coins', v: 8 }, desc: '3揃い: RUSH 6R / 2揃い: +8玉' },
+  bar:     { glyph: 'BAR', name: 'バー',       color: '#e8e8e8', rarity: 'rare', three: { t: 'rush', v: 3 }, two: { t: 'coins', v: 6 }, desc: '3揃い: ミニRUSH 3R / 2揃い: +6玉' },
+  moon:    { glyph: '🌙', name: 'ムーン',     color: '#c4b5fd', rarity: 'rare', three: { t: 'multi', list: [{ t: 'mult', v: 0.3 }, { t: 'coins', v: 8 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.05 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 倍率+0.3＆+8玉 / 2揃い: +0.05＆+2玉' },
+  diamond: { glyph: '💎', name: 'ダイヤ',     color: '#67e8f9', rarity: 'rare', three: { t: 'coins', v: 300 }, two: { t: 'coins', v: 10 }, desc: '3揃い: +300玉×倍率 / 2揃い: +10玉' },
+  star:    { glyph: '⭐', name: 'スター',     color: '#fde68a', rarity: 'rare', three: { t: 'shower', v: 14 }, two: { t: 'coins', v: 2 }, desc: '3揃い: 玉シャワー14発 / 2揃い: +2玉' },
+  kinbukuro:{ glyph: '💰', name: '金袋',      color: '#ffd54f', rarity: 'rare', three: { t: 'coins', v: 240 }, two: { t: 'coins', v: 8 }, desc: '3揃い: +240玉×倍率 / 2揃い: +8玉' },
+  suisho:  { glyph: '🔮', name: '水晶',       color: '#ce93d8', rarity: 'rare', three: { t: 'rewriteHold', c: 6 }, two: { t: 'coins', v: 5 }, desc: '3揃い: 保留1つを当たりに書き換える / 2揃い: +5玉' },
+  saikoro: { glyph: '🎲', name: 'サイコロ',   color: '#e0e0e0', rarity: 'rare', three: { t: 'coinsRange', min: 50, max: 500 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +50〜500玉の大博打 / 2揃い: +3玉' },
+  inazuma: { glyph: '⚡', name: 'イナズマ',   color: '#84ffff', rarity: 'rare', three: { t: 'magnetPulse' }, two: { t: 'coins', v: 4 }, desc: '3揃い: 全玉がヘソへ吸引される(2.5秒) / 2揃い: +4玉' },
   nijiiro: { glyph: '🌈', name: '虹',         color: '#f48fb1', rarity: 'rare', three: { t: 'multi', list: [{ t: 'luck', v: 0.5 }, { t: 'mult', v: 0.15 }] }, two: { t: 'luck', v: 0.1 }, desc: '3揃い: 運+0.5＆倍率+0.15 / 2揃い: 運+0.1' },
-  present: { glyph: '🎁', name: 'プレゼント', color: '#f06292', rarity: 'rare', three: { t: 'relicGift' }, two: { t: 'coins', v: 20 }, desc: '3揃い: お守りをランダム入手！ / 2揃い: +20玉' },
+  present: { glyph: '🎁', name: 'プレゼント', color: '#f06292', rarity: 'rare', three: { t: 'relicGift' }, two: { t: 'coins', v: 4 }, desc: '3揃い: お守りをランダム入手！ / 2揃い: +4玉' },
   kagi:    { glyph: '🔑', name: '鍵',         color: '#ffe082', rarity: 'rare', three: { t: 'quotaCut', v: 0.2 }, two: { t: 'quotaCut', v: 0.03 }, desc: '3揃い: 納品額-20% / 2揃い: -3%' },
   buta:    { glyph: '🐷', name: '貯金箱',     color: '#f8bbd0', rarity: 'rare', three: { t: 'ballsPct', v: 0.08 }, two: { t: 'ballsPct', v: 0.03 }, desc: '3揃い: 持ち玉の8%を獲得 / 2揃い: 3%' },
-  hanabi:  { glyph: '🎇', name: '花火',       color: '#ffab91', rarity: 'rare', three: { t: 'multi', list: [{ t: 'shower', v: 12 }, { t: 'coins', v: 40 }] }, two: { t: 'coins', v: 15 }, desc: '3揃い: シャワー12発＆+40玉 / 2揃い: +15玉' },
+  hanabi:  { glyph: '🎇', name: '花火',       color: '#ffab91', rarity: 'rare', three: { t: 'multi', list: [{ t: 'shower', v: 12 }, { t: 'coins', v: 8 }] }, two: { t: 'coins', v: 3 }, desc: '3揃い: シャワー12発＆+8玉 / 2揃い: +3玉' },
   unicorn: { glyph: '🦄', name: 'ユニコーン', color: '#f8bbd0', rarity: 'rare', three: { t: 'multi', list: [{ t: 'luck', v: 0.4 }, { t: 'shower', v: 8 }] }, two: { t: 'luck', v: 0.1 }, desc: '3揃い: 運+0.4＆シャワー8発 / 2揃い: 運+0.1' },
-  // ---- レジェンド ----
-  crown:   { glyph: '👑', name: '王冠',       color: '#ffe57f', rarity: 'legend', three: { t: 'rush', v: 8 }, two: { t: 'coins', v: 80 }, desc: '3揃い: 超RUSH 8R / 2揃い: +80玉' },
-  ryu:     { glyph: '🐉', name: '龍',         color: '#80cbc4', rarity: 'legend', three: { t: 'coins', v: 666 }, two: { t: 'coins', v: 66 }, desc: '3揃い: +666玉×倍率 / 2揃い: +66玉' },
-  taiyo:   { glyph: '🌞', name: '太陽',       color: '#ffcc80', rarity: 'legend', three: { t: 'multi', list: [{ t: 'mult', v: 0.6 }, { t: 'coins', v: 80 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.1 }, { t: 'coins', v: 12 }] }, desc: '3揃い: 倍率+0.6＆+80玉 / 2揃い: +0.1＆+12玉' },
+  // ---- レジェンド(格0.12=相当積まないと揃わない。揃えば爆発) ----
+  crown:   { glyph: '👑', name: '王冠',       color: '#ffe57f', rarity: 'legend', three: { t: 'rush', v: 8 }, two: { t: 'coins', v: 12 }, desc: '3揃い: 超RUSH 8R / 2揃い: +12玉' },
+  ryu:     { glyph: '🐉', name: '龍',         color: '#80cbc4', rarity: 'legend', three: { t: 'coins', v: 666 }, two: { t: 'coins', v: 10 }, desc: '3揃い: +666玉×倍率 / 2揃い: +10玉' },
+  taiyo:   { glyph: '🌞', name: '太陽',       color: '#ffcc80', rarity: 'legend', three: { t: 'multi', list: [{ t: 'mult', v: 0.6 }, { t: 'coins', v: 12 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.1 }, { t: 'coins', v: 3 }] }, desc: '3揃い: 倍率+0.6＆+12玉 / 2揃い: +0.1＆+3玉' },
   ryusei:  { glyph: '💫', name: '流星群',     color: '#b3e5fc', rarity: 'legend', three: { t: 'shower', v: 25 }, two: { t: 'shower', v: 3 }, desc: '3揃い: 玉シャワー25発 / 2揃い: シャワー3発' },
-  joker:   { glyph: '🃏', name: 'ジョーカー', color: '#ff4dff', rarity: 'legend', three: { t: 'joker' }, two: { t: 'coins', v: 30 }, desc: '3揃い: ランダムなレジェンド級効果 / 2揃い: +30玉' },
+  joker:   { glyph: '🃏', name: 'ジョーカー', color: '#ff4dff', rarity: 'legend', three: { t: 'joker' }, two: { t: 'coins', v: 5 }, desc: '3揃い: ランダムなレジェンド級効果 / 2揃い: +5玉' },
+  ringo: { glyph: "🍎", name: "りんご", color: "#e5604f", rarity: "normal", three: {"t":"coins","v":11}, two: {"t":"coins","v":3}, desc: "3揃い: +11玉×倍率 / 2揃い: +3玉" },
+  momo: { glyph: "🍑", name: "もも", color: "#f6a6a0", rarity: "normal", three: {"t":"multi","list":[{"t":"luck","v":0.15},{"t":"coins","v":8}]}, two: {"t":"luck","v":0.03}, desc: "3揃い: 運+0.15＆+8玉 / 2揃い: 運+0.03" },
+  mikan: { glyph: "🍊", name: "みかん", color: "#ff9f43", rarity: "normal", three: {"t":"coins","v":12}, two: {"t":"coins","v":3}, desc: "3揃い: +12玉×倍率 / 2揃い: +3玉" },
+  ine: { glyph: "🌾", name: "稲穂", color: "#e3b23c", rarity: "normal", three: {"t":"multi","list":[{"t":"luck","v":0.2},{"t":"coins","v":12}]}, two: {"t":"multi","list":[{"t":"luck","v":0.03},{"t":"coins","v":2}]}, desc: "3揃い: 運+0.2＆+12玉(豊作の種) / 2揃い: 運+0.03＆+2玉" },
+  himawari: { glyph: "🌻", name: "ひまわり", color: "#f9a825", rarity: "normal", three: {"t":"multi","list":[{"t":"mult","v":0.25},{"t":"coins","v":8}]}, two: {"t":"multi","list":[{"t":"mult","v":0.05},{"t":"coins","v":2}]}, desc: "3揃い: 倍率+0.25＆+8玉 / 2揃い: +0.05＆+2玉" },
+  momiji: { glyph: "🍁", name: "もみじ", color: "#e0592a", rarity: "normal", three: {"t":"shots","v":5,"c":10}, two: {"t":"shots","v":1,"c":3}, desc: "3揃い: +10玉＆発射+5 / 2揃い: +3玉＆発射+1" },
+  usagi: { glyph: "🐰", name: "兎", color: "#e2cdbb", rarity: "normal", three: {"t":"shots","v":5,"c":12}, two: {"t":"shots","v":1,"c":3}, desc: "3揃い: +12玉＆発射+5 / 2揃い: +3玉＆発射+1" },
+  neko: { glyph: "🐱", name: "招き猫", color: "#ffd54f", rarity: "rare", three: {"t":"multi","list":[{"t":"ballsPct","v":0.1},{"t":"coins","v":18}]}, two: {"t":"coins","v":4}, desc: "3揃い: 持ち玉10%獲得＆+18玉 / 2揃い: +4玉" },
+  byakko: { glyph: "🐅", name: "白虎", color: "#e8e8e8", rarity: "rare", three: {"t":"rush","v":3}, two: {"t":"coins","v":6}, desc: "3揃い: ミニRUSH 3R / 2揃い: +6玉" },
+  suzaku: { glyph: "🦅", name: "朱雀", color: "#ef5350", rarity: "rare", three: {"t":"multi","list":[{"t":"shower","v":16},{"t":"coins","v":10}]}, two: {"t":"coins","v":3}, desc: "3揃い: シャワー16発＆+10玉 / 2揃い: +3玉" },
+  genbu: { glyph: "🐢", name: "玄武", color: "#66bb6a", rarity: "rare", three: {"t":"hesoPayPerm","v":2}, two: {"t":"coins","v":3}, desc: "3揃い: ヘソ賞球+2(永続) / 2揃い: +3玉" },
+  kumo: { glyph: "☁️", name: "雲", color: "#b0bec5", rarity: "normal", three: {"t":"shots","v":2,"c":12}, two: {"t":"coins","v":2}, desc: "3揃い: +12玉＆発射+2 / 2揃い: +2玉" },
+  chochin: { glyph: "🏮", name: "提灯", color: "#ff7043", rarity: "normal", three: {"t":"shots","v":8,"c":6}, two: {"t":"coins","v":2}, desc: "3揃い: +6玉＆発射+8 / 2揃い: +2玉" },
 };
 
 // ---------- 絵柄の色系統(色共鳴玉とのビルド相乗に使う) ----------
@@ -114,6 +127,7 @@ const SYMBOL_FAMILY = {
   diamond: 'blue', inazuma: 'blue', ryusei: 'blue', ryu: 'blue',
   sakura: 'pink', fuusen: 'pink', buta: 'pink', unicorn: 'pink', present: 'pink',
   nijiiro: 'rainbow', // 虹は全系統にマッチ
+  ringo: 'red', momo: 'pink', mikan: 'gold', ine: 'gold', himawari: 'gold', momiji: 'red', usagi: 'pink', neko: 'gold', byakko: 'gold', suzaku: 'red', genbu: 'green', chochin: 'red',  // 追加13絵柄(雲kumoは無彩色=色共鳴なしで意図的に除外)
 };
 
 // ---------- 絵柄アンロック(メタ進行・スルメ要素) ----------
@@ -165,43 +179,138 @@ function nextUnlockInfo() {
   return best;
 }
 
-// ---------- 特殊役(レシピ): 異なる絵柄の組み合わせで成立する役 ----------
-// 必要な絵柄を全部リールに入れていると抽選に混ざる。枚数を積むほど出やすい
+// ---------- 絵柄カテゴリ(8系統。役をカテゴリ制にして分かりやすくする) ----------
+const SYMBOL_CAT = {
+  cherry: 'fruit', lemon: 'fruit', grape: 'fruit', suika: 'fruit', ringo: 'fruit', momo: 'fruit', mikan: 'fruit',
+  clover: 'plant', sakura: 'plant', mitsuba: 'plant', ine: 'plant', himawari: 'plant', momiji: 'plant',
+  buta: 'animal', unicorn: 'animal', ryu: 'animal', usagi: 'animal', neko: 'animal', byakko: 'animal', suzaku: 'animal', genbu: 'animal',
+  moon: 'sky', star: 'sky', taiyo: 'sky', ryusei: 'sky', nijiiro: 'sky', kumo: 'sky',
+  coin: 'treasure', kinbukuro: 'treasure', diamond: 'treasure', crown: 'treasure', suisho: 'treasure', kagi: 'treasure',
+  seven: 'luck', bar: 'luck', saikoro: 'luck', fortune: 'luck', mato: 'luck', joker: 'luck',
+  bell: 'festival', hanabi: 'festival', fuusen: 'festival', present: 'festival', chochin: 'festival',
+  house: 'tool', kozutsumi: 'tool', inazuma: 'tool',
+};
+const CAT_INFO = {
+  fruit: { name: '果物', glyph: '🍒' }, plant: { name: '植物', glyph: '🍀' },
+  animal: { name: '動物', glyph: '🐾' }, sky: { name: '天体', glyph: '🌙' },
+  treasure: { name: '財宝', glyph: '💎' }, luck: { name: '博打', glyph: '🎲' },
+  festival: { name: '祭', glyph: '🎆' }, tool: { name: '仕掛', glyph: '🔧' },
+};
+function symCat(id) { return SYMBOL_CAT[id] || null; }
+
+// ---------- 特殊役(レシピ): カテゴリ制＋レア固定役。need=必要スロット(cat=カテゴリ / id=特定絵柄) ----------
 const RECIPES = [
-  { ids: ['moon', 'moon', 'suisho'],        name: '満月の儀式',       desc: '倍率+0.5＆+250玉',        eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'coins', v: 250 }] } },
-  { ids: ['cherry', 'cherry', 'diamond'],   name: '宝石のなる木',     desc: '+600玉×倍率',             eff: { t: 'coins', v: 600 } },
-  { ids: ['seven', 'clover', 'seven'],      name: 'ラッキーセブン',   desc: '超RUSH 8R',               eff: { t: 'rush', v: 8 } },
-  { ids: ['bell', 'bell', 'star'],          name: '鐘星の祭',         desc: 'シャワー12発＆発射+15',   eff: { t: 'multi', list: [{ t: 'shower', v: 12 }, { t: 'shots', v: 15 }] } },
-  { ids: ['house', 'house', 'kagi'],        name: 'マスターキー',     desc: '納品額-30%',              eff: { t: 'quotaCut', v: 0.3 } },
-  { ids: ['taiyo', 'moon', 'star'],         name: '天体ショー',       desc: '倍率+1.0',                eff: { t: 'mult', v: 1.0 } },
-  { ids: ['lemon', 'grape', 'suika'],       name: 'フルーツパフェ',   desc: '+450玉×倍率＆発射+8',     eff: { t: 'multi', list: [{ t: 'coins', v: 450 }, { t: 'shots', v: 8 }] } },
-  { ids: ['buta', 'coin', 'buta'],          name: 'まるまる太る',     desc: '持ち玉の18%を獲得',       eff: { t: 'ballsPct', v: 0.18 } },
-  { ids: ['saikoro', 'saikoro', 'joker'],   name: 'イカサマ賭場',     desc: '+100〜1500玉',            eff: { t: 'coinsRange', min: 100, max: 1500 } },
-  { ids: ['kinbukuro', 'diamond', 'crown'], name: '王の財宝',         desc: '+1500玉×倍率',            eff: { t: 'coins', v: 1500 } },
-  { ids: ['clover', 'sakura', 'mitsuba'],   name: 'お花畑',           desc: '運+0.8',                  eff: { t: 'luck', v: 0.8 } },
-  { ids: ['nijiiro', 'unicorn', 'star'],    name: 'メルヘン',         desc: '運+0.5＆倍率+0.3',        eff: { t: 'multi', list: [{ t: 'luck', v: 0.5 }, { t: 'mult', v: 0.3 }] } },
+  // ══ カテゴリ役: 同じ系統を集めれば揃う。誰でも狙える普段使い ══
+  { name: '果実の恵み', family: 'カテゴリ役', tier: '中',   need: [{ cat: 'fruit', n: 3 }],                          desc: '果物×3 → +130玉',                eff: { t: 'coins', v: 130 } },
+  { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],                          desc: '植物×3 → 運+0.6＆+70玉',         eff: { t: 'multi', list: [{ t: 'luck', v: 0.6 }, { t: 'coins', v: 70 }] } },
+  { name: '獣の群れ',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'animal', n: 3 }],                         desc: '動物×3 → +220玉＆発射+8',        eff: { t: 'multi', list: [{ t: 'coins', v: 220 }, { t: 'shots', v: 8 }] } },
+  { name: '天の采配',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'sky', n: 3 }],                            desc: '天体×3 → 倍率+0.7',              eff: { t: 'mult', v: 0.7 } },
+  { name: '千両役者',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'treasure', n: 3 }],                       desc: '財宝×3 → +450玉',                eff: { t: 'coins', v: 450 } },
+  { name: '大博打',     family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'luck', n: 3 }],                           desc: '博打×3 → +50〜850玉',            eff: { t: 'coinsRange', min: 50, max: 850 } },
+  { name: '宵祭り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'festival', n: 3 }],                       desc: '祭×3 → 玉シャワー20発',          eff: { t: 'shower', v: 20 } },
+  { name: '絡繰の妙',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'tool', n: 3 }],                           desc: '仕掛×3 → 納品-15%＆白玉間引き',  eff: { t: 'multi', list: [{ t: 'quotaCut', v: 0.15 }, { t: 'thinDeck', c: 15 }] } },
+  { name: '実りの宝',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'fruit', n: 2 }, { cat: 'treasure', n: 1 }], desc: '果物×2＋財宝 → +300玉×倍率',    eff: { t: 'coins', v: 300 } },
+  { name: '月夜の花',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { cat: 'sky', n: 1 }],      desc: '植物×2＋天体 → 倍率+0.5＆運+0.4', eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'luck', v: 0.4 }] } },
+  // ══ 倍率役: レア絵柄の固定役。積み重ねて倍率を雪だるまにする本命 ══
+  { name: '三日月',     family: '倍率役', tier: '倍率', need: [{ id: 'moon', n: 2 }],                                              desc: '🌙×2 → 倍率+0.4',            eff: { t: 'mult', v: 0.4 } },
+  { name: '満月の儀式', family: '倍率役', tier: '倍率', need: [{ id: 'moon', n: 2 }, { id: 'suisho', n: 1 }],                       desc: '🌙🌙🔮 → 倍率+0.5＆+250玉',  eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'coins', v: 250 }] } },
+  { name: '月光乱舞',   family: '倍率役', tier: '倍率', need: [{ id: 'moon', n: 3 }],                                              desc: '🌙×3 → 倍率+1.0',            eff: { t: 'mult', v: 1.0 } },
+  { name: '陰陽',       family: '倍率役', tier: '倍率', need: [{ id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }],                        desc: '🌞🌙 → 倍率+0.8',            eff: { t: 'mult', v: 0.8 } },
+  { name: '太陽神',     family: '倍率役', tier: '倍率', need: [{ id: 'taiyo', n: 2 }],                                             desc: '🌞×2 → 倍率+1.2',            eff: { t: 'mult', v: 1.2 } },
+  { name: '日輪',       family: '倍率役', tier: '倍率', need: [{ id: 'taiyo', n: 3 }],                                             desc: '🌞×3 → 倍率+2.5',            eff: { t: 'mult', v: 2.5 } },
+  { name: '天体ショー', family: '倍率役', tier: '倍率', need: [{ id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }, { id: 'star', n: 1 }], desc: '🌞🌙⭐ → 倍率+1.0',          eff: { t: 'mult', v: 1.0 } },
+  { name: '開眼',       family: '倍率役', tier: '倍率', need: [{ id: 'suisho', n: 2 }, { id: 'moon', n: 1 }],                      desc: '🔮🔮🌙 → 倍率×1.4(乗算)',    eff: { t: 'multMult', v: 1.4 } },
+  { name: '覚醒',       family: '倍率役', tier: '倍率', need: [{ id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }, { id: 'joker', n: 1 }], desc: '🌞🌙🃏 → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
+  { name: '黄金比',     family: '倍率役', tier: '倍率', need: [{ id: 'kinbukuro', n: 1 }, { id: 'diamond', n: 1 }, { id: 'taiyo', n: 1 }], desc: '💰💎🌞 → 倍率×1.6(乗算)', eff: { t: 'multMult', v: 1.6 } },
+  { name: '神懸り',     family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'crown', n: 1 }, { id: 'taiyo', n: 1 }], desc: '🐉👑🌞 → 倍率×2.0(乗算)',   eff: { t: 'multMult', v: 2.0 } },
+  { name: '金龍昇天',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 2 }],                                               desc: '🐉×2 → 次の当たり×4',        eff: { t: 'nextMult', v: 4, n: 1 } },
+  { name: '一天四海',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }], desc: '🐉🌞🌙 → 次の当たり×3',      eff: { t: 'nextMult', v: 3, n: 1 } },
+  // ══ 大当り役: RUSH・大爆発。レア絵柄の固定役。滅多に出ないが脳汁 ══
+  { name: 'ラッキーセブン', family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 2 }, { id: 'clover', n: 1 }],                desc: '７🍀７ → 超RUSH 8R',         eff: { t: 'rush', v: 8 } },
+  { name: '大当り777',     family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 3 }],                                       desc: '７×3 → 超RUSH 10R',          eff: { t: 'rush', v: 10 } },
+  { name: '龍神降臨',   family: '大当り役', tier: '爆発', need: [{ id: 'ryu', n: 3 }],                                             desc: '🐉×3 → +2222玉×倍率',        eff: { t: 'coins', v: 2222 } },
+  { name: '王の財宝',   family: '大当り役', tier: '爆発', need: [{ id: 'kinbukuro', n: 1 }, { id: 'diamond', n: 1 }, { id: 'crown', n: 1 }], desc: '💰💎👑 → +1500玉', eff: { t: 'coins', v: 1500 } },
+  { name: '大黒天の蔵', family: '大当り役', tier: '爆発', need: [{ id: 'crown', n: 2 }, { id: 'kinbukuro', n: 1 }],                 desc: '👑👑💰 → +2800玉×倍率',      eff: { t: 'coins', v: 2800 } },
+  { name: 'ダイヤの原石', family: '大当り役', tier: '爆発', need: [{ id: 'diamond', n: 3 }],                                       desc: '💎×3 → +700玉×倍率',         eff: { t: 'coins', v: 700 } },
+  { name: '四神降臨',   family: '大当り役', tier: '爆発', need: [{ id: 'ryu', n: 1 }, { id: 'byakko', n: 1 }, { id: 'suzaku', n: 1 }, { id: 'genbu', n: 1 }], desc: '🐉🐅🦅🐢 → 超RUSH10R＆倍率+0.5', eff: { t: 'multi', list: [{ t: 'rush', v: 10 }, { t: 'mult', v: 0.5 }] } },
+  { name: '一世一代',   family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 1 }, { id: 'saikoro', n: 1 }, { id: 'joker', n: 1 }], desc: '７🎲🃏 → 超RUSH6R＆+200〜2000玉', eff: { t: 'multi', list: [{ t: 'rush', v: 6 }, { t: 'coinsRange', min: 200, max: 2000 }] } },
+  { name: 'イカサマ賭場', family: '大当り役', tier: '爆発', need: [{ id: 'saikoro', n: 2 }, { id: 'joker', n: 1 }],                 desc: '🎲🎲🃏 → +100〜1500玉',      eff: { t: 'coinsRange', min: 100, max: 1500 } },
+  { name: '混沌',       family: '大当り役', tier: '倍率', need: [{ id: 'joker', n: 3 }],                                          desc: '🃏×3 → ランダム超級効果',    eff: { t: 'joker' } },
 ];
+// need判定ヘルパー(cat=カテゴリ一致 / id=絵柄一致)
+function symMatchesNeed(id, nd) { return nd.id ? id === nd.id : SYMBOL_CAT[id] === nd.cat; }
+function recipeSlots(rc) { return rc.need.reduce((a, nd) => a + nd.n, 0); }
+// 役の必要条件を「🍒果物×2 ＋ 💎財宝」のように描く
+function recipePatternHTML(rc) {
+  return rc.need.map(nd => {
+    if (nd.id) return (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') + (nd.n > 1 ? '×' + nd.n : '');
+    const ci = CAT_INFO[nd.cat] || { glyph: '?', name: '?' };
+    return ci.glyph + ci.name + '×' + nd.n;
+  }).join(' ＋ ');
+}
+// コンパクトな絵文字だけの並び(チップ/図鑑用)。カテゴリはカテゴリ絵文字で表す
+function recipeGlyphs(rc) {
+  let s = '';
+  for (const nd of rc.need) {
+    const gl = nd.id ? (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') : (CAT_INFO[nd.cat] ? CAT_INFO[nd.cat].glyph : '?');
+    for (let i = 0; i < nd.n; i++) s += gl;
+  }
+  return s;
+}
+// この絵柄(または同カテゴリ)がプールにあれば、そのneedに寄与しているか
+function recipeAnyOwned(rc) {
+  return rc.need.some(nd => Object.keys(S.symbolPool).some(id => S.symbolPool[id] > 0 && symMatchesNeed(id, nd)));
+}
+
 function recipeReady(rc) {
-  const need = {};
-  rc.ids.forEach(id => need[id] = (need[id] || 0) + 1);
-  return Object.entries(need).every(([id, k]) => (S.symbolPool[id] || 0) >= k);
+  // 貪欲割当: 絵柄指定needを先に確保→残りでカテゴリneedを満たせるか
+  const avail = {};
+  for (const id in S.symbolPool) if (S.symbolPool[id] > 0) avail[id] = S.symbolPool[id];
+  const needs = [...rc.need].sort((a, b) => (b.id ? 1 : 0) - (a.id ? 1 : 0));
+  for (const nd of needs) {
+    let want = nd.n;
+    for (const id in avail) {
+      if (want <= 0) break;
+      if (avail[id] > 0 && symMatchesNeed(id, nd)) { const t = Math.min(avail[id], want); avail[id] -= t; want -= t; }
+    }
+    if (want > 0) return false;
+  }
+  return true;
 }
 
 // ---------- 所持シナジー: 相性の良い組み合わせで相乗倍率(全獲得に乗算) ----------
 const SYNERGIES = [
-  { id: 'kinman',    name: '金満コンビ',       desc: '金玉＋金袋 → 全獲得+15%',                   mult: 1.15, cond: () => S.deck.includes('kin') && (S.symbolPool.kinbukuro || 0) > 0 },
-  { id: 'tentai',    name: '天体観測',         desc: 'ムーン2枚以上＋スター → 全獲得+12%',        mult: 1.12, cond: () => (S.symbolPool.moon || 0) >= 2 && (S.symbolPool.star || 0) >= 1 },
-  { id: 'hoshizora', name: '星降る夜空',       desc: '星系の玉＋星降る夜 → 全獲得+15%',           mult: 1.15, cond: () => (S.deck.includes('hoshi') || S.deck.includes('hoshikuzu')) && S.relics.some(r => r.id === 'hoshifuru') },
-  { id: 'jiba',      name: '磁力発電',         desc: '磁石系の玉＋マグネットコイル → 全獲得+12%', mult: 1.12, cond: () => (S.deck.includes('jishaku') || S.deck.includes('denji') || S.deck.includes('blackhole')) && S.parts.some(p => p.id === 'magcoil') },
-  { id: 'raijin',    name: '雷神',             desc: '雷玉＋イナズマ → 全獲得+15%',               mult: 1.15, cond: () => S.deck.includes('kaminari') && (S.symbolPool.inazuma || 0) > 0 },
-  { id: 'garden',    name: '植物園',           desc: 'クローバー＋サクラ＋三つ葉 → 全獲得+12%',   mult: 1.12, cond: () => (S.symbolPool.clover || 0) > 0 && (S.symbolPool.sakura || 0) > 0 && (S.symbolPool.mitsuba || 0) > 0 },
-  { id: 'fruits',    name: 'フルーツバスケット', desc: 'フルーツ4種をリールに → 全獲得+18%',      mult: 1.18, cond: () => ['cherry', 'lemon', 'grape', 'suika'].every(id => (S.symbolPool[id] || 0) > 0) },
-  { id: 'gambler',   name: 'ギャンブル狂',     desc: 'サイコロ＋おみくじ → 全獲得+12%',           mult: 1.12, cond: () => (S.symbolPool.saikoro || 0) > 0 && (S.symbolPool.fortune || 0) > 0 },
-  { id: 'shichifuku',name: '七福神',           desc: 'セブン2枚以上＋七光玉 → 全獲得+20%',        mult: 1.2,  cond: () => (S.symbolPool.seven || 0) >= 2 && S.deck.includes('nanahikari') },
-  { id: 'daikazoku', name: '大家族',           desc: '分裂系の玉＋分裂フィールド → 全獲得+15%',   mult: 1.15, cond: () => (S.deck.includes('futago') || S.deck.includes('bunshin')) && S.parts.some(p => p.id === 'splitter') },
-  { id: 'oushitsu',  name: '王室御用達',       desc: '王冠＋純金の玉箱 → 全獲得+25%',             mult: 1.25, cond: () => (S.symbolPool.crown || 0) > 0 && S.relics.some(r => r.id === 'kinbako') },
-  { id: 'nijibashi', name: '虹の橋',           desc: '虹系の玉＋虹 → 全獲得+15%',                 mult: 1.15, cond: () => (S.deck.includes('niji') || S.deck.includes('kenja')) && (S.symbolPool.nijiiro || 0) > 0 },
+  { id: 'kinman',    name: '金満コンビ',       desc: '金玉＋金袋 → 全獲得+15%',                   mult: 1.15, symTags: ['kinbukuro'], cond: () => S.deck.includes('kin') && (S.symbolPool.kinbukuro || 0) > 0 },
+  { id: 'tentai',    name: '天体観測',         desc: 'ムーン2枚以上＋スター → 全獲得+12%',        mult: 1.12, symTags: ['moon', 'star'], cond: () => (S.symbolPool.moon || 0) >= 2 && (S.symbolPool.star || 0) >= 1 },
+  { id: 'hoshizora', name: '星降る夜空',       desc: '星系の玉＋星降る夜 → 全獲得+15%',           mult: 1.15, symTags: [], cond: () => (S.deck.includes('hoshi') || S.deck.includes('hoshikuzu')) && S.relics.some(r => r.id === 'hoshifuru') },
+  { id: 'jiba',      name: '磁力発電',         desc: '磁石系の玉＋マグネットコイル → 全獲得+12%', mult: 1.12, symTags: [], cond: () => (S.deck.includes('jishaku') || S.deck.includes('denji') || S.deck.includes('blackhole')) && S.parts.some(p => p.id === 'magcoil') },
+  { id: 'raijin',    name: '雷神',             desc: '雷玉＋イナズマ → 全獲得+15%',               mult: 1.15, symTags: ['inazuma'], cond: () => S.deck.includes('kaminari') && (S.symbolPool.inazuma || 0) > 0 },
+  { id: 'garden',    name: '植物園',           desc: 'クローバー＋サクラ＋三つ葉 → 全獲得+12%',   mult: 1.12, symTags: ['clover', 'sakura', 'mitsuba'], cond: () => (S.symbolPool.clover || 0) > 0 && (S.symbolPool.sakura || 0) > 0 && (S.symbolPool.mitsuba || 0) > 0 },
+  { id: 'fruits',    name: 'フルーツバスケット', desc: 'フルーツ4種をリールに → 全獲得+18%',      mult: 1.18, symTags: ['cherry', 'lemon', 'grape', 'suika'], cond: () => ['cherry', 'lemon', 'grape', 'suika'].every(id => (S.symbolPool[id] || 0) > 0) },
+  { id: 'gambler',   name: 'ギャンブル狂',     desc: 'サイコロ＋おみくじ → 全獲得+12%',           mult: 1.12, symTags: ['saikoro', 'fortune'], cond: () => (S.symbolPool.saikoro || 0) > 0 && (S.symbolPool.fortune || 0) > 0 },
+  { id: 'shichifuku',name: '七福神',           desc: 'セブン2枚以上＋七光玉 → 全獲得+20%',        mult: 1.2,  symTags: ['seven'], cond: () => (S.symbolPool.seven || 0) >= 2 && S.deck.includes('nanahikari') },
+  { id: 'daikazoku', name: '大家族',           desc: '分裂系の玉＋分裂フィールド → 全獲得+15%',   mult: 1.15, symTags: [], cond: () => (S.deck.includes('futago') || S.deck.includes('bunshin')) && S.parts.some(p => p.id === 'splitter') },
+  { id: 'oushitsu',  name: '王室御用達',       desc: '王冠＋純金の玉箱 → 全獲得+25%',             mult: 1.25, symTags: ['crown'], cond: () => (S.symbolPool.crown || 0) > 0 && S.relics.some(r => r.id === 'kinbako') },
+  { id: 'nijibashi', name: '虹の橋',           desc: '虹系の玉＋虹 → 全獲得+15%',                 mult: 1.15, symTags: ['nijiiro'], cond: () => (S.deck.includes('niji') || S.deck.includes('kenja')) && (S.symbolPool.nijiiro || 0) > 0 },
 ];
+
+// 選択カード用: この絵柄のカテゴリ＋絡む特殊役・シナジーを書き出す(カテゴリ制で分かりやすく)
+function symbolRoleTagsHTML(id) {
+  const cat = SYMBOL_CAT[id];
+  const recs = RECIPES.filter(rc => rc.need.some(nd => symMatchesNeed(id, nd)));
+  const syns = SYNERGIES.filter(sy => (sy.symTags || []).includes(id));
+  let rows = '';
+  if (cat && CAT_INFO[cat]) rows += `<div class="rt cat"><b>${CAT_INFO[cat].glyph} ${CAT_INFO[cat].name}カテゴリ</b></div>`;
+  for (const rc of recs.slice(0, 6)) {
+    rows += `<div class="rt rec"><b>🎴${rc.name}</b> <span class="rc">${recipePatternHTML(rc)}</span></div>`;
+  }
+  for (const sy of syns) {
+    rows += `<div class="rt syn"><b>🔗${sy.name}</b> ${sy.desc}</div>`;
+  }
+  if (!rows) return '';
+  return `<div class="roleTags"><div class="rth">この絵柄で狙える役</div>${rows}</div>`;
+}
+
 let SYNcache = null;
 function synDirty() { SYNcache = null; }
 function activeSynergies() {
@@ -212,6 +321,28 @@ function synergyMult() {
   let m = 1;
   for (const sy of activeSynergies()) m *= sy.mult;
   return m;
+}
+// 選択候補を「今の手持ち」に仮に足したら、新たに成立するシナジーを返す(選ぶ瞬間の指針)
+function synergiesGainedBy(card) {
+  if (!card) return [];
+  const before = new Set(SYNERGIES.filter(sy => sy.cond()).map(sy => sy.id));
+  let undo = null;
+  if (card.kind === 'ball') { S.deck.push(card.id); undo = () => S.deck.pop(); }
+  else if (card.kind === 'symbol') { const orig = S.symbolPool[card.id]; S.symbolPool[card.id] = (orig || 0) + 1; undo = () => { if (orig == null) delete S.symbolPool[card.id]; else S.symbolPool[card.id] = orig; }; }
+  else if (card.kind === 'relic') { S.relics.push(card.rel || { id: card.id, fx: {} }); undo = () => S.relics.pop(); }
+  else if (card.kind === 'part') { S.parts.push({ id: card.id }); undo = () => S.parts.pop(); }
+  else return [];
+  const gained = SYNERGIES.filter(sy => !before.has(sy.id) && sy.cond());
+  undo();
+  return gained;
+}
+// 選択カード/確認に載せる「手持ちと組んで成立するシナジー」表示
+function synergyGainHTML(card, compact) {
+  const g = synergiesGainedBy(card);
+  if (!g.length) return '';
+  if (compact) return `<div class="synGain">🔗 シナジー成立 ${g.map(s => s.name).join('・')}</div>`;
+  return `<div class="synGain full"><div class="sgh">🔗 手持ちと組んでシナジー成立！</div>` +
+    g.map(s => `<div class="sgr"><b>${s.name}</b><span class="m">全獲得×${s.mult}</span><div class="sgd">${s.desc}</div></div>`).join('') + `</div>`;
 }
 function checkSynergies(prev) {
   synDirty();
@@ -360,16 +491,18 @@ const PART_SLOTS = [
 function freeSlots() {
   return PART_SLOTS.filter(sl => !S.parts.some(p => p.x === sl.x && p.y === sl.y));
 }
-function installPart(id) {
-  const slots = freeSlots();
-  if (slots.length === 0) return false;
-  const sl = pick(slots);
+function installPartAt(id, sl) {
   const def = PARTS[id];
   S.parts.push({ id, ...def, x: sl.x, y: sl.y, dir: rng() < 0.5 ? 1 : -1, ang: 0, flash: 0 });
   markDex('part', id);
   refreshPins();
   addLog(`盤面に「${def.name}」を設置`, 'hit');
   return true;
+}
+function installPart(id) { // ランダム設置(sim/フォールバック用)
+  const slots = freeSlots();
+  if (slots.length === 0) return false;
+  return installPartAt(id, pick(slots));
 }
 // 釘の再構成: お守りの釘抜き + 役物周辺のクリアランス
 function refreshPins() {
@@ -493,6 +626,8 @@ function handleParts(b, dt, m) {
   }
   if (b.warpCd > 0) b.warpCd -= dt;
 }
+// 揃い「格」ペナルティ: 強い絵柄ほど1回転で揃いにくい(=積んで初めて出る)
+const RARITY_ALIGN = { normal: 1.0, rare: 0.30, legend: 0.12 };
 const RARITY_LABEL = { normal: 'NORMAL', rare: 'RARE', legend: 'LEGEND' };
 const RARITY_COLOR = { normal: '#9aa49d', rare: '#38c8ff', legend: '#ff4dff' };
 const RARITY_PRICE = { normal: 170, rare: 320, legend: 560 };
@@ -507,6 +642,7 @@ const S = {
   deck: [], bag: [],
   symbolPool: {}, relics: [], parts: [],
   luck: 1, mult: 1, hesoPayPerm: 0, magnetPulse: 0, lastFiredType: 'shiro',
+  winBoostV: 1, winBoostN: 0, winBoostThis: 1, winBoostGranted: false, // 役倍率(nextMult)の保持状態
   hold: [], spin: null, rush: null,
   ballsOnBoard: [],
   power: 0.62, targetPower: 0.62, autoAim: true, fireCd: 0,
@@ -908,6 +1044,7 @@ function gainBalls(n, srcBall, applyMult = true) {
   v = Math.round(v * CFG.payScale); // 経済全体の底上げ(高ノルマに対する払い出しスケール)
   // 面エスカレーター: 後半の台ほど出玉が増える(ノルマ上昇に全ビルドが追いつける下駄)
   v = Math.round(v * (1 + CFG.stageCoinRamp * (S.stage - 1)));
+  if (S.winBoostThis > 1) v = Math.round(v * S.winBoostThis); // 役倍率(nextMult): この当たりを丸ごと×
   S.balls += v;
   S.stat.totalWon += v;
   // FEVERゲージ: リール当選(3揃い/2揃い/役)の獲得で貯まる
@@ -1019,7 +1156,8 @@ function decideOutcome(ballType) {
   const p3 = {}, ids = Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0);
   let sum3 = 0;
   for (const id of ids) {
-    let w = Math.pow(S.symbolPool[id] / N, 3);
+    // 格ペナルティ: 強い絵柄(レア/レジェンド)は枚数を積まないとほぼ揃わない
+    let w = Math.pow(S.symbolPool[id] / N, 3) * (RARITY_ALIGN[SYMBOLS[id].rarity] || 1);
     if (bfx.biasSym === id) w *= bfx.biasMult || 1;
     p3[id] = w; sum3 += w;
   }
@@ -1033,16 +1171,18 @@ function decideOutcome(ballType) {
   // 特殊役(レシピ): 必要絵柄をリールに揃えていると抽選に混ざる
   const rl = [];
   let rSum = 0;
+  const FACT = [1, 1, 2, 6, 24, 120];
   for (const rc of RECIPES) {
     if (!recipeReady(rc)) continue;
-    const need = {};
-    rc.ids.forEach(id => need[id] = (need[id] || 0) + 1);
-    let prod = 1, dupF = 1;
-    for (const [id, k] of Object.entries(need)) {
-      for (let i = 0; i < k; i++) prod *= S.symbolPool[id];
-      dupF *= [1, 1, 2, 6][k];
+    let prod = 1, dupF = 1, slots = 0;
+    for (const nd of rc.need) {
+      let cnt = 0; // このneedに該当するプール枚数
+      for (const id of ids) if (symMatchesNeed(id, nd)) cnt += S.symbolPool[id];
+      for (let i = 0; i < nd.n; i++) prod *= Math.max(1, cnt);
+      dupF *= FACT[nd.n] || 720;
+      slots += nd.n;
     }
-    const p = (6 / dupF) * (prod / (N * N * N)) * (CFG.recipeL + luck * 0.6) * m.winLMult;
+    const p = ((FACT[slots] || 720) / dupF) * (prod / Math.pow(N, slots)) * (CFG.recipeL + luck * 0.6) * m.winLMult;
     rl.push({ rc, p }); rSum += p;
   }
   if (rl.length && rng() < Math.min(rSum, 0.25)) {
@@ -1063,15 +1203,17 @@ function facesFor(out) {
   const ids = Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0);
   if (ids.length === 0) return ['seven', 'seven', 'seven'];
   if (out.kind === 'recipe') {
-    // ダブり絵柄は先頭に寄せてリーチ演出に乗せる(例: 月月🔮)
-    const cnt = {};
-    out.recipe.ids.forEach(id => cnt[id] = (cnt[id] || 0) + 1);
-    const dup = Object.keys(cnt).find(id => cnt[id] >= 2);
-    if (dup) {
-      const other2 = out.recipe.ids.find(id => id !== dup) || dup;
-      return [dup, dup, other2];
+    // 各needを満たす実際のプール絵柄を選んで3枠に割り当てる(カテゴリ役は該当系統から拾う)
+    const faces = [];
+    for (const nd of out.recipe.need) {
+      const cands = ids.filter(id => symMatchesNeed(id, nd));
+      for (let i = 0; i < nd.n && faces.length < 3; i++) {
+        const fresh = cands.find(id => !faces.includes(id));
+        faces.push(fresh || cands[i % cands.length] || cands[0] || ids[0]);
+      }
     }
-    return out.recipe.ids.slice();
+    while (faces.length < 3) faces.push(faces[0] || ids[0]);
+    return faces.slice(0, 3);
   }
   const other = ex => { let o = pick(ids); let g = 0; while (o === ex && g++ < 12) o = pick(ids); return o; };
   if (out.kind === 3) return [out.symbol, out.symbol, out.symbol];
@@ -1140,12 +1282,14 @@ function resolveSpin() {
 function applyRecipe(rc, ballType) {
   S.stat.wins++;
   markDex('recipe', rc.name);
-  const srcBall = { type: ballType, winSym: rc.ids[0] };
+  // 揃った実際のリール絵柄を代表シンボルにする(カテゴリ役は固定idが無いため)
+  const rep = (S.lastDigits || []).find(x => SYMBOLS[x]) || Object.keys(S.symbolPool).find(k => S.symbolPool[k] > 0) || 'seven';
+  const srcBall = { type: ballType, winSym: rep };
   fx.flashDOM(); S.shake = Math.max(S.shake, 14); S.boardFlash = 1;
   fx.confettiBurst(70);
   fx.ring(BLOCK.x + BLOCK.w / 2, BLOCK.y + BLOCK.h / 2, '#ff4dff');
   if (!S.simMode) {
-    S.winFx = { t: 0, amount: 0, symbol: rc.ids[0] };
+    S.winFx = { t: 0, amount: 0, symbol: rep };
     hitStop(0.05, 0.2);
     S.cam.punch = 0.12;
     S.aberr = Math.max(S.aberr, 1.2);
@@ -1154,10 +1298,13 @@ function applyRecipe(rc, ballType) {
     sfx('jackpot');
   }
   addLog(`🎴 特殊役「${rc.name}」成立！`, 'hit');
-  symbolWinSound(rc.ids[0]); // 役の主役絵柄のジングルを重ねる
-  runEffect(rc.eff, srcBall, false, rc.ids[0]);
+  if (!S.simMode) roleNameBanner(rc.name); // 役名を液晶に大きく掲示(何の役か一目で分かる)
+  symbolWinSound(rep); // 役の主役絵柄のジングルを重ねる
+  winBoostBegin();
+  runEffect(rc.eff, srcBall, false, rep);
   const m = mods();
   if (m.bonusPerWin) gainBalls(m.bonusPerWin, null, false);
+  winBoostEnd();
   if (!S.rush) tryStartSpin();
   updateHUD();
 }
@@ -1168,6 +1315,16 @@ function flashStat(id) {
   if (!el) return;
   el.classList.remove('up'); void el.offsetWidth; el.classList.add('up');
 }
+// 役成立時に役名を液晶へ大きく掲示(何の役が決まったか一目で分かる)
+let roleBannerT = null;
+function roleNameBanner(name) {
+  const el = document.getElementById('roleBanner');
+  if (!el) return;
+  el.innerHTML = `<span class="rb-k">役 成立</span><span class="rb-n">${name}</span>`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  if (roleBannerT) clearTimeout(roleBannerT);
+  roleBannerT = setTimeout(() => el.classList.remove('show'), 2600);
+}
 // 倍率UPの巨大カットイン(一目で「倍率が上がった」とわかる)
 function bigMultPopup(newMult) {
   if (S.simMode) return;
@@ -1176,8 +1333,20 @@ function bigMultPopup(newMult) {
 }
 // 当たりに乗った「自分のビルド倍率」を表示用に組む(倍率×相乗×FEVER)。1.05倍以上のとき"×N"を出す
 function winMultTag() {
-  const bm = effMult() * synergyMult() * (S.fever ? 2 : 1);
+  const bm = effMult() * synergyMult() * (S.fever ? 2 : 1) * (S.winBoostThis > 1 ? S.winBoostThis : 1);
   return bm > 1.05 ? ` ×${bm.toFixed(1)}` : '';
+}
+// 役倍率(nextMult)の当たり単位ライフサイクル。当たり開始時に有効な倍率を確定し、gainBallsで乗せる
+function winBoostBegin() {
+  S.winBoostThis = (S.winBoostN > 0) ? (S.winBoostV || 1) : 1; // この当たりに乗る役倍率(開始時に確定=自己ブースト防止)
+  S.winBoostGranted = false; // この当たり中にnextMultを新規付与したか(付与したものは即消費しない)
+}
+function winBoostEnd() {
+  if (S.winBoostThis > 1 && !S.winBoostGranted) {
+    S.winBoostN = Math.max(0, S.winBoostN - 1);
+    if (S.winBoostN <= 0) S.winBoostV = 1;
+  }
+  S.winBoostThis = 1;
 }
 // ---------- 効果エグゼキュータ ----------
 function runEffect(d, srcBall, big, symId) {
@@ -1218,6 +1387,12 @@ function runEffect(d, srcBall, big, symId) {
     }
     case 'luck': S.luck = +(S.luck + d.v).toFixed(2); F(`運UP ▲ ${effLuck().toFixed(1)}`, '#7ef0a8'); flashStat('luckChip'); BW(); break;
     case 'mult': S.mult = +(S.mult + d.v).toFixed(2); bigMultPopup(effMult()); flashStat('multChip'); BW(); break;
+    // 倍率乗算型: 倍率スタットそのものを×する(加算より遥かに跳ねる)
+    case 'multMult': S.mult = +(S.mult * d.v).toFixed(2); bigMultPopup(effMult()); flashStat('multChip'); BW(); break;
+    // 役倍率型: 次のn回の「当たり(3揃い/役)」を丸ごと×v。今回の当たりには乗らない(winBoostThisは当たり開始時に確定済み)
+    case 'nextMult':
+      S.winBoostV = d.v; S.winBoostN = (d.n || 1); S.winBoostGranted = true;
+      F(`次の${(d.n || 1) > 1 ? (d.n) + '回の' : ''}当たり ×${d.v}！`, '#ff8aff'); flashStat('multChip'); BW(); break;
     case 'shots': {
       S.shotsLeft += d.v;
       let t = `+${d.v}発`;
@@ -1312,8 +1487,10 @@ function applyThree(id, ballType) {
   addLog(`🎰 ${sym.name} 3揃い！`, 'hit');
   cheerSwimmers(); // 液晶の生き物が歓喜ジャンプ
   symbolWinSound(id); // 揃った絵柄「らしい」専用ジングル
+  winBoostBegin();
   runEffect(sym.three, srcBall, true, id);
   if (m.bonusPerWin) gainBalls(m.bonusPerWin, null, false); // ネオン管
+  winBoostEnd();
   const bfx = (BALLS[ballType] || BALLS.shiro).fx;
   if (bfx.onWinMult) {
     S.mult = +(S.mult + bfx.onWinMult).toFixed(2);
@@ -1411,6 +1588,7 @@ function startStage(n) {
     S.theme = THEMES[Math.min(Math.max(n, 1), THEMES.length) - 1];
     S.quota = quotaFor(n);
   }
+  if (S.cullCd > 0) S.cullCd--; // 間引き商品クールダウンを面ごとに消化
   const m = mods();
   S.shotsLeft = stageShots(m);
   if (m.periodBalls > 0) {
@@ -1561,7 +1739,8 @@ function openSymbolRemove(opts = {}) {
     el.className = 'buildCard';
     el.innerHTML =
       `<div class="g">${s.glyph}</div><div class="n">${s.name} ×${n}</div>` +
-      `<div class="d">${s.desc.replace('3揃い: ', '').split(' / ')[0]}</div>`;
+      `<div class="d">${s.desc.replace('3揃い: ', '')}</div>` +
+      symbolRoleTagsHTML(id);
     el.onclick = () => {
       removeSymbolCopy(id);
       document.getElementById('removeOverlay').classList.remove('show');
@@ -1588,10 +1767,7 @@ function rollDraftCard(depth = 0) {
   }
   const rar = rollRarity();
   const r = rng();
-  // 絵柄はがしチケット(度々もらえる)
-  if (r < 0.09 && poolTotal() > 3) {
-    return { kind: 'symRemoveTicket', rarity: 'normal', id: 'ticket', name: '絵柄はがし', desc: 'リールから好きな絵柄を1枚はがせる。残った絵柄が濃くなる', icon: '🧹' };
-  }
+  // (絵柄はがしチケットは廃止。間引きは屋台で3面に1回だけ = デッキ構築を主役に)
   if (r < 0.35) {
     const cand = Object.keys(BALLS).filter(k => k !== 'shiro' && BALLS[k].rarity === rar);
     if (cand.length) {
@@ -1618,13 +1794,8 @@ function rollDraftCard(depth = 0) {
   const rel = pick(avail);
   return { kind: 'relic', rarity: rar, id: rel.id, name: rel.name, desc: rel.desc, icon: rel.icon, rel };
 }
-function acquire(card) {
-  const prevSyn = activeSynergies().slice();
-  if (card.kind === 'ball') { S.deck.push(card.id); S.bag = []; markDex('ball', card.id); addLog(`玉デッキに「${card.name}」追加`, 'hit'); }
-  if (card.kind === 'symbol') { S.symbolPool[card.id] = (S.symbolPool[card.id] || 0) + 1; markDex('sym', card.id); addLog(`リールに ${SYMBOLS[card.id].glyph} 追加`, 'hit'); }
-  if (card.kind === 'relic') { S.relics.push(card.rel); markDex('relic', card.id); modsDirty(); if (card.rel.fx.removePins) refreshPins(); addLog(`お守り「${card.name}」入手`, 'hit'); }
-  if (card.kind === 'part') installPart(card.id);
-  if (card.kind === 'symRemoveTicket') openSymbolRemove({});
+// 取得後の共通処理(シナジー再判定・レジェンド演出・再描画)
+function afterAcquire(card, prevSyn) {
   if (card.rarity === 'legend' && !S.simMode) { // レジェンド入手はド派手に
     S.aberr = 1.6; S.glitchT = 0.22;
     fx.confettiBurst(80);
@@ -1634,6 +1805,137 @@ function acquire(card) {
   checkSynergies(prevSyn);
   renderCollections();
   updateHUD();
+}
+function acquire(card) {
+  const prevSyn = activeSynergies().slice();
+  if (card.kind === 'ball') { S.deck.push(card.id); S.bag = []; markDex('ball', card.id); addLog(`玉デッキに「${card.name}」追加`, 'hit'); }
+  if (card.kind === 'symbol') { S.symbolPool[card.id] = (S.symbolPool[card.id] || 0) + 1; markDex('sym', card.id); addLog(`リールに ${SYMBOLS[card.id].glyph} 追加`, 'hit'); }
+  if (card.kind === 'relic') { S.relics.push(card.rel); markDex('relic', card.id); modsDirty(); if (card.rel.fx.removePins) refreshPins(); addLog(`お守り「${card.name}」入手`, 'hit'); }
+  if (card.kind === 'part') installPart(card.id); // ランダム(sim/プログラム経由のみ。UIは設置場所を選ばせる)
+  if (card.kind === 'symRemoveTicket') openSymbolRemove({});
+  afterAcquire(card, prevSyn);
+}
+// ---------- 選択の確認ダイアログ ----------
+function confirmSelect(card, price, onOk) {
+  const ov = document.getElementById('confirmOverlay');
+  const isPart = card.kind === 'part';
+  const icon = card.kind === 'ball'
+    ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
+    : card.kind === 'symbol' ? card.glyph : card.icon;
+  const kindLabel = card.kind === 'ball' ? '玉デッキ' : card.kind === 'symbol' ? 'リール絵柄'
+    : card.kind === 'part' ? '盤面役物' : card.kind === 'relic' ? 'お守り' : 'アイテム';
+  document.getElementById('cfKind').textContent = `${RARITY_LABEL[card.rarity] || ''}・${kindLabel}`;
+  document.getElementById('cfIcon').innerHTML = icon;
+  document.getElementById('cfName').innerHTML =
+    `<span class="cfrar" style="color:${RARITY_COLOR[card.rarity] || '#ccc'}">${RARITY_LABEL[card.rarity] || ''}</span> ${card.name}`;
+  document.getElementById('cfDesc').innerHTML =
+    card.desc + synergyGainHTML(card, false) + (card.kind === 'symbol' ? symbolRoleTagsHTML(card.id) : '') +
+    (isPart ? '<div class="cf-hint">次に盤面で設置場所を選びます</div>' : '');
+  const pr = document.getElementById('cfPrice');
+  pr.style.display = price != null ? 'block' : 'none';
+  if (price != null) pr.innerHTML = `支払い <b>${price}玉</b>　→　残り ${Math.max(0, S.balls - price)}玉`;
+  const ok = document.getElementById('cfOk');
+  ok.textContent = isPart ? '設置場所を選ぶ →' : (price != null ? 'これを買う' : 'これにする');
+  ok.onclick = () => { ov.classList.remove('show'); sfx('tick'); onOk(); };
+  document.getElementById('cfCancel').onclick = () => { ov.classList.remove('show'); sfx('tick'); };
+  ov.classList.add('show');
+}
+// ---------- 盤面役物: 設置場所を自分で選ぶ ----------
+let placeCtx = null;
+function startPlacement(card, onPlaced, onCancel) {
+  placeCtx = { card, onPlaced, onCancel };
+  S.cam.z = 1; S.cam.py = 390; S.cam.punch = 0; // カメラをデフォルト固定→盤面座標とDOMを一致
+  S.placing = true;
+  document.getElementById('plName').innerHTML = `${card.icon} ${card.name}`;
+  document.getElementById('placeOverlay').classList.add('show');
+  layoutPlaceSlots();
+}
+function layoutPlaceSlots() {
+  const box = document.getElementById('placeSlots');
+  if (!box || !placeCtx) return;
+  box.innerHTML = '';
+  const w = cv.clientWidth, h = cv.clientHeight, l = cv.offsetLeft, t = cv.offsetTop;
+  const sx = w / CFG.CW, sy = h / CFG.CH;
+  for (const sl of PART_SLOTS) {
+    const occ = S.parts.find(p => p.x === sl.x && p.y === sl.y);
+    const cxp = CFG.FX + sl.x, cyp = CFG.FY + sl.y; // z=1,py=390 の写像
+    const btn = document.createElement('button');
+    btn.className = 'placeSlot' + (occ ? ' occ' : '');
+    btn.style.left = (l + cxp * sx) + 'px';
+    btn.style.top = (t + cyp * sy) + 'px';
+    if (occ) {
+      btn.innerHTML = `<span class="ps-ic">${occ.icon}</span>`;
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = `<span class="ps-plus">＋</span><span class="ps-ic ghost">${placeCtx.card.icon}</span>`;
+      btn.onclick = () => commitPlacement(sl);
+    }
+    box.appendChild(btn);
+  }
+}
+function commitPlacement(sl) {
+  const { card, onPlaced } = placeCtx;
+  const prevSyn = activeSynergies().slice();
+  installPartAt(card.id, sl);
+  afterAcquire(card, prevSyn);
+  sfx('heso'); fx.confettiBurst(20);
+  endPlacement();
+  if (onPlaced) onPlaced();
+}
+function cancelPlacement() {
+  const cb = placeCtx && placeCtx.onCancel;
+  endPlacement();
+  if (cb) cb();
+}
+function endPlacement() {
+  S.placing = false;
+  placeCtx = null;
+  document.getElementById('placeOverlay').classList.remove('show');
+}
+// ---------- 戦利品/屋台の選択(確認→パーツは設置場所選択) ----------
+function selectDraft(card) {
+  confirmSelect(card, null, () => {
+    if (card.kind === 'part') {
+      document.getElementById('draftOverlay').classList.remove('show');
+      startPlacement(card,
+        () => closeDraft(),
+        () => document.getElementById('draftOverlay').classList.add('show'));
+    } else {
+      acquire(card); closeDraft();
+    }
+  });
+}
+function selectShop(item) {
+  confirmSelect(item, item.price, () => {
+    const commitBuy = () => { S.balls -= item.price; item.bought = true; };
+    if (item.kind === 'part') {
+      document.getElementById('shopOverlay').classList.remove('show');
+      startPlacement(item,
+        () => { commitBuy(); document.getElementById('shopOverlay').classList.add('show'); renderShop(); updateHUD(); },
+        () => document.getElementById('shopOverlay').classList.add('show'));
+    } else if (item.kind === 'thin') {
+      commitBuy();
+      const prevSyn = activeSynergies().slice();
+      const i = S.deck.indexOf('shiro');
+      if (i >= 0) S.deck.splice(i, 1);
+      S.bag = [];
+      addLog('白玉を1つ間引いた', 'hit');
+      checkSynergies(prevSyn);
+      renderCollections();
+      sfx('heso'); renderShop(); updateHUD();
+    } else if (item.kind === 'symRemove') {
+      commitBuy();
+      openSymbolRemove({
+        refund: true,
+        onDone: () => { renderShop(); updateHUD(); },
+        onCancel: () => { S.balls += item.price; delete item.bought; renderShop(); updateHUD(); },
+      });
+      sfx('heso'); renderShop(); updateHUD();
+    } else {
+      commitBuy(); acquire(item);
+      sfx('heso'); renderShop(); updateHUD();
+    }
+  });
 }
 function openDraft() {
   if (S.phase !== 'settle') return; // reset/goStage後の古いsetTimeout誤発火ガード
@@ -1655,8 +1957,9 @@ function openDraft() {
     const kindLabel = card.kind === 'ball' ? 'BALL' : card.kind === 'symbol' ? 'REEL' : 'RELIC';
     el.innerHTML =
       `<div class="kind">${RARITY_LABEL[card.rarity]}・${kindLabel}</div>` +
-      `<div class="icon">${icon}</div><div class="nm">${card.name}</div><div class="ds">${card.desc}</div>`;
-    el.onclick = () => { acquire(card); closeDraft(); };
+      `<div class="icon">${icon}</div><div class="nm">${card.name}</div><div class="ds">${card.desc}</div>` +
+      synergyGainHTML(card, true) + (card.kind === 'symbol' ? symbolRoleTagsHTML(card.id) : '');
+    el.onclick = () => selectDraft(card);
     box.appendChild(el);
   }
   document.getElementById('draftOverlay').classList.add('show');
@@ -1674,19 +1977,23 @@ function openShop() {
   shopStock = [];
   const seen = new Set();
   const hasThin = S.deck.filter(d => d === 'shiro').length > 1;
-  const rollN = hasThin ? 2 : 3; // 商品も含めて選択肢は最大3つ
-  for (let i = 0; i < rollN; i++) {
+  // 常に3枚の「積む」商品を並べてデッキ構築を主役に
+  for (let i = 0; i < 3; i++) {
     let card = rollDraftCard(), guard = 0;
     while (seen.has(card.kind + card.id) && guard++ < 15) card = rollDraftCard();
     seen.add(card.kind + card.id);
     card.price = priceAt(RARITY_PRICE[card.rarity] + (card.kind === 'symbol' ? 40 : 0));
     shopStock.push(card);
   }
-  if (hasThin) {
-    shopStock.push({ kind: 'thin', rarity: 'normal', name: '白玉を間引く', desc: '白玉を1つデッキから除去(当たり玉が濃くなる)', icon: '✂️', price: priceAt(120) });
-  }
-  if (poolTotal() > 3) {
-    shopStock.push({ kind: 'symRemove', rarity: 'normal', name: '絵柄はがし', desc: 'リールから好きな絵柄を1枚削除(残りが揃いやすくなる)', icon: '🧹', price: priceAt(190) });
+  // 間引き(削る)は3面に1回だけ。積む楽しさを邪魔しない
+  if ((S.cullCd || 0) <= 0) {
+    if (poolTotal() > 3) {
+      shopStock.push({ kind: 'symRemove', rarity: 'normal', name: '絵柄はがし', desc: 'リールから好きな絵柄を1枚削除(残りが揃いやすくなる)', icon: '🧹', price: priceAt(190) });
+      S.cullCd = 3;
+    } else if (hasThin) {
+      shopStock.push({ kind: 'thin', rarity: 'normal', name: '白玉を間引く', desc: '白玉を1つデッキから除去(当たり玉が濃くなる)', icon: '✂️', price: priceAt(120) });
+      S.cullCd = 3;
+    }
   }
   renderShop();
   document.getElementById('shopOverlay').classList.add('show');
@@ -1706,29 +2013,10 @@ function renderShop() {
     btn.innerHTML =
       `<span class="ic">${ic}</span><span>` +
       `<div class="nm"><span class="rar" style="color:${RARITY_COLOR[item.rarity]}">${RARITY_LABEL[item.rarity]}</span> ${item.name}${item.kind === 'symbol' ? 'を追加' : ''}</div>` +
-      `<div class="ds">${item.desc}</div></span><span class="pr">${item.bought ? '購入済' : item.price + '玉'}</span>`;
-    btn.onclick = () => {
-      if (btn.disabled) return;
-      S.balls -= item.price;
-      item.bought = true;
-      if (item.kind === 'thin') {
-        const prevSyn = activeSynergies().slice();
-        const i = S.deck.indexOf('shiro');
-        if (i >= 0) S.deck.splice(i, 1);
-        S.bag = [];
-        addLog('白玉を1つ間引いた', 'hit');
-        checkSynergies(prevSyn);
-        renderCollections();
-      } else if (item.kind === 'symRemove') {
-        openSymbolRemove({
-          refund: true,
-          onDone: () => { renderShop(); updateHUD(); },
-          onCancel: () => { S.balls += item.price; delete item.bought; renderShop(); updateHUD(); },
-        });
-      } else acquire(item);
-      sfx('heso');
-      renderShop(); updateHUD();
-    };
+      `<div class="ds">${item.desc}</div>` +
+      synergyGainHTML(item, true) + (item.kind === 'symbol' ? symbolRoleTagsHTML(item.id) : '') +
+      `</span><span class="pr">${item.bought ? '購入済' : item.price + '玉'}</span>`;
+    btn.onclick = () => { if (btn.disabled) return; selectShop(item); };
     box.appendChild(btn);
   }
 }
@@ -1741,13 +2029,14 @@ function closeShop() {
 // ---------- 開始リール選択(スタータービルド) ----------
 // 1枚ずつ薄く配る = 序盤はほぼ揃わない。面クリアのドラフトで同じ絵柄を重ねて「濃く」して初めて揃い出す
 // 開始7枚(各1枚)→ N=7で揃い率約5%。ドラフトで積んで最終的に計15枚前後
+// 初期はノーマル6枚だけ(レア撤去)。序盤に7は存在すらしない=ゴミから積み上げる
 const BUILD_STEPS = [
   { rarity: 'normal', copies: 1, label: '1枚目 — 選んだ絵柄が ×1枚 入る' },
   { rarity: 'normal', copies: 1, label: '2枚目 — ×1枚' },
   { rarity: 'normal', copies: 1, label: '3枚目 — ×1枚' },
   { rarity: 'normal', copies: 1, label: '4枚目 — ×1枚' },
   { rarity: 'normal', copies: 1, label: '5枚目 — ×1枚' },
-  { rarity: 'rare',   copies: 1, label: '仕上げのレア — ×1枚' },
+  { rarity: 'normal', copies: 1, label: '6枚目 — ×1枚' },
 ];
 let buildStep = 0;
 function openBuild() {
@@ -1777,7 +2066,8 @@ function renderBuild() {
     el.className = `buildCard${st.rarity === 'rare' ? ' rare' : ''}`;
     el.innerHTML =
       `<div class="g">${s.glyph}</div><div class="n">${s.name}</div>` +
-      `<div class="d">${s.desc.replace('3揃い: ', '').split(' / ')[0]}</div>`;
+      `<div class="d">${s.desc.replace('3揃い: ', '')}</div>` +
+      symbolRoleTagsHTML(id);
     el.onclick = () => {
       const prevSyn = activeSynergies().slice();
       S.symbolPool[id] = (S.symbolPool[id] || 0) + st.copies;
@@ -1820,6 +2110,7 @@ function saveRun() {
       relics: S.relics.map(r => r.id),
       parts: S.parts.map(p => ({ id: p.id, x: p.x, y: p.y, dir: p.dir })),
       luck: S.luck, mult: S.mult, hesoPayPerm: S.hesoPayPerm || 0,
+      winBoostV: S.winBoostV || 1, winBoostN: S.winBoostN || 0,
       feverGauge: S.feverGauge || 0, rightHit: !!S.rightHit,
       stat: S.stat,
     };
@@ -1841,6 +2132,7 @@ function continueRun() {
   S.relics = (sv.relics || []).map(id => RELICS.find(r => r.id === id)).filter(Boolean);
   S.parts = (sv.parts || []).map(p => ({ id: p.id, ...PARTS[p.id], x: p.x, y: p.y, dir: p.dir, ang: 0, flash: 0 }));
   S.luck = sv.luck; S.mult = sv.mult; S.hesoPayPerm = sv.hesoPayPerm || 0;
+  S.winBoostV = sv.winBoostV || 1; S.winBoostN = sv.winBoostN || 0; S.winBoostThis = 1; S.winBoostGranted = false;
   S.free = false; document.getElementById('homeBtn').style.display = 'none';
   S.feverGauge = sv.feverGauge || 0; S.fever = null;
   S.rightHit = !!sv.rightHit;
@@ -1887,7 +2179,8 @@ function resetGame(opts = {}) {
     deck: ['shiro', 'shiro', 'shiro', 'shiro', 'shiro', 'shiro'], bag: [],
     symbolPool: {},
     relics: [], parts: [], luck: CFG.luckStart, mult: 1, hesoPayPerm: 0, magnetPulse: 0, lastFiredType: 'shiro',
-    allUnlock: false,
+    winBoostV: 1, winBoostN: 0, winBoostThis: 1, winBoostGranted: false, // 役倍率(nextMult)
+    allUnlock: false, cullCd: 2, // 間引き商品のクールダウン(最初は序盤を積みに集中)
     hold: [], spin: null, rush: null, ballsOnBoard: [], winFx: null, charFx: null,
     power: 0.62, targetPower: 0.62, fireCd: 0, rightHit: false,
     shower: 0, showerCd: 0, simMode: false,
@@ -2007,10 +2300,9 @@ function renderCollections() {
   if (rcEl) {
     const rows = RECIPES.map(rc => {
       const ready = recipeReady(rc);
-      const anyOwned = rc.ids.some(id => (S.symbolPool[id] || 0) > 0);
-      if (!anyOwned) return null;
-      const g = rc.ids.map(id => SYMBOLS[id].glyph).join('');
-      return `<span class="chip sym" style="${ready ? 'border-color:var(--accent2)' : 'opacity:.45'}">${g}<span class="cnt">${rc.name}</span><span class="tip"><b>${rc.name}</b><br>${rc.desc}${ready ? '（成立可能！）' : '（必要な絵柄が足りない）'}</span></span>`;
+      if (!recipeAnyOwned(rc)) return null;
+      const g = recipeGlyphs(rc);
+      return `<span class="chip sym" style="${ready ? 'border-color:var(--accent2)' : 'opacity:.45'}">${g}<span class="cnt">${rc.name}</span><span class="tip"><b>${rc.name}</b> ${recipePatternHTML(rc)}<br>${rc.desc}${ready ? '（成立可能！）' : '（あと少し）'}</span></span>`;
     }).filter(Boolean).join('');
     rcEl.innerHTML = rows || '<span style="color:var(--dim);font-size:10px;font-weight:600">特定の絵柄の組み合わせで「特殊役」が揃うようになる</span>';
   }
@@ -3719,13 +4011,20 @@ function draw(dt) {
     c.beginPath(); c.moveTo(px, 98); c.lineTo(px - 6, 84); c.lineTo(px + 6, 84); c.closePath(); c.fill();
     c.globalAlpha = 1;
   }
-  // 役物スロット(空き=点線サークル)
+  // 役物スロット(空き=点線サークル。配置モード中は光らせて設置候補を強調)
   for (const sl of PART_SLOTS) {
     if (S.parts.some(p => p.x === sl.x && p.y === sl.y)) continue;
-    c.strokeStyle = '#ffffff16'; c.lineWidth = 1.5;
-    c.setLineDash([4, 5]);
-    c.beginPath(); c.arc(sl.x, sl.y, 13, 0, 7); c.stroke();
-    c.setLineDash([]);
+    if (S.placing) {
+      c.strokeStyle = T.accent; c.lineWidth = 2.4;
+      c.globalAlpha = 0.55 + Math.sin(S.time * 6) * 0.35;
+      c.beginPath(); c.arc(sl.x, sl.y, 16, 0, 7); c.stroke();
+      c.globalAlpha = 1;
+    } else {
+      c.strokeStyle = '#ffffff16'; c.lineWidth = 1.5;
+      c.setLineDash([4, 5]);
+      c.beginPath(); c.arc(sl.x, sl.y, 13, 0, 7); c.stroke();
+      c.setLineDash([]);
+    }
   }
   // 設置済み役物
   for (const pt of S.parts) drawPart(c, pt, dt);
@@ -4550,7 +4849,7 @@ function dexCardHTML(key, id) {
     if (seen) { name = p.name; desc = p.desc; }
   } else if (key === 'recipe') {
     const rc = RECIPES.find(r => r.name === id); rar = 'rare';
-    icon = seen ? `<span class="dg">${rc.ids.map(x => SYMBOLS[x] ? SYMBOLS[x].glyph : '').join('')}</span>` : '<span class="dg">？</span>';
+    icon = seen ? `<span class="dg">${recipeGlyphs(rc)}</span>` : '<span class="dg">？</span>';
     if (seen) { name = rc.name; desc = rc.desc; }
   } else if (key === 'syn') {
     const sy = SYNERGIES.find(s => s.id === id); rar = 'legend';
@@ -4572,6 +4871,125 @@ function renderDex() {
   document.getElementById('dexGrid').innerHTML = t.all().map(id => dexCardHTML(dexTab, id)).join('');
 }
 function openDex() { renderDex(); document.getElementById('dexOverlay').classList.add('show'); }
+
+// ---------- 役ガイド(カテゴリ制の役一覧・いつでも開ける) ----------
+const GUIDE_FAMS = [
+  { key: 'カテゴリ役', icon: '🎯' },
+  { key: '倍率役', icon: '✖️' },
+  { key: '大当り役', icon: '💥' },
+];
+const TIER_CLS = { 'ゴミ': 'gomi', '中': 'chu', '爆発': 'bang', '倍率': 'mult' };
+const TIER_LABEL = { 'ゴミ': 'ゴミ級', '中': '中級', '爆発': '爆発級', '倍率': '倍率操作' };
+let guideTab = 'all';
+function guideRowHTML(rc) {
+  const cls = TIER_CLS[rc.tier] || 'chu';
+  const inRun = S.phase && S.phase !== 'title' && poolTotal() > 0;
+  const ready = inRun && recipeReady(rc);
+  const eff = rc.desc.includes('→') ? rc.desc.split('→').pop().trim() : rc.desc;
+  return `<div class="gRow ${ready ? 'ready' : ''}"><div class="gtx">` +
+    `<div class="gnm">${rc.name}${ready ? '<span class="rd">狙える</span>' : ''}<span class="gt tier-${cls}">${TIER_LABEL[rc.tier] || rc.tier || ''}</span></div>` +
+    `<div class="gpat">${recipePatternHTML(rc)} <span class="garrow">→</span> ${eff}</div>` +
+    `</div></div>`;
+}
+function renderGuide() {
+  document.getElementById('guideLegend').innerHTML =
+    ['ゴミ', '中', '爆発', '倍率'].map(t => `<span class="lg tier-${TIER_CLS[t]}">${TIER_LABEL[t]}</span>`).join('') +
+    `<span class="lg" style="background:#1c2620;color:var(--accent)">🔗 シナジー ${SYNERGIES.length}</span>`;
+  const tabs = [{ key: 'all', label: `全${RECIPES.length}` }].concat(GUIDE_FAMS.map(f => ({ key: f.key, label: f.icon })));
+  document.getElementById('guideTabs').innerHTML = tabs.map(t =>
+    `<button class="dexTab ${t.key === guideTab ? 'on' : ''}" data-g="${t.key}">${t.label}</button>`).join('');
+  document.querySelectorAll('#guideTabs .dexTab').forEach(b => b.onclick = () => { guideTab = b.dataset.g; renderGuide(); });
+  const fams = guideTab === 'all' ? GUIDE_FAMS : GUIDE_FAMS.filter(f => f.key === guideTab);
+  let html = '';
+  for (const f of fams) {
+    const rs = RECIPES.filter(r => r.family === f.key);
+    if (!rs.length) continue;
+    html += `<div class="gFam"><div class="gFamH">${f.icon} ${f.key}<span class="n">${rs.length}役</span></div>` +
+      rs.map(guideRowHTML).join('') + '</div>';
+  }
+  if (guideTab === 'all') {
+    html += `<div class="gFam"><div class="gFamH">🔗 シナジー<span class="n">所持で全獲得に相乗倍率</span></div>` +
+      SYNERGIES.map(sy => `<div class="gRow"><div class="gg">🔗</div><div class="gtx"><div class="gnm">${sy.name}</div><div class="gds">${sy.desc}</div></div><div class="gt tier-mult">×${sy.mult}</div></div>`).join('') + '</div>';
+  }
+  document.getElementById('guideBody').innerHTML = html;
+}
+function openGuide() { renderGuide(); document.getElementById('guideOverlay').classList.add('show'); }
+
+// ---------- チュートリアル(初回自動＋あとで再表示。役の理解を助ける) ----------
+const TUT_PAGES = [
+  { ico: '🎰', h: '「役」ってなに？', html: 'リールの3つの窓に<b>同じ絵柄が揃う</b>と、その絵柄の効果が発動＝当たり。<br>強い絵柄(7・龍・王冠…)ほど<b>揃いにくい「格」ペナルティ</b>。だから序盤はブタやチェリーみたいな<b>ゴミ役</b>ばかり。' },
+  { ico: '🎴', h: '役はカテゴリで狙う', html: 'まずは<b>同じ系統(カテゴリ)を3つ</b>集めれば役になる。<br>果物・植物・動物・天体・財宝・博打・祭・仕掛の8系統。レア絵柄は🌙🌙🔮のような<b>固定の強い役</b>もある。', ex: ['🍒🍒💎', '果物×2＋財宝 →「実りの宝」'] },
+  { ico: '🐉', h: '倍率で雪だるま', html: '単体はゴミ。<b>倍率を積んで噛み合わせる</b>と爆発する。色共鳴・シナジー・FEVERも全部掛け算。', flow: [['① 加算', '🌙などで 倍率＋'], ['② 乗算', '🔮🔮🌙で 倍率×1.4'], ['③ 役倍率', '🐉🐉で 次の当たり×4'], ['④ 爆発', '150倍級で脳汁ドバッ']] },
+  { ico: '📖', h: 'さあ、開店', html: '役の一覧は<b>役ガイド</b>、言葉の意味は<b>📚用語集</b>で見られる。<br><b>分からない言葉は、運・倍率・玉デッキなどの表示を直接タップ</b>すれば説明が開く。<br>まずは揃えて、倍率を重ねて、脳汁を出せ。', last: true },
+];
+let tutIdx = 0;
+function renderTut() {
+  const p = TUT_PAGES[tutIdx];
+  let body = `<div class="tico">${p.ico}</div><h2>${p.h}</h2><p>${p.html}</p>`;
+  if (p.ex) body += `<div class="ex"><span style="font-size:20px">${p.ex[0]}</span><b>→ ${p.ex[1]}</b></div>`;
+  if (p.flow) body += `<div class="flow4">${p.flow.map(f => `<div class="f"><b>${f[0]}</b>　${f[1]}</div>`).join('')}</div>`;
+  document.getElementById('tutPage').innerHTML = body;
+  document.getElementById('tutDots').innerHTML = TUT_PAGES.map((_, i) => `<span class="dot ${i === tutIdx ? 'on' : ''}"></span>`).join('');
+  document.getElementById('tutNext').textContent = p.last ? '役ガイドを見る 📖' : '次へ ▶';
+  document.getElementById('tutSkip').textContent = p.last ? 'とじる' : 'スキップ';
+}
+function openTut() { tutIdx = 0; renderTut(); document.getElementById('tutOverlay').classList.add('show'); }
+function closeTut() { document.getElementById('tutOverlay').classList.remove('show'); try { localStorage.setItem('luckyPachiTutSeen', '1'); } catch (e) {} }
+function maybeFirstTut() {
+  let seen = false; try { seen = localStorage.getItem('luckyPachiTutSeen') === '1'; } catch (e) {}
+  if (!seen) openTut();
+}
+
+// ---------- 用語集(ゲームの言葉を全部定義。HUDの語をタップでも開く) ----------
+const GLOSSARY = [
+  { g: '基本ルール', terms: [
+    { id: 'tama', t: '玉（たま）', d: 'パチンコの通貨。盤面に撃ち込み、中央の「ヘソ」に入ると増える。集めてノルマを払うのが目的。' },
+    { id: 'mochidama', t: '持ち玉', d: '今持っている玉の数（右上に表示）。面の終わりに、ここからノルマ分を支払う。' },
+    { id: 'hassha', t: '発射（はっしゃ）', d: '玉を撃つ回数。1面ごとに上限があり「この面の残り◯発」で表示。0になると面が終了する。撃つのは全自動。' },
+    { id: 'heso', t: 'ヘソ', d: '盤面中央の金の受け口。玉が入るたびにリール(液晶)が回って抽選される。ここに入れるのが全て。' },
+    { id: 'norma', t: '納品ノルマ', d: '面の終わりに払う玉の目標。持ち玉がノルマ以上なら次の面へ、足りないと廃業(ゲームオーバー)。面が進むほど跳ね上がる。' },
+    { id: 'men', t: '面（めん）', d: 'ステージのこと。全10面。各面に別テーマ(場末/桜/深海…)とノルマがある。10面クリアで1周。' },
+  ] },
+  { g: 'ステータス（右上の3つ）', terms: [
+    { id: 'un', t: '運（うん）', d: 'リールが揃いやすくなる数値。高いほど当たりやすい。クローバーや植物系の絵柄で上がる。基準は1.0。' },
+    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '当たりで貰える玉の掛け算。×2なら獲得2倍。天体絵柄(🌙🌞)や倍率役で上がり、乗算役(開眼など)で一気に跳ねる。これを積み重ねるのがこのゲームの核。' },
+    { id: 'soujou', t: '相乗（そうじょう）', d: 'シナジー成立で全獲得に乗る掛け算。相性の良い手持ちを揃えると自動で上がる。' },
+    { id: 'hesoshou', t: 'ヘソ賞球', d: 'ヘソに玉が入るたびに貰える基本の玉。的(🎯)などの絵柄で永続的に増やせる。' },
+  ] },
+  { g: 'ビルドの4本柱（集めて強くする）', terms: [
+    { id: 'deck', t: '玉デッキ', d: '撃つ玉の中身。白玉スタート。特殊玉(金玉・磁石玉・色玉…)を足すと色共鳴や特殊効果で強くなる。白玉を間引くと特殊玉の比率が上がる。' },
+    { id: 'reel', t: 'リール構成', d: '液晶リールに入っている絵柄の一覧。同じ絵柄を積むほど3揃いが出やすくなる(枚数の3乗で急上昇)。ここを組むのがメインの遊び。' },
+    { id: 'yakumono', t: '役物（やくもの）', d: '盤面に設置する装置(バンパー/風車/ポケット等)。玉の動きを変えてヘソへの入りを助ける。設置場所は自分で選べる。' },
+    { id: 'omamori', t: 'お守り', d: '台全体を常時強化するパッシブ効果。回転率・出玉・ノルマ軽減などを底上げする。' },
+  ] },
+  { g: '当たりの仕組み', terms: [
+    { id: 'sanzoroi', t: '3揃い（さんぞろい）', d: 'リールの3つの窓に同じ絵柄が揃うこと=当たり。その絵柄の効果が発動する。' },
+    { id: 'yaku', t: '役（やく）', d: '特定の絵柄の組み合わせで成立する特別な当たり。「カテゴリ役」と「レア固定役」がある。詳しくは役ガイド。' },
+    { id: 'category', t: 'カテゴリ', d: '絵柄の系統。果物🍒/植物🍀/動物🐾/天体🌙/財宝💎/博打🎲/祭🎆/仕掛🔧の8つ。同じ系統を3つ揃えるとカテゴリ役になる(例: 果物×3)。' },
+    { id: 'synergy', t: 'シナジー', d: '手持ちの相性の良い組み合わせ。成立すると全獲得に「相乗」倍率が乗る。選ぶ時に「シナジー成立」表示が出る。' },
+    { id: 'rush', t: 'RUSH（ラッシュ）', d: '連チャン。一定回数のあいだ当たりが確定して連続する。7絵柄や大当り役で突入。' },
+    { id: 'fever', t: 'FEVER（フィーバー）', d: 'ゲージが溜まると突入する爆発タイム。一定発数のあいだ全獲得×2＋高速連射。' },
+    { id: 'colorSyn', t: '色共鳴（いろきょうめい）', d: '撃った玉の色と、揃った絵柄の系統色が一致すると追加倍率。色玉を絵柄の色に合わせると強い。' },
+  ] },
+];
+function renderGlossary() {
+  const box = document.getElementById('glossaryBody');
+  if (!box) return;
+  box.innerHTML = GLOSSARY.map(sec =>
+    `<div class="glSec"><div class="glSecH">${sec.g}</div>` +
+    sec.terms.map(t => `<div class="glItem" id="gl-${t.id}"><div class="glT">${t.t}</div><div class="glD">${t.d}</div></div>`).join('') +
+    `</div>`).join('');
+}
+function openGlossary(anchor) {
+  renderGlossary();
+  document.getElementById('glossaryOverlay').classList.add('show');
+  if (anchor) {
+    const el = document.getElementById('gl-' + anchor);
+    if (el) { el.scrollIntoView({ block: 'center' }); el.classList.remove('hl'); void el.offsetWidth; el.classList.add('hl'); }
+  } else {
+    const b = document.getElementById('glossaryBody'); if (b) b.scrollTop = 0;
+  }
+}
 function updateDiffBtn() {
   const b = document.getElementById('diffBtn');
   const d = curDiff();
@@ -4619,12 +5037,28 @@ document.getElementById('homeBtn').onclick = () => { // フリーモードから
   refreshMenu();
 };
 
-document.getElementById('startBtn').onclick = () => { ensureAudio(); resetGame(); };
+document.getElementById('startBtn').onclick = () => { ensureAudio(); resetGame(); maybeFirstTut(); };
 document.getElementById('retryBtn').onclick = () => resetGame(); // 同じ周回で再挑戦
+// 役ガイド＆チュートリアルの開閉
+document.getElementById('guideBtn').onclick = () => openGuide();
+document.getElementById('guideBtnBar').onclick = () => openGuide();
+document.getElementById('guideClose').onclick = () => document.getElementById('guideOverlay').classList.remove('show');
+document.getElementById('glossaryBtn').onclick = () => openGlossary();
+document.getElementById('glossaryClose').onclick = () => document.getElementById('glossaryOverlay').classList.remove('show');
+// HUDの用語・パネル見出しをタップ → その語の説明を用語集で開く
+document.querySelectorAll('[data-gl]').forEach(el => el.addEventListener('click', () => openGlossary(el.dataset.gl)));
+document.getElementById('tutBtn').onclick = () => openTut();
+document.getElementById('tutSkip').onclick = () => closeTut();
+document.getElementById('tutNext').onclick = () => {
+  if (TUT_PAGES[tutIdx].last) { closeTut(); openGuide(); }
+  else { tutIdx++; renderTut(); }
+};
 document.getElementById('nextLoopBtn').onclick = () => { S.loop++; resetGame(); };
 document.getElementById('clearRetryBtn').onclick = () => { S.loop = 0; resetGame(); };
 document.getElementById('draftSkip').onclick = () => closeDraft();
 document.getElementById('shopNext').onclick = () => closeShop();
+document.getElementById('plCancel').onclick = () => cancelPlacement();
+window.addEventListener('resize', () => { if (S.placing) layoutPlaceSlots(); });
 document.getElementById('removeCancel').onclick = () => {
   document.getElementById('removeOverlay').classList.remove('show');
   const cancel = removeCtx && removeCtx.onCancel;
@@ -4648,9 +5082,10 @@ window.__game = {
     }
   },
   forceWin(sym) { S.hold.push({ ball: 'shiro' }); const o = { kind: 3, symbol: sym || 'seven' }; const f = facesFor(o); S.spin = { faces: f, out: o, ball: 'shiro', t: 99, stopAt: [0, 0, 0], reach: true, reachPlayed: true }; resolveSpin(); },
+  forceRecipe(name) { const rc = RECIPES.find(r => r.name === name) || RECIPES[0]; S.hold.push({ ball: 'shiro' }); const o = { kind: 'recipe', recipe: rc }; const f = facesFor(o); S.spin = { faces: f, out: o, ball: 'shiro', t: 99, stopAt: [0, 0, 0], reach: true, reachPlayed: true }; resolveSpin(); return { name: rc.name, faces: S.lastDigits }; },
   goStage(n) { startStage(n); },
-  installPart, PARTS, PART_SLOTS, freeSlots,
-  acquire, synDirty, activeSynergies, synergyMult, RECIPES, SYNERGIES, recipeReady,
+  installPart, installPartAt, PARTS, PART_SLOTS, freeSlots,
+  acquire, synDirty, activeSynergies, synergyMult, synergiesGainedBy, synergyGainHTML, RECIPES, SYNERGIES, recipeReady,
   autoBuild(pool) { // テスト/即スタート用: 初期リールを一括設定して第一面へ
     S.symbolPool = pool || { cherry: 3, bell: 3, clover: 2, house: 2, seven: 1 };
     buildStep = BUILD_STEPS.length;
@@ -4741,15 +5176,19 @@ window.__game = {
       balanced: ['cherry', 'bell', 'clover', 'seven', 'diamond'],
     }[arch] || [];
     S.symbolPool = {};
-    for (const st of BUILD_STEPS) {
-      const pool = Object.keys(SYMBOLS).filter(id => SYMBOLS[id].rarity === st.rarity && !S.symbolPool[id]);
-      const opts3 = [];
-      const tmp = pool.slice();
-      while (opts3.length < 3 && tmp.length) opts3.push(tmp.splice((rng() * tmp.length) | 0, 1)[0]);
-      opts3.sort((a, b) =>
-        ((pfPre.includes(b) ? 2 : 0) + (SYMBOLS[b].three.t === 'coins' ? 1 : 0)) -
-        ((pfPre.includes(a) ? 2 : 0) + (SYMBOLS[a].three.t === 'coins' ? 1 : 0)));
-      S.symbolPool[opts3[0]] = (S.symbolPool[opts3[0]] || 0) + st.copies;
+    if (opts.pool0) { // 神引き計測: 初期リールを固定(「最良のビルドを引けたら」の再現)
+      S.symbolPool = { ...opts.pool0 };
+    } else {
+      for (const st of BUILD_STEPS) {
+        const pool = Object.keys(SYMBOLS).filter(id => SYMBOLS[id].rarity === st.rarity && !S.symbolPool[id]);
+        const opts3 = [];
+        const tmp = pool.slice();
+        while (opts3.length < 3 && tmp.length) opts3.push(tmp.splice((rng() * tmp.length) | 0, 1)[0]);
+        opts3.sort((a, b) =>
+          ((pfPre.includes(b) ? 2 : 0) + (SYMBOLS[b].three.t === 'coins' ? 1 : 0)) -
+          ((pfPre.includes(a) ? 2 : 0) + (SYMBOLS[a].three.t === 'coins' ? 1 : 0)));
+        S.symbolPool[opts3[0]] = (S.symbolPool[opts3[0]] || 0) + st.copies;
+      }
     }
     buildStep = BUILD_STEPS.length;
     document.getElementById('buildOverlay').classList.remove('show');
@@ -4806,16 +5245,34 @@ window.__game = {
       rec.after = S.balls;
       stages.push(rec);
       if (st === 10) break;
-      // ドラフト(無料1枚)
-      const dc = rollCards(3 + Math.min(2, m.draftExtra));
-      dc.sort((a, b) => score(b) - score(a));
-      acquire(dc[0]);
-      // 屋台
-      const stock = rollCards(3).map(c => (c.price = priceAt(RARITY_PRICE[c.rarity] + (c.kind === 'symbol' ? 40 : 0)), c));
-      stock.sort((a, b) => score(b) - score(a));
+      // 神引き計測: 指定カードでドラフト/購入(価格は正規。買えなければ見送り=経済は誠実)
+      const specToCard = (sp) => {
+        if (sp.kind === 'symbol') { const s = SYMBOLS[sp.id]; return { kind: 'symbol', rarity: s.rarity, id: sp.id, name: s.name }; }
+        if (sp.kind === 'ball') { const b = BALLS[sp.id]; return { kind: 'ball', rarity: b.rarity, id: sp.id, name: b.name }; }
+        if (sp.kind === 'relic') { const rel = RELICS.find(r => r.id === sp.id); return { kind: 'relic', rarity: rel.rarity, id: sp.id, name: rel.name, rel }; }
+        if (sp.kind === 'part') { const p = PARTS[sp.id]; return { kind: 'part', rarity: p.rarity, id: sp.id, name: p.name }; }
+        return null;
+      };
+      const plan = opts.plan && opts.plan[st];
       const reserve = Math.round(quotaFor(st + 1) * 0.4);
-      for (const it of stock) {
-        if (score(it) >= 2.5 && S.balls - it.price > reserve) { S.balls -= it.price; acquire(it); }
+      if (plan) {
+        if (plan.draft) { const c = specToCard(plan.draft); if (c) acquire(c); } // ドラフトは無料1枚
+        for (const sp of (plan.buys || [])) {
+          const c = specToCard(sp); if (!c) continue;
+          const price = priceAt(RARITY_PRICE[c.rarity] + (c.kind === 'symbol' ? 40 : 0));
+          if (S.balls - price > reserve) { S.balls -= price; acquire(c); }
+        }
+      } else {
+        // ドラフト(無料1枚)
+        const dc = rollCards(3 + Math.min(2, m.draftExtra));
+        dc.sort((a, b) => score(b) - score(a));
+        acquire(dc[0]);
+        // 屋台
+        const stock = rollCards(3).map(c => (c.price = priceAt(RARITY_PRICE[c.rarity] + (c.kind === 'symbol' ? 40 : 0)), c));
+        stock.sort((a, b) => score(b) - score(a));
+        for (const it of stock) {
+          if (score(it) >= 2.5 && S.balls - it.price > reserve) { S.balls -= it.price; acquire(it); }
+        }
       }
       if (S.deck.filter(d => d === 'shiro').length > 2) {
         const thinP = priceAt(120);
