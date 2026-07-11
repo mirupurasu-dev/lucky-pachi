@@ -202,15 +202,15 @@ function symCat(id) { return SYMBOL_CAT[id] || null; }
 const RECIPES = [
   // ══ カテゴリ役: 同じ系統を集めれば揃う。誰でも狙える普段使い ══
   { name: '果実の恵み', family: 'カテゴリ役', tier: '中',   need: [{ cat: 'fruit', n: 3 }],                          desc: '果物×3 → +130玉',                eff: { t: 'coins', v: 130 } },
-  { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],                          desc: '植物×3 → 運+0.6＆+70玉',         eff: { t: 'multi', list: [{ t: 'luck', v: 0.6 }, { t: 'coins', v: 70 }] } },
+  { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],                          desc: '植物×3 → 運+0.5＆+340玉×倍率',   eff: { t: 'multi', list: [{ t: 'luck', v: 0.5 }, { t: 'coins', v: 340 }] } },
   { name: '獣の群れ',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'animal', n: 3 }],                         desc: '動物×3 → +220玉＆発射+8',        eff: { t: 'multi', list: [{ t: 'coins', v: 220 }, { t: 'shots', v: 8 }] } },
   { name: '天の采配',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'sky', n: 3 }],                            desc: '天体×3 → 倍率+0.7',              eff: { t: 'mult', v: 0.7 } },
   { name: '千両役者',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'treasure', n: 3 }],                       desc: '財宝×3 → +450玉',                eff: { t: 'coins', v: 450 } },
   { name: '大博打',     family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'luck', n: 3 }],                           desc: '博打×3 → +50〜850玉',            eff: { t: 'coinsRange', min: 50, max: 850 } },
-  { name: '宵祭り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'festival', n: 3 }],                       desc: '祭×3 → 玉シャワー20発',          eff: { t: 'shower', v: 20 } },
+  { name: '宵祭り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'festival', n: 3 }],                       desc: '祭×3 → +400玉×倍率＆シャワー8発', eff: { t: 'multi', list: [{ t: 'coins', v: 400 }, { t: 'shower', v: 8 }] } },
   { name: '絡繰の妙',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'tool', n: 3 }],                           desc: '仕掛×3 → 納品-15%＆白玉間引き',  eff: { t: 'multi', list: [{ t: 'quotaCut', v: 0.15 }, { t: 'thinDeck', c: 15 }] } },
   { name: '実りの宝',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'fruit', n: 2 }, { cat: 'treasure', n: 1 }], desc: '果物×2＋財宝 → +300玉×倍率',    eff: { t: 'coins', v: 300 } },
-  { name: '月夜の花',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { cat: 'sky', n: 1 }],      desc: '植物×2＋天体 → 倍率+0.5＆運+0.4', eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'luck', v: 0.4 }] } },
+  { name: '月夜の花',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { cat: 'sky', n: 1 }],      desc: '植物×2＋天体 → 倍率+0.5＆+260玉',  eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'coins', v: 260 }] } },
   // ══ 倍率役: レア絵柄の固定役。積み重ねて倍率を雪だるまにする本命 ══
   { name: '三日月',     family: '倍率役', tier: '倍率', need: [{ id: 'moon', n: 2 }],                                              desc: '🌙×2 → 倍率+0.4',            eff: { t: 'mult', v: 0.4 } },
   { name: '満月の儀式', family: '倍率役', tier: '倍率', need: [{ id: 'moon', n: 2 }, { id: 'suisho', n: 1 }],                       desc: '🌙🌙🔮 → 倍率+0.5＆+250玉',  eff: { t: 'multi', list: [{ t: 'mult', v: 0.5 }, { t: 'coins', v: 250 }] } },
@@ -225,6 +225,14 @@ const RECIPES = [
   { name: '神懸り',     family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'crown', n: 1 }, { id: 'taiyo', n: 1 }], desc: '🐉👑🌞 → 倍率×2.0(乗算)',   eff: { t: 'multMult', v: 2.0 } },
   { name: '金龍昇天',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 2 }],                                               desc: '🐉×2 → 次の当たり×4',        eff: { t: 'nextMult', v: 4, n: 1 } },
   { name: '一天四海',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }], desc: '🐉🌞🌙 → 次の当たり×3',      eff: { t: 'nextMult', v: 3, n: 1 } },
+  // ══ 覚醒役: 各カテゴリ×2＋レジェンド1枚で「倍率×(乗算)」。どのカテゴリのビルドもレジェンドと組めば雪だるまに ══
+  { name: 'フルーツ覚醒', family: '覚醒役', tier: '倍率', need: [{ cat: 'fruit', n: 2 }, { rarity: 'legend', n: 1 }],    desc: '果物×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
+  { name: '花木覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { rarity: 'legend', n: 1 }],    desc: '植物×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
+  { name: '百獣覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'animal', n: 2 }, { rarity: 'legend', n: 1 }],   desc: '動物×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
+  { name: '財宝覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'treasure', n: 2 }, { rarity: 'legend', n: 1 }], desc: '財宝×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
+  { name: '博打覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'luck', n: 2 }, { rarity: 'legend', n: 1 }],     desc: '博打×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
+  { name: '宴覚醒',     family: '覚醒役', tier: '倍率', need: [{ cat: 'festival', n: 2 }, { rarity: 'legend', n: 1 }], desc: '祭×2＋🌟レジェンド → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
+  { name: '絡繰覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'tool', n: 2 }, { rarity: 'legend', n: 1 }],     desc: '仕掛×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
   // ══ 大当り役: RUSH・大爆発。レア絵柄の固定役。滅多に出ないが脳汁 ══
   { name: 'ラッキーセブン', family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 2 }, { id: 'clover', n: 1 }],                desc: '７🍀７ → 超RUSH 8R',         eff: { t: 'rush', v: 8 } },
   { name: '大当り777',     family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 3 }],                                       desc: '７×3 → 超RUSH 10R',          eff: { t: 'rush', v: 10 } },
@@ -237,24 +245,30 @@ const RECIPES = [
   { name: 'イカサマ賭場', family: '大当り役', tier: '爆発', need: [{ id: 'saikoro', n: 2 }, { id: 'joker', n: 1 }],                 desc: '🎲🎲🃏 → +100〜1500玉',      eff: { t: 'coinsRange', min: 100, max: 1500 } },
   { name: '混沌',       family: '大当り役', tier: '倍率', need: [{ id: 'joker', n: 3 }],                                          desc: '🃏×3 → ランダム超級効果',    eff: { t: 'joker' } },
 ];
-// need判定ヘルパー(cat=カテゴリ一致 / id=絵柄一致)
-function symMatchesNeed(id, nd) { return nd.id ? id === nd.id : SYMBOL_CAT[id] === nd.cat; }
-function recipeSlots(rc) { return rc.need.reduce((a, nd) => a + nd.n, 0); }
-// 役の必要条件を「🍒果物×2 ＋ 💎財宝」のように描く
-function recipePatternHTML(rc) {
-  return rc.need.map(nd => {
-    if (nd.id) return (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') + (nd.n > 1 ? '×' + nd.n : '');
-    const ci = CAT_INFO[nd.cat] || { glyph: '?', name: '?' };
-    return ci.glyph + ci.name + '×' + nd.n;
-  }).join(' ＋ ');
+// need判定ヘルパー(id=絵柄一致 / rarity=格一致[レジェンド枠等] / cat=カテゴリ一致)
+function symMatchesNeed(id, nd) {
+  if (nd.id) return id === nd.id;
+  if (nd.rarity) return SYMBOLS[id] && SYMBOLS[id].rarity === nd.rarity;
+  return SYMBOL_CAT[id] === nd.cat;
 }
-// コンパクトな絵文字だけの並び(チップ/図鑑用)。カテゴリはカテゴリ絵文字で表す
+function needGlyph(nd) {
+  if (nd.id) return SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?';
+  if (nd.rarity) return '🌟';
+  return CAT_INFO[nd.cat] ? CAT_INFO[nd.cat].glyph : '?';
+}
+function needLabel(nd) {
+  if (nd.id) return (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') + (nd.n > 1 ? '×' + nd.n : '');
+  if (nd.rarity) return '🌟レジェンド×' + nd.n;
+  const ci = CAT_INFO[nd.cat] || { glyph: '?', name: '?' };
+  return ci.glyph + ci.name + '×' + nd.n;
+}
+function recipeSlots(rc) { return rc.need.reduce((a, nd) => a + nd.n, 0); }
+// 役の必要条件を「🍒果物×2 ＋ 🌟レジェンド」のように描く
+function recipePatternHTML(rc) { return rc.need.map(needLabel).join(' ＋ '); }
+// コンパクトな絵文字だけの並び(チップ/図鑑用)
 function recipeGlyphs(rc) {
   let s = '';
-  for (const nd of rc.need) {
-    const gl = nd.id ? (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') : (CAT_INFO[nd.cat] ? CAT_INFO[nd.cat].glyph : '?');
-    for (let i = 0; i < nd.n; i++) s += gl;
-  }
+  for (const nd of rc.need) { const gl = needGlyph(nd); for (let i = 0; i < nd.n; i++) s += gl; }
   return s;
 }
 // この絵柄(または同カテゴリ)がプールにあれば、そのneedに寄与しているか
@@ -262,11 +276,12 @@ function recipeAnyOwned(rc) {
   return rc.need.some(nd => Object.keys(S.symbolPool).some(id => S.symbolPool[id] > 0 && symMatchesNeed(id, nd)));
 }
 
+function needSpecificity(nd) { return nd.id ? 2 : nd.rarity ? 1 : 0; }
 function recipeReady(rc) {
-  // 貪欲割当: 絵柄指定needを先に確保→残りでカテゴリneedを満たせるか
+  // 貪欲割当: 具体的なneed(絵柄>格>カテゴリ)から先に確保。龍=動物かつレジェンドの二重取りを防ぐ
   const avail = {};
   for (const id in S.symbolPool) if (S.symbolPool[id] > 0) avail[id] = S.symbolPool[id];
-  const needs = [...rc.need].sort((a, b) => (b.id ? 1 : 0) - (a.id ? 1 : 0));
+  const needs = [...rc.need].sort((a, b) => needSpecificity(b) - needSpecificity(a));
   for (const nd of needs) {
     let want = nd.n;
     for (const id in avail) {
@@ -470,7 +485,7 @@ const RELICS = [
 // ---------- 盤面役物パーツ(第4のビルド軸) ----------
 const PARTS = {
   bumper:    { name: 'バンパー',         rarity: 'normal', icon: '🔴', type: 'bumper', pay: 1, boost: 330, desc: '玉を強烈に弾き返す。ヒットごと+1玉' },
-  minitulip: { name: 'ミニチューリップ', rarity: 'normal', icon: '🌷', type: 'pocket', pay: 8, desc: '小さな入賞口: +8玉' },
+  minitulip: { name: 'ミニチューリップ', rarity: 'normal', icon: '🌷', type: 'pocket', pay: 8, desc: '小さな入賞口: +8玉。FEVERゲージ(チューリップ50)も速く貯まる' },
   fusha2:    { name: '追加風車',         rarity: 'normal', icon: '🌀', type: 'windmill', desc: '玉を掻き回す風車を増設' },
   jumper:    { name: 'ジャンプ台',       rarity: 'normal', icon: '📐', type: 'jumper', desc: '乗った玉を中央上空へ打ち上げる' },
   bellpock:  { name: 'ベルポケット',     rarity: 'normal', icon: '🔔', type: 'pocket', pay: 5, shotChance: 0.35, desc: '+5玉、35%で発射数+1' },
@@ -552,6 +567,7 @@ function handleParts(b, dt, m) {
           b.dead = true;
           const got = gainBalls(pt.pay, b, false);
           pt.flash = 1;
+          if (pt.id === 'minitulip') chargeFever(1); // 🌷ミニチューリップ50ヒットでFEVER
           if (pt.shotChance && rng() < pt.shotChance) S.shotsLeft += 1;
           if (pt.spinChance && rng() < pt.spinChance) {
             const max = CFG.holdMax + m.holdAdd;
@@ -1047,9 +1063,7 @@ function gainBalls(n, srcBall, applyMult = true) {
   if (S.winBoostThis > 1) v = Math.round(v * S.winBoostThis); // 役倍率(nextMult): この当たりを丸ごと×
   S.balls += v;
   S.stat.totalWon += v;
-  // FEVERゲージ: リール当選(3揃い/2揃い/役)の獲得で貯まる
-  // ※ヘソ/チューリップの拾い玉では貯めない(垂れ流し防止)。RUSHは半分レート(onAttackerCatch側)
-  if (srcBall && srcBall.winSym) chargeFever(v);
+  // FEVERは当選ではなくミニチューリップ🌷のヒット数で貯まる(pocket処理側でchargeFever)
   return v;
 }
 let FEVER_COUNT = 0; // 計測用(累計)
@@ -1059,7 +1073,7 @@ function chargeFever(amount) {
   if (S.feverGauge >= feverReq()) startFever();
 }
 // ---------- FEVER TIME(脳汁ゲージ) ----------
-function feverReq() { return Math.max(380, Math.round(quotaFor(S.stage) * 2.0)); }
+function feverReq() { return 50; } // FEVERはミニチューリップ🌷を50回ヒットで発動(feverGauge=チューリップ計数)
 function startFever() {
   S.fever = { shots: 24, total: 24 };
   S.feverGauge = 0;
@@ -1125,6 +1139,7 @@ function onTulip(b, t) {
   const bfx = (BALLS[b.type] || BALLS.shiro).fx;
   const pay = Math.round((CFG.tulipPay + m.tulipPayAdd) * (bfx.tulipMult || 1));
   const got = gainBalls(pay, b, false);
+  chargeFever(1); // 左右のデフォルトチューリップも50ヒットでFEVERへ(ミニチューリップ役物と合算)
   fx.spark(t.x, t.y, '#ff9ecb', 6);
   fx.floatText(t.x, t.y - 14, `+${got}`, '#ff9ecb');
   sfx('tulip');
@@ -1136,7 +1151,6 @@ function onAttackerCatch(b) {
   const got = gainBalls(CFG.attackerPay + m.attackerPay, b, false);
   S.rushWon += got;
   S.rush.catches++;
-  chargeFever(got * 0.5); // RUSHビルドにもFEVERへの道を(半分レート)
   fx.spark(ATTACKER.x, ATTACKER.y, S.theme.accent, 8);
   fx.coinFly(b.x, ATTACKER.y, 3);
   fx.floatText(ATTACKER.x + (rng() - 0.5) * 70, ATTACKER.y - 12, `+${got}`, '#fff');
@@ -3425,7 +3439,7 @@ function drawFever(c, dt) {
     c.font = '800 8px Orbitron, monospace';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = pct > 0.8 || S.fever ? '#fff' : 'rgba(255,255,255,.5)';
-    c.fillText(S.fever ? `FEVER ${S.fever.shots}` : 'FEVER', gx + gw / 2, gy + gh / 2 + 0.5);
+    c.fillText(S.fever ? `FEVER ${S.fever.shots}` : `🌷 ${S.feverGauge || 0}/50`, gx + gw / 2, gy + gh / 2 + 0.5);
     c.restore();
   }
   if (!S.fever || S.simMode) return;
@@ -4894,6 +4908,7 @@ function openDex() { renderDex(); document.getElementById('dexOverlay').classLis
 // ---------- 役ガイド(カテゴリ制の役一覧・いつでも開ける) ----------
 const GUIDE_FAMS = [
   { key: 'カテゴリ役', icon: '🎯' },
+  { key: '覚醒役', icon: '🌟' },
   { key: '倍率役', icon: '✖️' },
   { key: '大当り役', icon: '💥' },
 ];
@@ -4989,7 +5004,7 @@ const GLOSSARY = [
     { id: 'category', t: 'カテゴリ', d: '絵柄の系統。果物🍒/植物🍀/動物🐾/天体🌙/財宝💎/博打🎲/祭🎆/仕掛🔧の8つ。同じ系統を3つ揃えるとカテゴリ役になる(例: 果物×3)。' },
     { id: 'synergy', t: 'シナジー', d: '手持ちの相性の良い組み合わせ。成立すると全獲得に「相乗」倍率が乗る。選ぶ時に「シナジー成立」表示が出る。' },
     { id: 'rush', t: 'RUSH（ラッシュ）', d: '連チャン。一定回数のあいだ当たりが確定して連続する。7絵柄や大当り役で突入。' },
-    { id: 'fever', t: 'FEVER（フィーバー）', d: 'ゲージが溜まると突入する爆発タイム。一定発数のあいだ全獲得×2＋高速連射。' },
+    { id: 'fever', t: 'FEVER（フィーバー）', d: '爆発タイム。一定発数のあいだ全獲得×2＋高速連射。発動条件は盤面のチューリップ🌷を50回ヒットすること。盤面左右のデフォルトのチューリップに加え、役物「ミニチューリップ」を設置すると貯まりが速くなる。液晶下のゲージ🌷が50/50で突入。' },
     { id: 'colorSyn', t: '色共鳴（いろきょうめい）', d: '撃った玉の色と、揃った絵柄の系統色が一致すると追加倍率。色玉を絵柄の色に合わせると強い。' },
   ] },
 ];
