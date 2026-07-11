@@ -129,6 +129,7 @@
 
   #controls { display: flex; gap: 6px; }
   #barHandle { display: none; }
+  #lever { display: none; }
   .ctlBtn {
     flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; letter-spacing: .05em;
     background: var(--panel2); color: var(--dim); border: 1px solid var(--line); border-radius: 8px;
@@ -416,7 +417,7 @@
   #renStamp.show { display: block; animation: stampIn .32s cubic-bezier(.2,1.6,.4,1); }
   @keyframes stampIn { 0% { transform: rotate(-12deg) scale(2.8); opacity: 0; } 55% { opacity: 1; } 100% { transform: rotate(-12deg) scale(1); } }
   /* 開封の儀: 表裏フリップ */
-  .draftCard { transform: perspective(720px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+  .draftCard { position: relative; transform: perspective(720px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
   .draftCard.dealing { animation: dealIn .55s cubic-bezier(.2,1.2,.4,1) backwards; animation-delay: calc(var(--i, 0) * .14s); }
   @keyframes dealIn { from { transform: translateY(-340px) rotate(-10deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
   .draftCard .cardInner { position: relative; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.3,1.35,.4,1); }
@@ -443,20 +444,56 @@
   .draftCard.aura-r { box-shadow: 0 0 30px #38c8ffaa !important; }
   .draftCard.aura-l { box-shadow: 0 0 40px #ff4dffcc !important; }
   /* ホロ箔(レア=銀箔スイープ/レジェンド=虹ホロ)。指の位置--mx/--myに光沢が追従 */
-  .draftCard .cfFront { position: relative; }
-  .draftCard .holo { position: absolute; inset: -2px; border-radius: 8px; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0; }
+  .draftCard .cfFront { position: static; }
+  /* ホロ: カード全体を覆い、常時ゆっくり光が流れる(ポインタ位置にも追従) */
+  .draftCard .holo { position: absolute; inset: 0; border-radius: 11px; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0; }
   .draftCard.rare .holo {
-    opacity: .45;
-    background: linear-gradient(115deg, transparent 20%, rgba(210,235,255,.5) var(--mx, 50%), transparent 78%);
+    opacity: .5;
+    background:
+      linear-gradient(115deg, transparent 25%, rgba(210,235,255,.6) 45%, transparent 65%),
+      linear-gradient(115deg, transparent 30%, rgba(160,220,255,.35) var(--mx, 50%), transparent 75%);
+    background-size: 300% 100%, 100% 100%;
+    animation: holoSweep 2.8s ease-in-out infinite;
   }
   .draftCard.legend .holo {
-    opacity: .6;
+    opacity: .65;
     background:
+      linear-gradient(115deg, transparent 25%, rgba(255,255,255,.5) 45%, transparent 65%),
       conic-gradient(from 0deg at var(--mx, 50%) var(--my, 50%),
         rgba(255,80,120,.5), rgba(255,220,90,.45), rgba(90,255,160,.45),
         rgba(90,180,255,.5), rgba(200,110,255,.5), rgba(255,80,120,.5));
-    filter: blur(6px);
+    background-size: 300% 100%, 100% 100%;
+    filter: blur(4px);
+    animation: holoSweep 2.2s ease-in-out infinite;
   }
+  @keyframes holoSweep { 0% { background-position: 140% 0, 0 0; } 55% { background-position: -60% 0, 0 0; } 100% { background-position: -60% 0, 0 0; } }
+  /* キラ枠: 回転する光のフレーム(レア度で色が変わる)+外側グロー */
+  @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+  .draftCard::after {
+    content: ''; position: absolute; inset: -2px; border-radius: 13px; padding: 2px;
+    pointer-events: none;
+    background: conic-gradient(from var(--ang),
+      rgba(201,163,74,.0), rgba(255,233,160,.8), rgba(201,163,74,.0) 32%,
+      rgba(201,163,74,.0) 50%, rgba(255,233,160,.5), rgba(201,163,74,.0) 82%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: frameSpin 3.2s linear infinite;
+  }
+  .draftCard.rare::after {
+    background: conic-gradient(from var(--ang),
+      rgba(56,200,255,0), rgba(210,240,255,.95), rgba(56,200,255,0) 30%,
+      rgba(56,200,255,0) 50%, rgba(120,220,255,.7), rgba(56,200,255,0) 80%);
+    animation-duration: 2.4s;
+  }
+  .draftCard.legend::after {
+    padding: 2.5px; inset: -3px;
+    background: conic-gradient(from var(--ang),
+      #ff5078, #ffdc5a, #5affa0, #5ab4ff, #c86eff, #ff5078);
+    animation-duration: 1.8s;
+  }
+  @keyframes frameSpin { to { --ang: 360deg; } }
+  .draftCard.rare { box-shadow: 0 0 20px rgba(56,200,255,.4); }
+  .draftCard.legend { box-shadow: 0 0 28px rgba(255,77,255,.55), 0 0 60px rgba(255,77,255,.2); }
   /* 銭飛翔+売約ハンコ */
   .flyCoin {
     position: fixed; top: 0; left: 0; width: 15px; height: 15px; border-radius: 50%;
@@ -614,8 +651,8 @@
     position: absolute; left: 50%; top: 42%;
     transform: translate(-50%,-50%) rotate(-8deg) scale(3);
     border: 5px solid var(--accent); color: var(--accent); border-radius: 10px;
-    font-size: 46px; font-weight: 400; letter-spacing: .12em; padding: 6px 26px;
-    font-family: var(--f-disp);
+    font-size: 46px; font-weight: 400; letter-spacing: .12em; padding: 10px 26px;
+    font-family: var(--f-disp); text-align: center; line-height: 1.12; white-space: nowrap;
     opacity: 0; background: rgba(4,6,5,.55);
   }
   #stamp.show { animation: stampSlam .9s cubic-bezier(.2,1.6,.4,1) forwards; }
@@ -697,6 +734,37 @@
       background: none; border: none; color: var(--dim);
       font-family: inherit; font-size: 10px; font-weight: 900; letter-spacing: .18em; cursor: pointer;
     }
+    /* 右下のハンドルレバー(回して発射のつよさ調整) */
+    #lever {
+      display: block; position: fixed; z-index: 30; touch-action: none;
+      right: 10px; bottom: calc(var(--mbottom-h) + 14px + env(safe-area-inset-bottom));
+      width: 92px; height: 92px; border-radius: 50%;
+      background:
+        conic-gradient(from 225deg, var(--accent) var(--pct, 40%), rgba(255,255,255,.07) var(--pct, 40%) 75%, transparent 75%),
+        radial-gradient(circle at 35% 30%, #39423e, #141816 72%);
+      border: 2px solid rgba(201,163,74,.55);
+      box-shadow: 0 6px 20px rgba(0,0,0,.55), inset 0 2px 8px rgba(255,255,255,.08), 0 0 16px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+    #lever::before { /* 内盤(グリップ) */
+      content: ''; position: absolute; inset: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #2c332f, #0d100e 75%);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,.6);
+    }
+    #lever .lvKnob { position: absolute; inset: 0; transform: rotate(var(--ang, -45deg)); pointer-events: none; }
+    #lever .lvKnob::before { /* つまみ */
+      content: ''; position: absolute; left: 50%; top: 7px; width: 12px; height: 22px;
+      translate: -50% 0; border-radius: 7px;
+      background: linear-gradient(180deg, #ffe9a0, #c9a34a);
+      box-shadow: 0 0 8px rgba(255,207,90,.6), inset 0 1px 2px rgba(255,255,255,.6);
+    }
+    #lever .lvVal {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 900; color: var(--text); pointer-events: none;
+      font-family: var(--f-num); text-shadow: 0 1px 4px #000;
+    }
+    #lever.auto .lvVal { font-size: 11px; color: var(--dim); letter-spacing: .1em; }
+    #lever.auto { opacity: .82; }
     #bottomBar.collapsed #powerCtl, #bottomBar.collapsed #controls { display: none; }
     #powerCtl { height: 42px; }
     .pwBtn { width: 46px; font-size: 15px; }
@@ -784,7 +852,7 @@
     </div>
     <div id="fxLayer">
       <div id="cutin"><div class="stripes"></div><span id="cutinText">RUSH</span></div>
-      <div id="stamp">納品完了</div>
+      <div id="stamp">納品<br>完了</div>
       <div id="flash"></div>
       <div id="roleBanner"></div>
     </div>
@@ -893,6 +961,7 @@
         <h1><span class="red">廃業</span></h1>
         <p id="gameoverText"></p>
         <button class="bigBtn" id="retryBtn">もう一度</button>
+        <p style="margin-top:10px"><button class="ghostBtn" id="gameoverHomeBtn">🏠 タイトルへ戻る</button></p>
       </div>
     </div>
 
@@ -1017,6 +1086,7 @@
     </div>
   </div>
 </div>
+<div id="lever"><div class="lvKnob"></div><div class="lvVal">AUTO</div></div>
 <script src="game.js"></script>
 </body>
 </html>

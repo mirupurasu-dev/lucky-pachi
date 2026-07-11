@@ -2478,6 +2478,7 @@ function updateHUD() {
       : '<span class="mbhint">まだ×1。🌙や役で上げると当たりの玉が全部この倍に</span>';
   }
   // 発射つよさバー
+  leverDraw();
   const pwb = document.getElementById('pwBar');
   if (pwb && pwb.children.length) {
     const on = Math.round(S.power * pwb.children.length);
@@ -3834,8 +3835,8 @@ function updateSwimmers(dt) {
   // リーチ突入で「鯉群予告」(激アツほど大群)
   if (lcdSchoolT > 0) {
     lcdSchoolT -= dt;
-    if (LCD_CREATURES.length && rng() < dt * (S.spin && S.spin.hot ? 26 : 12)) {
-      spawnSwimmer(rng() < 0.5 ? 0 : 1, { dir: 1, y: 0.15 + rng() * 0.66, speed: 0.28 + rng() * 0.22, scale: 0.26 + rng() * 0.14, life: 4 });
+    if (LCD_CREATURES.length && rng() < dt * (S.spin && S.spin.hot ? 7 : 4)) {
+      spawnSwimmer(rng() < 0.5 ? 0 : 1, { dir: 1, y: 0.2 + rng() * 0.55, speed: 0.2 + rng() * 0.14, scale: 0.42 + rng() * 0.18, life: 5 });
     }
   }
   for (const s of swimmers) {
@@ -4784,93 +4785,118 @@ function drawReels(c, dt) {
   roundRectPath(c, BLOCK.x, BLOCK.y, BLOCK.w, BLOCK.h, BLOCK.r);
   c.stroke();
   c.shadowBlur = 0;
-  // ラベル
-  c.font = '900 11px sans-serif'; c.textAlign = 'center';
-  c.fillStyle = S.rush ? '#fff' : T.accent;
-  const label = S.rush ? `⚡ RUSH ${S.rush.label} ⚡` : `${T.num}「${T.name}」`;
-  c.fillText(label, BLOCK.x + BLOCK.w / 2, BLOCK.y + 20);
-  // 3窓
+  // 3本の縦ストリップ(上下の境界なし=リールが枠まで一続き)
   let ids = Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0);
   if (ids.length === 0) ids = ['seven', 'cherry', 'clover', 'bell', 'diamond'];
   const winW = REEL.winW, winH = REEL.winH, gap = REEL.gap;
   const x0 = BLOCK.x + BLOCK.w / 2 - (winW * 1.5 + gap);
   const y0 = BLOCK.y + REEL.y0off;
+  const sy0 = BLOCK.y + 2, syH = BLOCK.h - 4; // ストリップは液晶の上下端まで
   for (let i = 0; i < 3; i++) {
     const wx = x0 + i * (winW + gap), wy = y0;
+    const cy = wy + winH / 2; // 有効ライン(勝負ライン)の中心
     if (S.reelCards !== false) {
-      // 奥まったガラス窓: 藍色寄りの縦グラデ(中央やや明るく)+ 縁の内影で凹み感。黒塗りより自然で視認性キープ
-      const gg = c.createLinearGradient(wx, wy, wx, wy + winH);
-      gg.addColorStop(0, 'rgba(11,15,25,0.88)');
-      gg.addColorStop(0.5, 'rgba(22,30,46,0.58)');
-      gg.addColorStop(1, 'rgba(7,10,17,0.9)');
+      const gg = c.createLinearGradient(wx, sy0, wx, sy0 + syH);
+      gg.addColorStop(0, 'rgba(11,15,25,0.9)');
+      gg.addColorStop(0.5, 'rgba(22,30,46,0.6)');
+      gg.addColorStop(1, 'rgba(7,10,17,0.92)');
       c.fillStyle = gg;
-      roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
-      const cxw = wx + winW / 2, cyw = wy + winH / 2;
-      const ig = c.createRadialGradient(cxw, cyw, winW * 0.18, cxw, cyw, winW * 0.72);
-      ig.addColorStop(0, 'rgba(0,0,0,0)');
-      ig.addColorStop(1, 'rgba(0,0,0,0.42)'); // 縁が奥まって見える内影
-      c.fillStyle = ig;
-      roundRectPath(c, wx, wy, winW, winH, 7); c.fill();
+      c.fillRect(wx, sy0, winW, syH);
+      // 左右の縁だけ描く(上下の境界はなし)
+      c.fillStyle = 'rgba(255,255,255,0.1)';
+      c.fillRect(wx - 1, sy0, 1, syH);
+      c.fillRect(wx + winW, sy0, 1, syH);
     }
     c.save();
-    roundRectPath(c, wx, wy, winW, winH, 7); c.clip();
+    c.beginPath(); c.rect(wx, sy0, winW, syH); c.clip();
     const settled = !S.spin || S.spin.t >= S.spin.stopAt[i];
+    // 静止中も上下に隣の絵柄を薄く見せる(連続したリール帯の実在感)
+    const drawNeighbors = (faceId) => {
+      const idx = Math.max(0, ids.indexOf(faceId));
+      for (const k of [-2, -1, 1, 2]) {
+        const nid = ids[((idx + k) % ids.length + ids.length) % ids.length];
+        const yy = cy + k * winH * 0.92;
+        if (yy < sy0 - 30 || yy > sy0 + syH + 30) continue;
+        c.globalAlpha = 0.3;
+        drawSymbol(c, nid, wx + winW / 2, yy, REEL.drum);
+      }
+      c.globalAlpha = 1;
+    };
     if (!S.spin) {
       const faces = S.lastDigits || ['seven', 'seven', 'seven'];
-      drawSymbol(c, faces[i], wx + winW / 2, wy + winH / 2, REEL.sym);
+      drawNeighbors(faces[i]);
+      drawSymbol(c, faces[i], wx + winW / 2, cy, REEL.sym);
     } else if (settled) {
       const pop = Math.max(0, 1 - (S.spin.t - S.spin.stopAt[i]) * 5);
-      drawSymbol(c, S.spin.faces[i], wx + winW / 2, wy + winH / 2, REEL.sym + pop * 10);
+      drawNeighbors(S.spin.faces[i]);
+      drawSymbol(c, S.spin.faces[i], wx + winW / 2, cy, REEL.sym + pop * 6);
     } else {
-      // 回転中: スクロールする絵柄列
+      // 回転中: ストリップ全域を絵柄列が流れる(端の潰れ欠片は出さない)
       const slow = i === 2 && S.spin.reachPlayed;
       let off;
       if (slow) {
-        // リーチ中はコマ送り(ガクッ…ガクッ…と1コマずつ)
         const raw = S.spin.t * 2.6 + i * 1.7;
         const st = Math.floor(raw), fr = raw - st;
         off = (st + (fr > 0.72 ? (fr - 0.72) / 0.28 : 0)) % ids.length;
       } else {
         off = (S.spin.t * 16 + i * 1.7) % ids.length;
       }
-      for (let k = -1; k <= 1; k++) {
+      const span = Math.ceil((syH / 2) / (winH * 0.92)) + 1;
+      for (let k = -span; k <= span; k++) {
         const idx = ((Math.floor(off) + k) % ids.length + ids.length) % ids.length;
-        const yy = wy + winH / 2 + (k - (off % 1)) * winH * 0.9;
-        // 疑似3Dドラム: 窓の中心から離れるほど円筒面に沿って潰れる
-        const rel = Math.max(-1.4, Math.min(1.4, (yy - (wy + winH / 2)) / (winH * 0.62)));
-        const sq = Math.max(0.12, Math.cos(rel * 1.25));
+        const yy = cy + (k - (off % 1)) * winH * 0.92;
+        if (yy < sy0 - 30 || yy > sy0 + syH + 30) continue;
+        const rel = (yy - cy) / (syH * 0.55);
+        const sq = Math.max(0.84, Math.cos(rel * 0.5)); // ドラム感はごく弱く(潰れない)
+        const fade = Math.max(0.22, 1 - Math.abs(rel) * 0.6);
         c.save();
         c.translate(wx + winW / 2, yy);
         c.scale(1, sq);
-        c.globalAlpha = (slow ? 0.95 : 0.55) * (0.4 + sq * 0.6);
+        c.globalAlpha = (slow ? 0.95 : 0.62) * fade;
         drawSymbol(c, ids[idx], 0, 0, REEL.drum);
         c.restore();
       }
       c.globalAlpha = 1;
       if (!slow) {
-        // モーションブラーの縦スジ
-        c.fillStyle = '#ffffff12';
-        c.fillRect(wx, wy, winW, winH);
+        // モーションブラーの縦スジ(ストリップ全域)
+        c.fillStyle = '#ffffff10';
+        c.fillRect(wx, sy0, winW, syH);
         for (let s2 = 0; s2 < 3; s2++) {
-          const sy = (S.time * 900 + s2 * 31 + i * 17) % winH;
-          c.fillStyle = '#ffffff1c';
-          c.fillRect(wx + 7 + s2 * 17, wy + sy - 15, 4, 30);
+          const sy = (S.time * 900 + s2 * 47 + i * 29) % syH;
+          c.fillStyle = '#ffffff1a';
+          c.fillRect(wx + 7 + s2 * 17, sy0 + sy - 18, 4, 36);
         }
       }
     }
-    // ガラス反射
-    const gl = c.createLinearGradient(wx, wy, wx + winW, wy + winH);
-    gl.addColorStop(0, 'rgba(255,255,255,.13)');
+    // ガラス反射(ストリップ全体)
+    const gl = c.createLinearGradient(wx, sy0, wx + winW, sy0 + syH);
+    gl.addColorStop(0, 'rgba(255,255,255,.1)');
     gl.addColorStop(0.4, 'rgba(255,255,255,.02)');
     gl.addColorStop(1, 'rgba(255,255,255,0)');
     c.fillStyle = gl;
-    c.fillRect(wx, wy, winW, winH);
+    c.fillRect(wx, sy0, winW, syH);
     c.restore();
-    c.strokeStyle = settled && S.spin ? '#fff' : '#ffffff33';
-    c.lineWidth = 1.5;
-    roundRectPath(c, wx, wy, winW, winH, 7); c.stroke();
   }
-  // リーチ演出: 窓の外周が脈打つ
+  // 有効ライン: 上下の細いラインと両サイドの▶◀マーカー(カード枠の代わり)
+  {
+    const lx0 = x0 - 4, lx1 = x0 + winW * 3 + gap * 2 + 4;
+    c.strokeStyle = 'rgba(255,255,255,0.16)';
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(lx0, y0); c.lineTo(lx1, y0);
+    c.moveTo(lx0, y0 + winH); c.lineTo(lx1, y0 + winH); c.stroke();
+    const my = y0 + winH / 2;
+    c.fillStyle = S.spin && S.spin.reachPlayed && S.spin.hot ? '#ff3355' : T.accent;
+    c.beginPath(); c.moveTo(lx0 - 7, my - 6); c.lineTo(lx0 - 7, my + 6); c.lineTo(lx0 + 1, my); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(lx1 + 7, my - 6); c.lineTo(lx1 + 7, my + 6); c.lineTo(lx1 - 1, my); c.closePath(); c.fill();
+  }
+  // ラベル(ストリップの上に後描き)
+  c.font = '900 11px sans-serif'; c.textAlign = 'center';
+  c.shadowColor = '#000'; c.shadowBlur = 6;
+  c.fillStyle = S.rush ? '#fff' : T.accent;
+  const label = S.rush ? `⚡ RUSH ${S.rush.label} ⚡` : `${T.num}「${T.name}」`;
+  c.fillText(label, BLOCK.x + BLOCK.w / 2, BLOCK.y + 20);
+  c.shadowBlur = 0;
+  // リーチ演出: 有効ライン行の外周が脈打つ
   if (S.spin && S.spin.reachPlayed) {
     const rc = S.spin.hot ? '#ff3355' : T.accent;
     c.strokeStyle = rc;
@@ -5017,11 +5043,51 @@ cv.addEventListener('touchmove', e => {
   S.power = S.targetPower = Math.max(0.1, Math.min(1, 1.15 - y * 1.25));
 }, { passive: false });
 document.addEventListener('touchstart', () => ensureAudio(), { once: true }); // iOSの音声解錠
-document.getElementById('aimBtn').onclick = function () {
-  S.autoAim = !S.autoAim;
-  this.classList.toggle('on', S.autoAim);
-  this.textContent = S.autoAim ? 'おまかせ照準' : '手動照準(マウス)';
-};
+function setAutoAim(v) {
+  S.autoAim = v;
+  const b = document.getElementById('aimBtn');
+  b.classList.toggle('on', v);
+  b.textContent = v ? 'おまかせ照準' : '手動照準';
+  leverDraw();
+}
+document.getElementById('aimBtn').onclick = () => setAutoAim(!S.autoAim);
+// ---------- スマホ右下のハンドルレバー(回すと発射のつよさを調整) ----------
+const leverEl = document.getElementById('lever');
+function leverDraw() {
+  if (!leverEl) return;
+  const p = Math.max(0, Math.min(1, (S.power - 0.1) / 0.9));
+  leverEl.style.setProperty('--ang', (-135 + p * 270) + 'deg');
+  leverEl.style.setProperty('--pct', (p * 75) + '%'); // 270度=円の75%
+  const v = leverEl.querySelector('.lvVal');
+  if (v) v.textContent = S.autoAim ? 'AUTO' : Math.round(p * 100);
+  leverEl.classList.toggle('auto', !!S.autoAim);
+}
+if (leverEl) {
+  let lvDrag = false;
+  const onLv = e => {
+    const r = leverEl.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let a = Math.atan2(e.clientX - cx, -(e.clientY - cy)) * 180 / Math.PI; // 上=0°, 時計回り+
+    a = Math.max(-135, Math.min(135, a));
+    const p = 0.1 + ((a + 135) / 270) * 0.9;
+    S.power = S.targetPower = p;
+    leverDraw();
+    updateHUD();
+  };
+  leverEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    ensureAudio();
+    lvDrag = true;
+    try { leverEl.setPointerCapture(e.pointerId); } catch (er) {}
+    if (S.autoAim) setAutoAim(false); // レバーを握ったら手動照準へ
+    onLv(e);
+  });
+  leverEl.addEventListener('pointermove', e => { if (lvDrag) onLv(e); });
+  leverEl.addEventListener('pointerup', () => { lvDrag = false; });
+  leverEl.addEventListener('pointercancel', () => { lvDrag = false; });
+  leverEl.addEventListener('dblclick', () => setAutoAim(true)); // ダブルタップでおまかせに戻す
+  leverDraw();
+}
 document.getElementById('speedBtn').onclick = function () {
   S.speed = S.speed === 1 ? 2 : 1;
   this.classList.toggle('on', S.speed === 2);
@@ -5373,6 +5439,13 @@ document.getElementById('homeBtn').onclick = () => { // フリーモードから
 
 document.getElementById('startBtn').onclick = () => { ensureAudio(); resetGame(); maybeFirstTut(); };
 document.getElementById('retryBtn').onclick = () => resetGame(); // 同じ周回で再挑戦
+document.getElementById('gameoverHomeBtn').onclick = () => { // 廃業→タイトルへ
+  document.getElementById('gameoverOverlay').classList.remove('show');
+  S.free = false; S.phase = 'title';
+  document.getElementById('homeBtn').style.display = 'none';
+  document.getElementById('titleOverlay').classList.add('show');
+  refreshMenu();
+};
 // 役ガイド＆チュートリアルの開閉
 document.getElementById('guideBtn').onclick = () => openGuide();
 document.getElementById('guideBtnBar').onclick = () => openGuide();
