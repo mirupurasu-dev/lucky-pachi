@@ -275,6 +275,41 @@ function recipeGlyphs(rc) {
 function recipeAnyOwned(rc) {
   return rc.need.some(nd => Object.keys(S.symbolPool).some(id => S.symbolPool[id] > 0 && symMatchesNeed(id, nd)));
 }
+// 役の「直接玉」の基礎値(倍率適用前)を推定
+function effBaseCoins(eff) {
+  if (!eff) return 0;
+  if (eff.t === 'coins') return eff.v;
+  if (eff.t === 'coinsRange') return (eff.min + eff.max) / 2;
+  if (eff.t === 'shots') return eff.c || 0;
+  if (eff.t === 'thinDeck' || eff.t === 'rewriteHold') return eff.c || 0;
+  if (eff.t === 'multi') return eff.list.reduce((s, e) => s + effBaseCoins(e), 0);
+  return 0;
+}
+// 役が揃った時の「想定獲得球数」を現在の倍率合計・面で計算(倍率/RUSH役は効果表記)
+function roleYieldText(rc) {
+  const eff = rc.eff;
+  if (eff.t === 'mult') return `倍率+${eff.v}`;
+  if (eff.t === 'multMult') return `倍率×${eff.v}`;
+  if (eff.t === 'nextMult') return `次の当たり×${eff.v}`;
+  if (eff.t === 'rush') return `RUSH ${eff.v}R`;
+  if (eff.t === 'ballsPct') return `持ち玉${Math.round(eff.v * 100)}%`;
+  if (eff.t === 'joker') return 'ランダム超級';
+  const base = effBaseCoins(eff);
+  if (base > 0) {
+    const tot = effMult() * synergyMult() * (S.fever ? 2 : 1) * (S.winBoostN > 0 ? (S.winBoostV || 1) : 1);
+    const scaled = Math.round(base * tot * CFG.payScale * (1 + CFG.stageCoinRamp * ((S.stage || 1) - 1)));
+    return `約${scaled.toLocaleString()}玉`;
+  }
+  if (eff.t === 'multi') {
+    const f = t => eff.list.find(e => e.t === t);
+    if (f('multMult')) return `倍率×${f('multMult').v}`;
+    if (f('mult')) return `倍率+${f('mult').v}`;
+    if (f('rush')) return `RUSH ${f('rush').v}R`;
+    if (f('shower')) return `玉シャワー${f('shower').v}発`;
+  }
+  if (eff.t === 'shower') return `玉シャワー${eff.v}発`;
+  return '';
+}
 
 function needSpecificity(nd) { return nd.id ? 2 : nd.rarity ? 1 : 0; }
 function recipeReady(rc) {
@@ -317,7 +352,7 @@ function symbolRoleTagsHTML(id) {
   let rows = '';
   if (cat && CAT_INFO[cat]) rows += `<div class="rt cat"><b>${CAT_INFO[cat].glyph} ${CAT_INFO[cat].name}カテゴリ</b></div>`;
   for (const rc of recs.slice(0, 6)) {
-    rows += `<div class="rt rec"><b>🎴${rc.name}</b> <span class="rc">${recipePatternHTML(rc)}</span></div>`;
+    rows += `<div class="rt rec"><b>🎴${rc.name}</b> <span class="rc">${recipePatternHTML(rc)}</span> <span class="ry">→ ${roleYieldText(rc)}</span></div>`;
   }
   for (const sy of syns) {
     rows += `<div class="rt syn"><b>🔗${sy.name}</b> ${sy.desc}</div>`;
@@ -4920,9 +4955,11 @@ function guideRowHTML(rc) {
   const inRun = S.phase && S.phase !== 'title' && poolTotal() > 0;
   const ready = inRun && recipeReady(rc);
   const eff = rc.desc.includes('→') ? rc.desc.split('→').pop().trim() : rc.desc;
+  const yt = roleYieldText(rc);
+  const goldY = yt.startsWith('約') ? ` <span class="gyield">${yt}</span>` : '';
   return `<div class="gRow ${ready ? 'ready' : ''}"><div class="gtx">` +
     `<div class="gnm">${rc.name}${ready ? '<span class="rd">狙える</span>' : ''}<span class="gt tier-${cls}">${TIER_LABEL[rc.tier] || rc.tier || ''}</span></div>` +
-    `<div class="gpat">${recipePatternHTML(rc)} <span class="garrow">→</span> ${eff}</div>` +
+    `<div class="gpat">${recipePatternHTML(rc)} <span class="garrow">→</span> ${eff}${goldY}</div>` +
     `</div></div>`;
 }
 function renderGuide() {
