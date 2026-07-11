@@ -510,22 +510,22 @@
   }
   .soldStamp.fresh { animation: stampPop .35s cubic-bezier(.2,1.6,.4,1); }
   @keyframes stampPop { 0% { scale: 2.6; opacity: 0; } 55% { opacity: 1; } 100% { scale: 1; } }
-  /* 屋台の「今の持ち物」パネル(折りたたみ) */
-  #shopInv { margin: 4px 0 10px; text-align: left; }
-  #shopInvToggle {
+  /* 屋台・戦利品画面の「今の持ち物」パネル(折りたたみ) */
+  #shopInv, #draftInv { margin: 4px 0 10px; text-align: left; }
+  #shopInvToggle, #draftInvToggle {
     display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
     background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
     padding: 8px 12px; cursor: pointer; font-family: inherit; font-weight: 800;
     font-size: 12px; color: var(--text);
   }
-  #shopInvToggle .siArrow { color: var(--dim); font-size: 10px; transition: transform .2s; }
-  #shopInv:not(.collapsed) #shopInvToggle .siArrow { transform: rotate(180deg); }
-  #shopInvBody {
+  #shopInvToggle .siArrow, #draftInvToggle .siArrow { color: var(--dim); font-size: 10px; transition: transform .2s; }
+  #shopInv:not(.collapsed) #shopInvToggle .siArrow, #draftInv:not(.collapsed) #draftInvToggle .siArrow { transform: rotate(180deg); }
+  #shopInvBody, #draftInvBody {
     overflow: hidden; display: grid; gap: 9px;
     padding: 10px 11px; margin-top: 6px;
     background: rgba(255,255,255,.02); border: 1px solid var(--line); border-radius: 9px;
   }
-  #shopInv.collapsed #shopInvBody { display: none; }
+  #shopInv.collapsed #shopInvBody, #draftInv.collapsed #draftInvBody { display: none; }
   .siGroup h4 { margin: 0 0 4px; font-size: 10px; font-weight: 800; color: var(--dim); letter-spacing: .04em; }
   /* 用語集(HUDの語タップで開く) */
   #glossaryOverlay { z-index: 82; }
@@ -959,6 +959,15 @@
       <div class="inner">
         <h1 style="font-size:24px"><span class="green">戦利品</span>を1つ選べ</h1>
         <p style="margin-top:4px">面クリアのご褒美。どれか1つ無料。REEL=スロットに絵柄を1個追加。同じ絵柄を2枚→3枚に増やすと、揃いやすさは倍以上に跳ね上がる。BALL=撃つ玉に特殊な玉を追加。RELIC=台そのものを改造。3つを組み合わせて、自分だけの台に育てよう。</p>
+        <div id="draftInv" class="collapsed">
+          <button id="draftInvToggle" type="button">🎒 今の持ち物を見る<span class="siArrow">▼</span></button>
+          <div id="draftInvBody">
+            <div class="siGroup"><h4>玉デッキ</h4><div class="chipRow" id="diDeck"></div></div>
+            <div class="siGroup"><h4>リール構成（揃うと発動）</h4><div class="chipRow" id="diReel"></div></div>
+            <div class="siGroup"><h4>お守り</h4><div class="chipRow" id="diRelic"></div></div>
+            <div class="siGroup"><h4>盤面役物</h4><div class="chipRow" id="diPart"></div></div>
+          </div>
+        </div>
         <div id="draftCards"></div>
         <button class="ghostBtn" id="draftSkip">受け取らない</button>
       </div>
