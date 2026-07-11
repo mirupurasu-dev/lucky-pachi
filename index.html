@@ -419,6 +419,17 @@
   .glLink { cursor: pointer; }
   .statChip.glLink { position: relative; }
   .statChip.glLink::after { content: 'ⓘ'; font-size: 7px; color: var(--dim); position: absolute; top: 1px; right: 2px; }
+  /* 今の合計倍率(はっきり大きく) */
+  #multBox { margin-top: 7px; padding: 7px 11px; border-radius: 10px;
+    background: linear-gradient(180deg, #291d08, #16120a); border: 1px solid var(--line); transition: box-shadow .3s, border-color .3s; }
+  #multBox.hot { border-color: #ffcf5a; box-shadow: 0 0 18px rgba(255,207,90,.32); }
+  #multBox .mbHead { font-size: 11px; font-weight: 800; color: var(--dim); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  #multBox .mbHead b { font-family: var(--f-num); font-size: 23px; font-weight: 900; line-height: 1;
+    background: linear-gradient(180deg,#fff4cf,#ffca4d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #ffd76a; }
+  #multBox.hot .mbHead b { filter: drop-shadow(0 0 8px rgba(255,207,90,.6)); }
+  #multBox .mbBreak { font-size: 10px; font-weight: 700; color: var(--dim); margin-top: 3px; line-height: 1.4; }
+  #multBox .mbBreak .mx { color: #ffcf5a; font-weight: 900; margin: 0 1px; }
+  #multBox .mbBreak .mbhint { color: color-mix(in srgb, var(--text) 46%, transparent); font-weight: 600; }
 
   #shopItems { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
   .shopItem {
@@ -818,6 +829,10 @@
           <span class="statChip glLink" id="luckChip" data-gl="un">運 <b id="luckV">1.0</b></span>
           <span class="statChip glLink" id="multChip" data-gl="bairitsu">倍率 <b id="multV">×1.0</b></span>
           <span class="statChip glLink" id="synChip" data-gl="soujou">相乗 <b id="synV">×1.00</b></span>
+        </div>
+        <div id="multBox" class="glLink" data-gl="total">
+          <div class="mbHead">今の合計倍率 <b id="multTotal">×1.0</b></div>
+          <div id="multBreak" class="mbBreak"></div>
         </div>
       </div>
     </div>

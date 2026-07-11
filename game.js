@@ -2249,12 +2249,31 @@ function updateHUD() {
     bEl.classList.remove('bump'); void bEl.offsetWidth; bEl.classList.add('bump');
   }
   document.getElementById('luckV').textContent = effLuck().toFixed(1);
-  document.getElementById('multV').textContent = '×' + effMult().toFixed(2);
+  const em = effMult();
+  document.getElementById('multV').textContent = '×' + em.toFixed(2);
+  const sm = synergyMult();
   const synEl = document.getElementById('synV');
   if (synEl) {
-    const sm = synergyMult();
     synEl.textContent = '×' + sm.toFixed(2);
     synEl.style.color = sm > 1 ? '#ff4dff' : '';
+  }
+  // 「今の合計倍率」= 倍率 × 相乗 × FEVER × 役倍率(次の当たり×N) を全部掛けた実際に乗る倍率
+  const fev = S.fever ? 2 : 1;
+  const nm = (S.winBoostN > 0) ? (S.winBoostV || 1) : 1;
+  const totalMult = em * sm * fev * nm;
+  const mtEl = document.getElementById('multTotal');
+  if (mtEl) {
+    mtEl.textContent = '×' + (totalMult >= 100 ? Math.round(totalMult) : totalMult.toFixed(totalMult >= 10 ? 1 : 2));
+    const box = document.getElementById('multBox');
+    if (box) box.classList.toggle('hot', totalMult >= 4);
+    const parts = [`倍率 ${em.toFixed(2)}`];
+    if (sm > 1.001) parts.push(`相乗 ${sm.toFixed(2)}`);
+    if (fev > 1) parts.push('FEVER 2');
+    if (nm > 1) parts.push(`役倍率 ${nm}`);
+    const mb = document.getElementById('multBreak');
+    if (mb) mb.innerHTML = parts.length > 1
+      ? parts.join(' <span class="mx">×</span> ')
+      : '<span class="mbhint">倍率だけ。天体絵柄🌙🌞や役で上げると獲得が倍増</span>';
   }
   // 発射つよさバー
   const pwb = document.getElementById('pwBar');
@@ -4952,8 +4971,10 @@ const GLOSSARY = [
   ] },
   { g: 'ステータス（右上の3つ）', terms: [
     { id: 'un', t: '運（うん）', d: 'リールが揃いやすくなる数値。高いほど当たりやすい。クローバーや植物系の絵柄で上がる。基準は1.0。' },
-    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '当たりで貰える玉の掛け算。×2なら獲得2倍。天体絵柄(🌙🌞)や倍率役で上がり、乗算役(開眼など)で一気に跳ねる。これを積み重ねるのがこのゲームの核。' },
-    { id: 'soujou', t: '相乗（そうじょう）', d: 'シナジー成立で全獲得に乗る掛け算。相性の良い手持ちを揃えると自動で上がる。' },
+    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '当たりで貰える玉の掛け算。基準×1.0。天体絵柄(🌙ムーン/🌞太陽)や「倍率役」で加算(+0.4など)され、乗算役(開眼×1.4/黄金比×1.6/神懸り×2.0)で一気に跳ねる。×2なら獲得も2倍。これを積み上げるのがこのゲームの核心。右上「倍率」チップが現在値。' },
+    { id: 'total', t: '合計倍率（今、何倍か）', d: '当たりに実際に乗る掛け算の合計。「倍率 × 相乗 × FEVER × 役倍率」を全部掛けた値で、右上に「今の合計倍率 ×N」と常時表示。例: 倍率1.5 × 相乗1.2 × FEVER2 × 役倍率3 ＝ ×10.8。当たった時の獲得はこの倍率がまるごと乗る。' },
+    { id: 'soujou', t: '相乗（そうじょう）', d: 'シナジー成立で全獲得に乗る掛け算。相性の良い手持ちを揃えると自動で上がる。合計倍率に含まれる。' },
+    { id: 'yakubairitsu', t: '役倍率（やくばいりつ）', d: '「次の当たり×N」系の役(金龍昇天🐉🐉=次×4/一天四海=次×3など)で発生。次の当たり1回(役により数回)を丸ごとN倍にする一時的な倍率。狙って仕込むと爆発する。' },
     { id: 'hesoshou', t: 'ヘソ賞球', d: 'ヘソに玉が入るたびに貰える基本の玉。的(🎯)などの絵柄で永続的に増やせる。' },
   ] },
   { g: 'ビルドの4本柱（集めて強くする）', terms: [
