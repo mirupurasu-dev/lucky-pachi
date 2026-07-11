@@ -103,6 +103,10 @@ const SYMBOLS = {
   taiyo:   { glyph: '🌞', name: '太陽',       color: '#ffcc80', rarity: 'legend', three: { t: 'multi', list: [{ t: 'mult', v: 0.6 }, { t: 'coins', v: 12 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.1 }, { t: 'coins', v: 3 }] }, desc: '3揃い: 倍率+0.6＆+12玉 / 2揃い: +0.1＆+3玉' },
   ryusei:  { glyph: '💫', name: '流星群',     color: '#b3e5fc', rarity: 'legend', three: { t: 'shower', v: 25 }, two: { t: 'shower', v: 3 }, desc: '3揃い: 玉シャワー25発 / 2揃い: シャワー3発' },
   joker:   { glyph: '🃏', name: 'ジョーカー', color: '#ff4dff', rarity: 'legend', three: { t: 'joker' }, two: { t: 'coins', v: 5 }, desc: '3揃い: ランダムなレジェンド級効果 / 2揃い: +5玉' },
+  banana:  { glyph: '🍌', name: '黄金バナナ', color: '#ffe135', rarity: 'legend', three: { t: 'coins', v: 500 }, two: { t: 'coins', v: 8 }, desc: '3揃い: +500玉×倍率 / 2揃い: +8玉' },
+  sekaiju: { glyph: '🌳', name: '世界樹',     color: '#66bb6a', rarity: 'legend', three: { t: 'multi', list: [{ t: 'luck', v: 1.0 }, { t: 'coins', v: 200 }] }, two: { t: 'luck', v: 0.1 }, desc: '3揃い: 運+1.0＆+200玉 / 2揃い: 運+0.1' },
+  shakudama:{ glyph: '🎆', name: '尺玉',      color: '#ff7043', rarity: 'legend', three: { t: 'multi', list: [{ t: 'shower', v: 30 }, { t: 'coins', v: 100 }] }, two: { t: 'shower', v: 2 }, desc: '3揃い: 玉シャワー30発＆+100玉 / 2揃い: シャワー2発' },
+  karakuri:{ glyph: '🏯', name: '絡繰城',     color: '#b39ddb', rarity: 'legend', three: { t: 'multi', list: [{ t: 'quotaCut', v: 0.25 }, { t: 'coins', v: 150 }] }, two: { t: 'coins', v: 5 }, desc: '3揃い: 納品-25%＆+150玉 / 2揃い: +5玉' },
   ringo: { glyph: "🍎", name: "りんご", color: "#e5604f", rarity: "normal", three: {"t":"coins","v":11}, two: {"t":"coins","v":3}, desc: "3揃い: +11玉×倍率 / 2揃い: +3玉" },
   momo: { glyph: "🍑", name: "もも", color: "#f6a6a0", rarity: "normal", three: {"t":"multi","list":[{"t":"luck","v":0.15},{"t":"coins","v":8}]}, two: {"t":"luck","v":0.03}, desc: "3揃い: 運+0.15＆+8玉 / 2揃い: 運+0.03" },
   mikan: { glyph: "🍊", name: "みかん", color: "#ff9f43", rarity: "normal", three: {"t":"coins","v":12}, two: {"t":"coins","v":3}, desc: "3揃い: +12玉×倍率 / 2揃い: +3玉" },
@@ -128,6 +132,7 @@ const SYMBOL_FAMILY = {
   sakura: 'pink', fuusen: 'pink', buta: 'pink', unicorn: 'pink', present: 'pink',
   nijiiro: 'rainbow', // 虹は全系統にマッチ
   ringo: 'red', momo: 'pink', mikan: 'gold', ine: 'gold', himawari: 'gold', momiji: 'red', usagi: 'pink', neko: 'gold', byakko: 'gold', suzaku: 'red', genbu: 'green', chochin: 'red',  // 追加13絵柄(雲kumoは無彩色=色共鳴なしで意図的に除外)
+  banana: 'gold', sekaiju: 'green', shakudama: 'red', karakuri: 'purple', // カテゴリ専用レジェンド
 };
 
 // ---------- 絵柄アンロック(メタ進行・スルメ要素) ----------
@@ -189,6 +194,7 @@ const SYMBOL_CAT = {
   seven: 'luck', bar: 'luck', saikoro: 'luck', fortune: 'luck', mato: 'luck', joker: 'luck',
   bell: 'festival', hanabi: 'festival', fuusen: 'festival', present: 'festival', chochin: 'festival',
   house: 'tool', kozutsumi: 'tool', inazuma: 'tool',
+  banana: 'fruit', sekaiju: 'plant', shakudama: 'festival', karakuri: 'tool', // カテゴリ専用レジェンド
 };
 const CAT_INFO = {
   fruit: { name: '果物', glyph: '🍒' }, plant: { name: '植物', glyph: '🍀' },
@@ -225,14 +231,14 @@ const RECIPES = [
   { name: '神懸り',     family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'crown', n: 1 }, { id: 'taiyo', n: 1 }], desc: '🐉👑🌞 → 倍率×2.0(乗算)',   eff: { t: 'multMult', v: 2.0 } },
   { name: '金龍昇天',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 2 }],                                               desc: '🐉×2 → 次の当たり×4',        eff: { t: 'nextMult', v: 4, n: 1 } },
   { name: '一天四海',   family: '倍率役', tier: '倍率', need: [{ id: 'ryu', n: 1 }, { id: 'taiyo', n: 1 }, { id: 'moon', n: 1 }], desc: '🐉🌞🌙 → 次の当たり×3',      eff: { t: 'nextMult', v: 3, n: 1 } },
-  // ══ 覚醒役: 各カテゴリ×2＋レジェンド1枚で「倍率×(乗算)」。どのカテゴリのビルドもレジェンドと組めば雪だるまに ══
-  { name: 'フルーツ覚醒', family: '覚醒役', tier: '倍率', need: [{ cat: 'fruit', n: 2 }, { rarity: 'legend', n: 1 }],    desc: '果物×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
-  { name: '花木覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { rarity: 'legend', n: 1 }],    desc: '植物×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
-  { name: '百獣覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'animal', n: 2 }, { rarity: 'legend', n: 1 }],   desc: '動物×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
-  { name: '財宝覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'treasure', n: 2 }, { rarity: 'legend', n: 1 }], desc: '財宝×2＋🌟レジェンド → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
-  { name: '博打覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'luck', n: 2 }, { rarity: 'legend', n: 1 }],     desc: '博打×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
-  { name: '宴覚醒',     family: '覚醒役', tier: '倍率', need: [{ cat: 'festival', n: 2 }, { rarity: 'legend', n: 1 }], desc: '祭×2＋🌟レジェンド → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
-  { name: '絡繰覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'tool', n: 2 }, { rarity: 'legend', n: 1 }],     desc: '仕掛×2＋🌟レジェンド → 倍率×1.4(乗算)', eff: { t: 'multMult', v: 1.4 } },
+  // ══ 覚醒役: カテゴリ×2＋そのカテゴリの「主(ぬし)」レジェンド1枚で倍率×(乗算)。テーマの合う組み合わせだけが覚醒する ══
+  { name: 'フルーツ覚醒', family: '覚醒役', tier: '倍率', need: [{ cat: 'fruit', n: 2 }, { id: 'banana', n: 1 }],    desc: '果物×2＋🍌黄金バナナ → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
+  { name: '花木覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],    desc: '植物×2＋🌳世界樹 → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
+  { name: '百獣覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'animal', n: 2 }, { id: 'ryu', n: 1 }],       desc: '動物×2＋🐉龍 → 倍率×1.5(乗算)',       eff: { t: 'multMult', v: 1.5 } },
+  { name: '財宝覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'treasure', n: 2 }, { id: 'crown', n: 1 }],   desc: '財宝×2＋👑王冠 → 倍率×1.5(乗算)',     eff: { t: 'multMult', v: 1.5 } },
+  { name: '博打覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'luck', n: 2 }, { id: 'joker', n: 1 }],       desc: '博打×2＋🃏ジョーカー → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
+  { name: '宴覚醒',     family: '覚醒役', tier: '倍率', need: [{ cat: 'festival', n: 2 }, { id: 'shakudama', n: 1 }], desc: '祭×2＋🎆尺玉 → 倍率×1.5(乗算)',      eff: { t: 'multMult', v: 1.5 } },
+  { name: '絡繰覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'tool', n: 2 }, { id: 'karakuri', n: 1 }],    desc: '仕掛×2＋🏯絡繰城 → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
   // ══ 大当り役: RUSH・大爆発。レア絵柄の固定役。滅多に出ないが脳汁 ══
   { name: 'ラッキーセブン', family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 2 }, { id: 'clover', n: 1 }],                desc: '７🍀７ → 超RUSH 8R',         eff: { t: 'rush', v: 8 } },
   { name: '大当り777',     family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 3 }],                                       desc: '７×3 → 超RUSH 10R',          eff: { t: 'rush', v: 10 } },
@@ -504,7 +510,7 @@ const RELICS = [
   { id: 'hatake',    rarity: 'rare', icon: '🌷', name: 'チューリップ畑', desc: 'チューリップ賞球 +5玉',     fx: { tulipPayAdd: 5 } },
   { id: 'hayauchi',  rarity: 'rare', icon: '🤠', name: '早撃ちグローブ', desc: '発射間隔 -15%',            fx: { fireFast: 0.85 } },
   { id: 'wazamono',  rarity: 'rare', icon: '📌', name: '業物の命釘',     desc: 'ヘソの幅 +20%',            fx: { hesoMult: 1.2 } },
-  { id: 'hosuu',     rarity: 'rare', icon: '🎪', name: '福引補助券',     desc: 'ドラフトのレア率 +8%',     fx: { rareBias: 0.08 } },
+  { id: 'hosuu',     rarity: 'rare', icon: '🎪', name: '福引補助券',     desc: '面クリア後のごほうびに、レアが出やすくなる(+8%)',     fx: { rareBias: 0.08 } },
   // ---- レジェンド ----
   { id: 'kamiwaza',  rarity: 'legend', icon: '🙏', name: '大当たりの神', desc: '3揃い率 +40%',             fx: { winLMult: 1.4 } },
   { id: 'kinbako',   rarity: 'legend', icon: '🧰', name: '純金の玉箱',   desc: '全ての玉獲得 +15%',         fx: { allGainMult: 1.15 } },
@@ -514,7 +520,7 @@ const RELICS = [
   { id: 'daifugo',   rarity: 'legend', icon: '💳', name: '大富豪の口座', desc: '納品後、残り玉の15%が配当', fx: { interest: 0.15 } },
   { id: 'koushounin',rarity: 'legend', icon: '🕴️', name: '立ち退き交渉人', desc: '全ての納品額 -25%',      fx: { quotaMult: 0.75 } },
   { id: 'hoshifuru', rarity: 'legend', icon: '🌠', name: '星降る夜',     desc: 'RUSH終了ごとに玉シャワー10発', fx: { showerOnRush: 10 } },
-  { id: 'buildsoul', rarity: 'legend', icon: '🛠️', name: 'デッキビルダーの魂', desc: 'ドラフトのレア率 +20%', fx: { rareBias: 0.2 } },
+  { id: 'buildsoul', rarity: 'legend', icon: '🛠️', name: 'デッキビルダーの魂', desc: '面クリア後のごほうびに、レアが出やすくなる(+20%)', fx: { rareBias: 0.2 } },
   { id: 'amadeji',   rarity: 'legend', icon: '🍬', name: '幻の甘デジ',   desc: 'ヘソの幅 +45%',            fx: { hesoMult: 1.45 } },
 ];
 // ---------- 盤面役物パーツ(第4のビルド軸) ----------
@@ -1119,6 +1125,7 @@ function startFever() {
   hitStop(0.18, 0.8);
   S.cam.punch = 0.2; S.aberr = 2.4; S.boardFlash = 1;
   fx.flashDOM();
+  if (GLP) { GLP.radialBurst(1); GLP.burst(CFG.CW / 2, CFG.CH * 0.45, 900, 'rainbow'); }
   fx.cutin('FEVER TIME！！', true);
   fx.confettiBurst(120);
   for (let i = 0; i < 6; i++) setTimeout(() => { if (S.fever && !S.simMode) fx.fireworks(60 + rng() * 340, 100 + rng() * 300); }, i * 200);
@@ -1288,39 +1295,143 @@ function tryStartSpin() {
     hot: out.kind === 3 ? rng() < 0.6 : isRecipe ? (reach && rng() < 0.75) : (reach && rng() < 0.12),
     stopped: [false, false, false],
   };
-  if (S.simMode) { S.spin.t = 99; resolveSpin(); }
+  if (S.simMode) { S.spin.t = 99; resolveSpin(); return; }
+  // ---- 実機級演出の仕込み(疑似連/復活/PUSH。計測simでは一切走らない) ----
+  const sp = S.spin;
+  const win = out.kind === 3 || isRecipe;
+  sp.finalFaces = faces.slice();
+  if (win && rng() < 0.4) sp.pseudo = rng() < 0.35 ? 2 : 1;           // 疑似連(当たりの40%)
+  else if (!win && reach && rng() < 0.08) sp.pseudo = 1;              // ガセ疑似連
+  if (win && !sp.pseudo && rng() < 0.13) sp.revive = true;            // 復活(逆転)
+  if (sp.pseudo || sp.revive) sp.faces = nearMissFaces(sp.finalFaces); // まずニアミス目を見せる
+  // PUSHボタン演出は廃止(テンポ優先)
+}
+// ニアミス目: 最後の1個だけ別の絵柄に差し替えた「あと1個」の形
+function nearMissFaces(f) {
+  const ids = Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0 && id !== f[2]);
+  const other = ids.length ? ids[(rng() * ids.length) | 0] : (f[2] === 'cherry' ? 'bell' : 'cherry');
+  return [f[0], f[1], other];
+}
+// 疑似連: いったん止まった風→「連」スタンプ→再始動
+function pseudoRespin(sp) {
+  sp.pseudo--;
+  sp.renN = (sp.renN || 1) + 1;
+  showRenStamp(sp.renN);
+  sfx('ren');
+  const last = sp.pseudo <= 0;
+  sp.faces = last ? sp.finalFaces.slice() : nearMissFaces(sp.finalFaces);
+  const sf = mods().spinFast;
+  sp.t = 0;
+  sp.stopAt = [0.42 * sf, 0.75 * sf, (last && sp.reach ? 2.3 : 1.25) * sf];
+  sp.stopped = [false, false, false];
+  sp.reachPlayed = false;
+  S.shake = Math.max(S.shake, 7);
+  S.cam.punch = Math.max(S.cam.punch, 0.07);
+  if (GLP) GLP.burst(CFG.FX + BLOCK.x + BLOCK.w / 2, CFG.FY + BLOCK.y + BLOCK.h / 2, 60, 'white');
+}
+function reelCenter() { return [CFG.FX + BLOCK.x + BLOCK.w / 2, CFG.FY + BLOCK.y + REEL.y0off + REEL.winH / 2]; }
+// PUSHボタン
+function showPushBtn(rainbow) {
+  const b = document.getElementById('pushBtn');
+  if (!b) return;
+  b.className = 'show' + (rainbow ? ' rainbow' : '');
+}
+function hidePushBtn() {
+  const b = document.getElementById('pushBtn');
+  if (b) b.className = '';
+}
+function pushRelease(pressed) {
+  const sp = S.spin;
+  hidePushBtn();
+  if (!sp || !sp.paused) return;
+  sp.paused = false;
+  if (pressed) {
+    S.shake = Math.max(S.shake, 9); S.cam.punch = Math.max(S.cam.punch, 0.11);
+    sfx('push');
+    const [cx, cy] = reelCenter();
+    if (GLP) { GLP.shock(cx, cy); GLP.burst(cx, cy, 90, 'white'); }
+  }
+}
+function showRenStamp(n) {
+  const el = document.getElementById('renStamp');
+  if (!el) return;
+  el.innerHTML = `連<span class="rn">×${n}</span>`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+function hideRenStamp() {
+  const el = document.getElementById('renStamp');
+  if (el) el.classList.remove('show');
 }
 function spinStep(dt) {
   if (!S.spin) return;
-  S.spin.t += dt;
+  const sp = S.spin;
+  // PUSH待機中は時間停止(タップか2.8秒で開放)
+  if (sp.paused) {
+    sp.pushTimer = (sp.pushTimer || 0) + dt;
+    if (sp.pushTimer > 2.8) pushRelease(false);
+    return;
+  }
+  sp.t += dt;
   // リールごとのビタ止め演出
   if (!S.simMode) {
     for (let i = 0; i < 3; i++) {
-      if (!S.spin.stopped[i] && S.spin.t >= S.spin.stopAt[i]) {
-        S.spin.stopped[i] = true;
+      if (!sp.stopped[i] && sp.t >= sp.stopAt[i]) {
+        sp.stopped[i] = true;
         const wx = BLOCK.x + BLOCK.w / 2 + (i - 1) * (REEL.winW + REEL.gap);
-        fx.ring(wx, BLOCK.y + REEL.y0off + REEL.winH / 2, i === 2 && (S.spin.out.kind === 3 || S.spin.out.kind === 'recipe') ? '#ffffff' : S.theme.accent);
+        fx.ring(wx, BLOCK.y + REEL.y0off + REEL.winH / 2, i === 2 && (sp.out.kind === 3 || sp.out.kind === 'recipe') ? '#ffffff' : S.theme.accent);
         S.shake = Math.max(S.shake, i === 2 ? 5 : 3);
         sfx('reelstop');
       }
     }
   }
-  if (S.spin.reach && !S.spin.reachPlayed && S.spin.t > S.spin.stopAt[1]) {
-    S.spin.reachPlayed = true;
+  if (sp.reach && !sp.reachPlayed && sp.t > sp.stopAt[1]) {
+    sp.reachPlayed = true;
     if (!S.simMode) {
       sfx('reach');
       document.getElementById('vignette').classList.add('on');
-      lcdSchoolT = S.spin.hot ? 2.2 : 1.2; // 鯉の群予告(激アツほど大群)
-      if (S.spin.hot) { fx.cutin('激アツ！！', true); sfx('atsu'); charCutin('hot', 2.4); }
+      lcdSchoolT = sp.hot ? 2.2 : 1.2; // 鯉の群予告(激アツほど大群)
+      if (sp.hot) { fx.cutin('激アツ！！', true); sfx('atsu'); charCutin('hot', 2.4); }
     }
   }
-  if (S.spin.t >= S.spin.stopAt[2]) resolveSpin();
+  // PUSH: 最終リール停止の直前で止めてボタンを出す(疑似連の最終変動のみ)
+  if (!S.simMode && sp.push && !sp.pushShown && !(sp.pseudo > 0) && sp.t >= sp.stopAt[2] - 0.06) {
+    sp.pushShown = true; sp.paused = true; sp.pushTimer = 0;
+    showPushBtn(sp.pushRainbow);
+    return;
+  }
+  // 復活: ハズレ目で止めた後、無音のタメ→第3リールが落ち直して当たりに書き換わる
+  if (!S.simMode && sp.reviveArmed && !sp.reviveDropped && sp.t >= sp.reviveDropAt) {
+    sp.reviveDropped = true;
+    sp.faces = sp.finalFaces.slice();
+    sp.stopped[2] = false; // 第3リール再落下→通常のビタ止め処理が再発火する
+    fx.flashDOM(); S.shake = Math.max(S.shake, 11); S.aberr = Math.max(S.aberr, 1.6);
+    sfx('revive');
+    const [cx, cy] = reelCenter();
+    if (GLP) { GLP.shock(cx, cy); GLP.burst(cx, cy, 180, 'gold'); }
+  }
+  if (sp.t >= sp.stopAt[2]) {
+    if (!S.simMode && sp.pseudo > 0) { pseudoRespin(sp); return; }
+    if (!S.simMode && sp.revive && !sp.reviveArmed) {
+      // いったん「負けた…」を演出: 無音0.85秒 → 再落下予約
+      sp.reviveArmed = true;
+      S.muteT = 0.85;
+      sp.stopAt = sp.stopAt.slice();
+      sp.reviveDropAt = sp.t + 0.85;
+      sp.stopAt[2] = sp.t + 1.4;
+      sfx('stop');
+      return;
+    }
+    resolveSpin();
+  }
 }
 function resolveSpin() {
   const sp = S.spin;
   S.spin = null;
   S.lastDigits = sp.faces;
-  if (!S.simMode) document.getElementById('vignette').classList.remove('on');
+  if (!S.simMode) {
+    document.getElementById('vignette').classList.remove('on');
+    hidePushBtn(); hideRenStamp();
+  }
   if (sp.out.kind === 3) applyThree(sp.out.symbol, sp.ball);
   else if (sp.out.kind === 'recipe') applyRecipe(sp.out.recipe, sp.ball);
   else if (sp.out.kind === 2) applyTwo(sp.out.symbol, sp.ball);
@@ -1342,6 +1453,7 @@ function applyRecipe(rc, ballType) {
     hitStop(0.05, 0.2);
     S.cam.punch = 0.12;
     S.aberr = Math.max(S.aberr, 1.2);
+    if (GLP) { const [cx, cy] = reelCenter(); GLP.shock(cx, cy); GLP.burst(cx, cy, 320, 'gold'); }
     fx.cutin(`役「${rc.name}」！！`, true);
     fx.coinFly(230, 200, 16);
     sfx('jackpot');
@@ -1528,6 +1640,7 @@ function applyThree(id, ballType) {
   fx.ring(BLOCK.x + BLOCK.w / 2, BLOCK.y + BLOCK.h / 2, sym.color);
   if (!S.simMode) {
     S.winFx = { t: 0, amount: 0, symbol: id }; // サンバースト+カウントアップ
+    if (GLP) { const [cx, cy] = reelCenter(); GLP.shock(cx, cy); GLP.burst(cx, cy, 220, 'gold'); }
     hitStop(0.06, 0.16);          // 揃った瞬間、時が止まる
     S.cam.punch = 0.09;           // ズームパンチ
     S.aberr = Math.max(S.aberr, 1);
@@ -1954,9 +2067,39 @@ function selectDraft(card) {
     }
   });
 }
+// 銭飛翔: 持ち玉HUDから商品へコインが弧を描いて飛ぶ(購入の手応え)
+function coinFlight(item) {
+  const from = document.getElementById('balls');
+  const rows = [...document.querySelectorAll('.shopItem')];
+  const to = rows.find(r => r.dataset.item === (item.kind + ':' + (item.id || item.name))) || rows[0];
+  if (!from || !to) return;
+  const fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
+  const x0 = fr.left + fr.width / 2, y0 = fr.top + fr.height / 2;
+  const x1 = tr.left + tr.width * 0.8, y1 = tr.top + tr.height / 2;
+  const n = Math.min(9, 4 + Math.floor((item.price || 100) / 150));
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div');
+    c.className = 'flyCoin';
+    document.body.appendChild(c);
+    const t0 = performance.now() + i * 55;
+    const cx = (x0 + x1) / 2 + (Math.random() - 0.5) * 120, cy = Math.min(y0, y1) - 90 - Math.random() * 60;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / 420);
+      if (p < 0) { requestAnimationFrame(step); return; }
+      const q = 1 - p;
+      const x = q * q * x0 + 2 * q * p * cx + p * p * x1;
+      const y = q * q * y0 + 2 * q * p * cy + p * p * y1;
+      c.style.transform = `translate(${x}px,${y}px) rotate(${p * 720}deg) scale(${1 - p * 0.35})`;
+      c.style.opacity = p > 0.9 ? String((1 - p) * 10) : '1';
+      if (p < 1) requestAnimationFrame(step);
+      else { c.remove(); if (sndOK()) beep(1300 + Math.random() * 500, 0.05, 'sine', 0.05); }
+    };
+    requestAnimationFrame(step);
+  }
+}
 function selectShop(item) {
   confirmSelect(item, item.price, () => {
-    const commitBuy = () => { S.balls -= item.price; item.bought = true; };
+    const commitBuy = () => { S.balls -= item.price; item.bought = true; item.freshStamp = true; coinFlight(item); };
     if (item.kind === 'part') {
       document.getElementById('shopOverlay').classList.remove('show');
       startPlacement(item,
@@ -1986,6 +2129,12 @@ function selectShop(item) {
     }
   });
 }
+// ドラムロール(開封のタメ)
+function drumroll(dur) {
+  if (!sndOK()) return;
+  const n = Math.floor(dur / 0.045);
+  for (let i = 0; i < n; i++) boomNoise(0.05, 0.03, i * 0.045);
+}
 function openDraft() {
   if (S.phase !== 'settle') return; // reset/goStage後の古いsetTimeout誤発火ガード
   S.phase = 'draft';
@@ -1999,17 +2148,37 @@ function openDraft() {
     while (seen.has(card.kind + card.id) && guard++ < 15) card = rollDraftCard();
     seen.add(card.kind + card.id);
     const el = document.createElement('button');
-    el.className = `draftCard ${card.rarity}`;
+    el.className = `draftCard ${card.rarity} dealing`;
+    el.style.setProperty('--i', i);
     const icon = card.kind === 'ball'
       ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
       : card.kind === 'symbol' ? card.glyph : card.icon;
     const kindLabel = card.kind === 'ball' ? 'BALL' : card.kind === 'symbol' ? 'REEL' : 'RELIC';
     el.innerHTML =
+      `<div class="cardInner"><div class="cfFace cfFront">` +
       `<div class="kind">${RARITY_LABEL[card.rarity]}・${kindLabel}</div>` +
       `<div class="icon">${icon}</div><div class="nm">${card.name}</div><div class="ds">${card.desc}</div>` +
-      synergyGainHTML(card, true) + (card.kind === 'symbol' ? symbolRoleTagsHTML(card.id) : '');
+      synergyGainHTML(card, true) + (card.kind === 'symbol' ? symbolRoleTagsHTML(card.id) : '') +
+      `<div class="holo"></div>` +
+      `</div></div>`;
+    // 3Dチルト(指/マウス位置でカードが傾き、ホロの光沢が流れる)
+    el.addEventListener('pointermove', ev => {
+      const r = el.getBoundingClientRect();
+      const nx = (ev.clientX - r.left) / r.width - 0.5;
+      const ny = (ev.clientY - r.top) / r.height - 0.5;
+      el.style.setProperty('--rx', (-ny * 10) + 'deg');
+      el.style.setProperty('--ry', (nx * 12) + 'deg');
+      el.style.setProperty('--mx', (nx * 100 + 50) + '%');
+      el.style.setProperty('--my', (ny * 100 + 50) + '%');
+    });
+    el.addEventListener('pointerleave', () => {
+      el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
+    });
     el.onclick = () => selectDraft(card);
     box.appendChild(el);
+    if (card.rarity === 'legend') { // レジェンド出現は登場時に一発演出だけ残す
+      setTimeout(() => { fx.flashDOM(); sfx('jackpot'); fx.confettiBurst(60); }, 200 + i * 140);
+    }
   }
   document.getElementById('draftOverlay').classList.add('show');
 }
@@ -2054,7 +2223,8 @@ function renderShop() {
   box.innerHTML = '';
   for (const item of shopStock) {
     const btn = document.createElement('button');
-    btn.className = 'shopItem';
+    btn.className = `shopItem r-${item.rarity || 'normal'}` + (item.bought ? ' sold' : '');
+    btn.dataset.item = item.kind + ':' + (item.id || item.name);
     btn.disabled = item.bought || S.balls < item.price;
     const ic = item.kind === 'ball'
       ? `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff, ${item.color})"></span>`
@@ -2064,7 +2234,9 @@ function renderShop() {
       `<div class="nm"><span class="rar" style="color:${RARITY_COLOR[item.rarity]}">${RARITY_LABEL[item.rarity]}</span> ${item.name}${item.kind === 'symbol' ? 'を追加' : ''}</div>` +
       `<div class="ds">${item.desc}</div>` +
       synergyGainHTML(item, true) + (item.kind === 'symbol' ? symbolRoleTagsHTML(item.id) : '') +
-      `</span><span class="pr">${item.bought ? '購入済' : item.price + '玉'}</span>`;
+      `</span><span class="pr">${item.bought ? '' : item.price + '玉'}</span>` +
+      (item.bought ? `<span class="soldStamp${item.freshStamp ? ' fresh' : ''}">売約</span>` : '');
+    if (item.bought && item.freshStamp) { setTimeout(() => { item.freshStamp = false; }, 700); if (sndOK()) { boomNoise(0.12, 0.07, 0.15); } }
     btn.onclick = () => { if (btn.disabled) return; selectShop(item); };
     box.appendChild(btn);
   }
@@ -2100,7 +2272,7 @@ function renderBuild() {
   document.getElementById('buildTitle').innerHTML =
     `開始リールを組め <span style="color:var(--accent)">${buildStep + 1} / ${BUILD_STEPS.length}</span>`;
   document.getElementById('buildSub').textContent =
-    st.label + (st.rarity === 'normal' ? '（同じ絵柄の重ね積みは面クリア後のドラフトで）' : '');
+    st.label + (st.rarity === 'normal' ? '（同じ絵柄を2枚以上に増やすのは、面クリア後のごほうびで）' : '');
   const grid = document.getElementById('buildGrid');
   grid.innerHTML = '';
   // 解禁済み&未取得からランダム3択(選択肢は常に3つまで)
@@ -2322,7 +2494,7 @@ function updateHUD() {
     const mb = document.getElementById('multBreak');
     if (mb) mb.innerHTML = parts.length > 1
       ? parts.join(' <span class="mx">×</span> ')
-      : '<span class="mbhint">倍率だけ。天体絵柄🌙🌞や役で上げると獲得が倍増</span>';
+      : '<span class="mbhint">まだ×1。🌙や役で上げると当たりの玉が全部この倍に</span>';
   }
   // 発射つよさバー
   const pwb = document.getElementById('pwBar');
@@ -2353,7 +2525,7 @@ function renderCollections() {
   if (pEl) pEl.innerHTML = S.parts.length
     ? S.parts.map(p => `<span class="chip">${p.icon} ${p.name}<span class="tip">${p.desc}</span></span>`).join('')
       + (freeSlots().length ? `<span class="chip" style="opacity:.5">空き ×${freeSlots().length}</span>` : '')
-    : '<span style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — ドラフト/屋台で役物を設置できる</span>';
+    : '<span style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — 面クリア後のごほうびや屋台で、装置を置ける</span>';
   // シナジー(相乗)
   const syEl = document.getElementById('synChips');
   if (syEl) {
@@ -2493,11 +2665,11 @@ function ensureAudio() {
   }
   if (AC && AC.state === 'suspended') AC.resume();
 }
-function sndOK() { return AC && !S.simMode && S.sndOn; }
+function sndOK() { return AC && !S.simMode && S.sndOn && !(S.muteT > 0); }
 function OUT() { return MASTER || AC.destination; }
 let lastTick = 0;
 function beep(freq, dur, type, gain, delay) {
-  if (!AC || S.simMode || !S.sndOn) return;
+  if (!AC || S.simMode || !S.sndOn || S.muteT > 0) return;
   const t = AC.currentTime + (delay || 0);
   const o = AC.createOscillator(), g = AC.createGain();
   o.type = type || 'sine'; o.frequency.value = freq;
@@ -2714,6 +2886,9 @@ function sfx(kind) {
     case 'stop': beep(300, 0.05, 'square', 0.05); break;
     case 'reelstop': beep(200, 0.06, 'square', 0.07); beep(120, 0.09, 'triangle', 0.06, 0.01); break;
     case 'atsu': for (let i = 0; i < 5; i++) beep(600 + i * 220, 0.09, 'sawtooth', 0.06, i * 0.06); break;
+    case 'push': beep(90, 0.16, 'square', 0.14); beep(1800, 0.05, 'sine', 0.07); boomNoise && boomNoise(0.1, 0.06); break;
+    case 'ren': boomNoise && boomNoise(0.16, 0.1); beep(220, 0.14, 'square', 0.1); beep(110, 0.22, 'square', 0.09, 0.05); break;
+    case 'revive': boomNoise && boomNoise(0.5, 0.16); for (let i = 0; i < 4; i++) beep(523 * Math.pow(1.334, i), 0.16, 'sawtooth', 0.08, 0.05 + i * 0.07); break;
     case 'two': beep(700, 0.08, 'square', 0.06); beep(1050, 0.1, 'square', 0.05, 0.06); break;
     case 'reach': for (let i = 0; i < 8; i++) beep(400 + i * 90, 0.07, 'sawtooth', 0.04, i * 0.08); break;
     case 'jackpot': {
@@ -2968,9 +3143,9 @@ function createGLPresenter(canvas, srcCanvas) {
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
     return s;
   };
-  const prog = fs => {
+  const prog = (fs, vs) => {
     const p = gl.createProgram();
-    gl.attachShader(p, compile(gl.VERTEX_SHADER, VS));
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, vs || VS));
     gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
@@ -2986,13 +3161,25 @@ function createGLPresenter(canvas, srcCanvas) {
     s+=(texture2D(t,v+d*1.384).rgb+texture2D(t,v-d*1.384).rgb)*.316;
     s+=(texture2D(t,v+d*3.230).rgb+texture2D(t,v-d*3.230).rgb)*.0702;
     gl_FragColor=vec4(s,1.);}`);
-  // 合成: ベース+ブルーム+アナモルフィックストリーク+ガラス反射スイープ+上部ハイライト+彩度+ビネット
+  // 合成: ベース+ブルーム+ストリーク+ガラス反射+彩度+ビネット+衝撃波歪み+ラジアルブラー
   const P_COMP = prog(`precision mediump float;varying vec2 v;
-    uniform sampler2D t,b,s;uniform float time,bloom,fxon,streak;
+    uniform sampler2D t,b,s;uniform float time,bloom,fxon,streak,radial;uniform vec3 shock;
     void main(){
-      vec3 base=texture2D(t,v).rgb;
-      vec3 c=base+texture2D(b,v).rgb*bloom;
-      c+=texture2D(s,v).rgb*vec3(.5,.72,1.)*streak;
+      vec2 vv=v;
+      if(shock.z>0.){
+        vec2 dv=v-shock.xy; float dist=length(dv);
+        float r=shock.z*.55;
+        float w=exp(-pow((dist-r)*16.,2.))*(1.-shock.z)*.05;
+        vv+=normalize(dv+vec2(1e-4))*w;
+      }
+      vec3 base=texture2D(t,vv).rgb;
+      if(radial>0.){
+        vec2 dir=(vec2(.5,.5)-vv)*.016*radial;
+        base+=texture2D(t,vv+dir).rgb+texture2D(t,vv+dir*2.).rgb+texture2D(t,vv+dir*3.).rgb+texture2D(t,vv+dir*4.).rgb;
+        base/=5.0;
+      }
+      vec3 c=base+texture2D(b,vv).rgb*bloom;
+      c+=texture2D(s,vv).rgb*vec3(.5,.72,1.)*streak;
       float sweep=sin(time*.13)*1.6;
       float g=v.x*.8-v.y*.55+sweep;
       float band=smoothstep(.0,.25,g)*smoothstep(.5,.25,g);
@@ -3005,10 +3192,19 @@ function createGLPresenter(canvas, srcCanvas) {
       c*=1.-dot(q,q)*.34;
       gl_FragColor=vec4(c,1.);
     }`);
+  // GPUパーティクル(ポイントスプライト・加算合成)
+  const VSP = `attribute vec2 ap;attribute float asz;attribute vec4 ac;uniform vec2 res;varying vec4 vc;
+    void main(){vc=ac;gl_PointSize=asz;
+    gl_Position=vec4(ap.x/res.x*2.-1.,1.-ap.y/res.y*2.,0.,1.);}`;
+  const P_PART = prog(`precision mediump float;varying vec4 vc;
+    void main(){float d=length(gl_PointCoord-.5);
+    float a=smoothstep(.5,.05,d);float core=smoothstep(.22,.0,d)*.7;
+    gl_FragColor=vec4((vc.rgb+core)*a*vc.a,a*vc.a);}`, VSP);
   const quad = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   const bindQuad = p => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     const loc = gl.getAttribLocation(p, 'p');
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
@@ -3035,19 +3231,58 @@ function createGLPresenter(canvas, srcCanvas) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   let texInit = false;
+  // ---- パーティクルプール(最大4096・CPU更新1バッファ・GPU1ドローコール) ----
+  const PMAX = 4096, STRIDE = 7;
+  const px = new Float32Array(PMAX), py = new Float32Array(PMAX);
+  const pvx = new Float32Array(PMAX), pvy = new Float32Array(PMAX);
+  const pl = new Float32Array(PMAX), pml = new Float32Array(PMAX);
+  const ps = new Float32Array(PMAX), pg = new Float32Array(PMAX), pdr = new Float32Array(PMAX);
+  const pr = new Float32Array(PMAX), pgn = new Float32Array(PMAX), pb = new Float32Array(PMAX);
+  const ptw = new Float32Array(PMAX);
+  const buf = new Float32Array(PMAX * STRIDE);
+  const pbuf = gl.createBuffer();
+  let cursor = 0, alive = 0;
+  const PRESETS = {
+    gold:   { cols: [[1, .84, .3], [1, .95, .6], [1, .7, .18]], speed: 330, grav: 620, drag: .988, life: [0.6, 1.4], size: [4, 11], tw: .8, up: -.55 },
+    ember:  { cols: [[1, .55, .15], [1, .8, .3], [.9, .3, .1]], speed: 120, grav: -70, drag: .97, life: [1.0, 2.2], size: [3, 8], tw: .9, up: -.3 },
+    rainbow:{ cols: [[1, .3, .4], [1, .9, .3], [.35, 1, .5], [.4, .7, 1], [.85, .5, 1]], speed: 380, grav: 480, drag: .985, life: [0.8, 1.8], size: [5, 12], tw: .6, up: -.7 },
+    white:  { cols: [[1, 1, 1], [.9, .97, 1]], speed: 460, grav: 220, drag: .975, life: [0.35, 0.9], size: [3, 9], tw: .3, up: 0 },
+  };
+  function burst(x, y, n, preset, spreadUp) {
+    const P = PRESETS[preset] || PRESETS.gold;
+    for (let i = 0; i < n; i++) {
+      const k = cursor; cursor = (cursor + 1) % PMAX;
+      const a = Math.random() * Math.PI * 2;
+      const sp = P.speed * (0.25 + Math.random() * 0.95);
+      px[k] = x + (Math.random() - 0.5) * 14; py[k] = y + (Math.random() - 0.5) * 14;
+      pvx[k] = Math.cos(a) * sp;
+      pvy[k] = Math.sin(a) * sp + P.speed * (spreadUp != null ? spreadUp : P.up);
+      pml[k] = pl[k] = P.life[0] + Math.random() * (P.life[1] - P.life[0]);
+      ps[k] = P.size[0] + Math.random() * (P.size[1] - P.size[0]);
+      pg[k] = P.grav; pdr[k] = P.drag; ptw[k] = P.tw;
+      const c = P.cols[(Math.random() * P.cols.length) | 0];
+      pr[k] = c[0]; pgn[k] = c[1]; pb[k] = c[2];
+    }
+    alive = Math.min(PMAX, alive + n);
+  }
+  let shockS = { x: 0.5, y: 0.5, t: 0 }, radialT = 0, lastT = 0;
   return {
+    burst(x, y, n, preset, up) { burst(x, y, n, preset, up); },
+    shock(x, y) { shockS = { x: x / CFG.CW, y: 1 - y / CFG.CH, t: 0.0001 }; },
+    radialBurst(v) { radialT = Math.max(radialT, v || 1); },
     present(time, fxMax, boost = 0) {
+      const dt = Math.min(0.05, Math.max(0, time - lastT)); lastT = time;
+      if (shockS.t > 0) { shockS.t += dt * 1.9; if (shockS.t >= 1) shockS.t = 0; }
+      if (radialT > 0) radialT = Math.max(0, radialT - dt * 2.4);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, srcTex);
       if (!texInit) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas); texInit = true; }
       else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
-      // 明部抽出 → fbo0
       gl.useProgram(P_BRIGHT); bindQuad(P_BRIGHT);
       gl.uniform1i(gl.getUniformLocation(P_BRIGHT, 't'), 0);
       gl.viewport(0, 0, BW, BH);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[0].f);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      // ブラーH → fbo1 → ブラーV → fbo0
       gl.useProgram(P_BLUR); bindQuad(P_BLUR);
       gl.uniform1i(gl.getUniformLocation(P_BLUR, 't'), 0);
       gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
@@ -3058,12 +3293,10 @@ function createGLPresenter(canvas, srcCanvas) {
       gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 0, 1 / BH);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[0].f);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      // アナモルフィックストリーク: ブルームをさらに横方向へ大きく引き伸ばす → fbo1
       gl.bindTexture(gl.TEXTURE_2D, fbo[0].t);
       gl.uniform2f(gl.getUniformLocation(P_BLUR, 'd'), 5.5 / BW, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[1].f);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      // 合成 → 画面
       gl.useProgram(P_COMP); bindQuad(P_COMP);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -3080,7 +3313,47 @@ function createGLPresenter(canvas, srcCanvas) {
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? 0.5 : 0.22);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'fxon'), fxMax ? 1 : 0);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.18 : 0.06) + boost * 0.4);
+      gl.uniform3f(gl.getUniformLocation(P_COMP, 'shock'), shockS.x, shockS.y, shockS.t);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'radial'), radialT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // ---- パーティクル更新+1ドローコール ----
+      if (alive > 0) {
+        let n = 0;
+        for (let k = 0; k < PMAX; k++) {
+          if (pl[k] <= 0) continue;
+          pl[k] -= dt;
+          if (pl[k] <= 0) continue;
+          pvy[k] += pg[k] * dt;
+          pvx[k] *= pdr[k]; pvy[k] *= pdr[k];
+          px[k] += pvx[k] * dt; py[k] += pvy[k] * dt;
+          const lf = pl[k] / pml[k];
+          const twk = ptw[k] > 0 ? (1 - ptw[k] * 0.5) + Math.sin((pl[k] * 31 + k) * 1.7) * ptw[k] * 0.5 : 1;
+          const o = n * STRIDE;
+          buf[o] = px[k]; buf[o + 1] = py[k];
+          buf[o + 2] = ps[k] * (0.5 + lf * 0.8);
+          buf[o + 3] = pr[k]; buf[o + 4] = pgn[k]; buf[o + 5] = pb[k];
+          buf[o + 6] = Math.min(1, lf * 2.2) * twk;
+          n++;
+        }
+        alive = n;
+        if (n > 0) {
+          gl.useProgram(P_PART);
+          gl.bindBuffer(gl.ARRAY_BUFFER, pbuf);
+          gl.bufferData(gl.ARRAY_BUFFER, buf.subarray(0, n * STRIDE), gl.DYNAMIC_DRAW);
+          const lp = gl.getAttribLocation(P_PART, 'ap');
+          const ls = gl.getAttribLocation(P_PART, 'asz');
+          const lc = gl.getAttribLocation(P_PART, 'ac');
+          gl.enableVertexAttribArray(lp); gl.vertexAttribPointer(lp, 2, gl.FLOAT, false, STRIDE * 4, 0);
+          gl.enableVertexAttribArray(ls); gl.vertexAttribPointer(ls, 1, gl.FLOAT, false, STRIDE * 4, 8);
+          gl.enableVertexAttribArray(lc); gl.vertexAttribPointer(lc, 4, gl.FLOAT, false, STRIDE * 4, 12);
+          gl.uniform2f(gl.getUniformLocation(P_PART, 'res'), CFG.CW, CFG.CH);
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.ONE, gl.ONE);
+          gl.drawArrays(gl.POINTS, 0, n);
+          gl.disable(gl.BLEND);
+          gl.disableVertexAttribArray(ls); gl.disableVertexAttribArray(lc);
+        }
+      }
     },
   };
 }
@@ -3335,6 +3608,12 @@ function celebrate(amount) {
   S.boardFlash = 1;
   fx.flashDOM();
   fx.confettiBurst(tier.coins);
+  if (GLP) { // GPU粒子: ティアで物量が跳ね上がる
+    const cx = CFG.CW / 2, cy = CFG.CH * 0.42;
+    GLP.shock(cx, cy);
+    GLP.burst(cx, cy, tier.min >= 4000 ? 1200 : tier.min >= 1500 ? 700 : 380, tier.min >= 4000 ? 'rainbow' : 'gold');
+    if (tier.min >= 1500) GLP.radialBurst(tier.min >= 4000 ? 1 : 0.6);
+  }
   megawinSound(tier.min);
   for (let i = 0; i < tier.fw; i++) {
     setTimeout(() => { if (!S.simMode) fx.fireworks(50 + rng() * 360, 120 + rng() * 280); }, i * 240);
@@ -4701,6 +4980,7 @@ function frame(t) {
     S.tsTimer -= raw;
     if (S.tsTimer <= 0) S.timeScale = 1;
   }
+  if (S.muteT > 0) S.muteT -= raw; // 復活演出の無音タメ(実時間で解除)
   let dt = raw * S.speed * S.timeScale;
   audioTick();
   if (S.phase === 'play') {
@@ -4988,10 +5268,11 @@ function openGuide() { renderGuide(); document.getElementById('guideOverlay').cl
 
 // ---------- チュートリアル(初回自動＋あとで再表示。役の理解を助ける) ----------
 const TUT_PAGES = [
-  { ico: '🎰', h: '「役」ってなに？', html: 'リールの3つの窓に<b>同じ絵柄が揃う</b>と、その絵柄の効果が発動＝当たり。<br>強い絵柄(7・龍・王冠…)ほど<b>揃いにくい「格」ペナルティ</b>。だから序盤はブタやチェリーみたいな<b>ゴミ役</b>ばかり。' },
-  { ico: '🎴', h: '役はカテゴリで狙う', html: 'まずは<b>同じ系統(カテゴリ)を3つ</b>集めれば役になる。<br>果物・植物・動物・天体・財宝・博打・祭・仕掛の8系統。レア絵柄は🌙🌙🔮のような<b>固定の強い役</b>もある。', ex: ['🍒🍒💎', '果物×2＋財宝 →「実りの宝」'] },
-  { ico: '🐉', h: '倍率で雪だるま', html: '単体はゴミ。<b>倍率を積んで噛み合わせる</b>と爆発する。色共鳴・シナジー・FEVERも全部掛け算。', flow: [['① 加算', '🌙などで 倍率＋'], ['② 乗算', '🔮🔮🌙で 倍率×1.4'], ['③ 役倍率', '🐉🐉で 次の当たり×4'], ['④ 爆発', '150倍級で脳汁ドバッ']] },
-  { ico: '📖', h: 'さあ、開店', html: '役の一覧は<b>役ガイド</b>、言葉の意味は<b>📚用語集</b>で見られる。<br><b>分からない言葉は、運・倍率・玉デッキなどの表示を直接タップ</b>すれば説明が開く。<br>まずは揃えて、倍率を重ねて、脳汁を出せ。', last: true },
+  { ico: "⏱️", h: "30秒でわかる遊び方", html: "玉はこのゲームのお金。増やして、面の終わりに<b>家賃(ノルマ)を玉で支払います</b>。払えたら次の面へ、足りないと閉店(ゲームオーバー)。全10面。撃つのは全部おまかせで、あなたは<b>「何を集めるか」選ぶだけ</b>。", flow: [["撃つ", "玉は全自動で飛んでいく"], ["入る", "真ん中の穴「ヘソ」に入るとスロットが回る"], ["揃う", "絵柄が揃うと当たり。玉がドッと増える"], ["払う", "面の終わりに家賃(ノルマ)を納めて次へ"]] },
+  { ico: "🎰", h: "当たりの正体は「役」", html: "スロットの3つの窓に、決まった組み合わせの絵柄が出ると当たり。これを<b>「役」</b>と呼びます。ぴったり同じ絵柄じゃなくてOK。<b>同じ系統(仲間)を3つ</b>集めれば役になります。系統は果物🍒 植物🍀 動物🐾 天体🌙 財宝💎 博打🎲 祭🎆 仕掛🔧の8つ。", ex: ["🍒🍇🍉", "バラバラでも全部果物の仲間。これで当たり!"] },
+  { ico: "🛒", h: "集める物は4種類", html: "面をクリアするたび、ご褒美を<b>1つ無料</b>で持ち帰れます。屋台では玉を使った買い物も。選べるのはこの4種類。", flow: [["絵柄", "スロットに追加。同じ絵柄を増やすほど揃いやすい"], ["特殊な玉", "撃つ玉そのものが強くなる"], ["お守り", "持っているだけでずっと効く応援"], ["役物", "盤面に置く装置。台そのものを改造できる"]] },
+  { ico: "💥", h: "倍率で雪だるま", html: "<b>倍率</b>は、当たりでもらえる玉が全部この倍になる数字。<b>×2なら、100玉の当たりが200玉</b>に。天体絵柄🌙や役で上がります。さらに相性のいい組み合わせ・玉と絵柄の色合わせ・FEVERも<b>全部掛け算</b>。1つ1つは小さくても、重なると150倍級の爆発が起きて脳汁が出ます。", ex: ["🍒🍒🍌", "果物2つ＋主のレジェンド(黄金バナナ)＝倍率が掛け算で増える「覚醒役」"] },
+  { ico: "🏮", h: "さあ、開店", html: "分からない言葉が出たら、画面の表示(運・倍率・玉デッキなど)を<b>そのままタップ</b>。説明がすぐ開きます。役の一覧は役ガイド、言葉の意味は📚用語集に。<br>まずは同じ系統を3つ。それだけで玉は増え始めます。増やして、家賃を払って、爆発させろ。", last: true },
 ];
 let tutIdx = 0;
 function renderTut() {
@@ -5014,35 +5295,35 @@ function maybeFirstTut() {
 // ---------- 用語集(ゲームの言葉を全部定義。HUDの語をタップでも開く) ----------
 const GLOSSARY = [
   { g: '基本ルール', terms: [
-    { id: 'tama', t: '玉（たま）', d: 'パチンコの通貨。盤面に撃ち込み、中央の「ヘソ」に入ると増える。集めてノルマを払うのが目的。' },
-    { id: 'mochidama', t: '持ち玉', d: '今持っている玉の数（右上に表示）。面の終わりに、ここからノルマ分を支払う。' },
-    { id: 'hassha', t: '発射（はっしゃ）', d: '玉を撃つ回数。1面ごとに上限があり「この面の残り◯発」で表示。0になると面が終了する。撃つのは全自動。' },
-    { id: 'heso', t: 'ヘソ', d: '盤面中央の金の受け口。玉が入るたびにリール(液晶)が回って抽選される。ここに入れるのが全て。' },
-    { id: 'norma', t: '納品ノルマ', d: '面の終わりに払う玉の目標。持ち玉がノルマ以上なら次の面へ、足りないと廃業(ゲームオーバー)。面が進むほど跳ね上がる。' },
-    { id: 'men', t: '面（めん）', d: 'ステージのこと。全10面。各面に別テーマ(場末/桜/深海…)とノルマがある。10面クリアで1周。' },
+    { id: 'tama', t: '玉（たま）', d: '一言でいうと、このゲームのお金。撃って増やして、面の終わりのノルマ(家賃)を払うのに使う。' },
+    { id: 'mochidama', t: '持ち玉', d: '一言でいうと、いまの所持金。手元にある玉の数。面の終わりにノルマより多ければ生き残れる。' },
+    { id: 'hassha', t: '発射（はっしゃ）', d: '一言でいうと、玉を撃つこと。全部自動で、あなたの操作はいらない。1つの面で撃てる数には上限がある。' },
+    { id: 'heso', t: 'ヘソ', d: '一言でいうと、盤面ど真ん中の穴。玉が入るとスロットが回る。すべての当たりの入り口。' },
+    { id: 'norma', t: '納品ノルマ', d: '一言でいうと、面ごとの家賃。面の終わりに玉で支払う。払えたら次の面へ、足りないとゲームオーバー。' },
+    { id: 'men', t: '面（めん）', d: '一言でいうと、ステージのこと。全部で10面。面ごとに撃てる玉の数とノルマが決まっている。' },
   ] },
   { g: 'ステータス（右上の3つ）', terms: [
-    { id: 'un', t: '運（うん）', d: 'リールが揃いやすくなる数値。高いほど当たりやすい。クローバーや植物系の絵柄で上がる。基準は1.0。' },
-    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '当たりで貰える玉の掛け算。基準×1.0。天体絵柄(🌙ムーン/🌞太陽)や「倍率役」で加算(+0.4など)され、乗算役(開眼×1.4/黄金比×1.6/神懸り×2.0)で一気に跳ねる。×2なら獲得も2倍。これを積み上げるのがこのゲームの核心。右上「倍率」チップが現在値。' },
-    { id: 'total', t: '合計倍率（今、何倍か）', d: '当たりに実際に乗る掛け算の合計。「倍率 × 相乗 × FEVER × 役倍率」を全部掛けた値で、右上に「今の合計倍率 ×N」と常時表示。例: 倍率1.5 × 相乗1.2 × FEVER2 × 役倍率3 ＝ ×10.8。当たった時の獲得はこの倍率がまるごと乗る。' },
-    { id: 'soujou', t: '相乗（そうじょう）', d: 'シナジー成立で全獲得に乗る掛け算。相性の良い手持ちを揃えると自動で上がる。合計倍率に含まれる。' },
-    { id: 'yakubairitsu', t: '役倍率（やくばいりつ）', d: '「次の当たり×N」系の役(金龍昇天🐉🐉=次×4/一天四海=次×3など)で発生。次の当たり1回(役により数回)を丸ごとN倍にする一時的な倍率。狙って仕込むと爆発する。' },
-    { id: 'hesoshou', t: 'ヘソ賞球', d: 'ヘソに玉が入るたびに貰える基本の玉。的(🎯)などの絵柄で永続的に増やせる。' },
+    { id: 'un', t: '運（うん）', d: '一言でいうと、絵柄の揃いやすさ。クローバー🍀などで上がる。高いほど当たりが出やすくなる。' },
+    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄🌙や役で上がる。' },
+    { id: 'total', t: '合計倍率（今、何倍か）', d: '一言でいうと、いまの倍率ぜんぶの掛け算。倍率×相乗×FEVER×役倍率をまとめた数字で、画面右上にいつも出ている。' },
+    { id: 'soujou', t: '相乗（そうじょう）', d: '一言でいうと、相性ボーナスの倍率。相性のいい持ち物の組み合わせ(シナジー)が成立すると上がる。' },
+    { id: 'yakubairitsu', t: '役倍率（やくばいりつ）', d: '一言でいうと、一時的なブースト。「次の当たり×4」のように、少しの間だけもらえる玉を増やす。' },
+    { id: 'hesoshou', t: 'ヘソ賞球', d: '一言でいうと、ヘソのお駄賃。ヘソに玉が入るたび、揃わなくても必ずもらえる基本の玉。' },
   ] },
   { g: 'ビルドの4本柱（集めて強くする）', terms: [
-    { id: 'deck', t: '玉デッキ', d: '撃つ玉の中身。白玉スタート。特殊玉(金玉・磁石玉・色玉…)を足すと色共鳴や特殊効果で強くなる。白玉を間引くと特殊玉の比率が上がる。' },
-    { id: 'reel', t: 'リール構成', d: '液晶リールに入っている絵柄の一覧。同じ絵柄を積むほど3揃いが出やすくなる(枚数の3乗で急上昇)。ここを組むのがメインの遊び。' },
-    { id: 'yakumono', t: '役物（やくもの）', d: '盤面に設置する装置(バンパー/風車/ポケット等)。玉の動きを変えてヘソへの入りを助ける。設置場所は自分で選べる。' },
-    { id: 'omamori', t: 'お守り', d: '台全体を常時強化するパッシブ効果。回転率・出玉・ノルマ軽減などを底上げする。' },
+    { id: 'deck', t: '玉デッキ', d: '一言でいうと、撃つ玉のラインナップ。ここに特殊な玉を加えると、その玉が順番に発射されていく。' },
+    { id: 'reel', t: 'リール構成', d: '一言でいうと、スロットの中身。どの絵柄が何枚入っているか。同じ絵柄を増やすほど揃いやすい。' },
+    { id: 'yakumono', t: '役物（やくもの）', d: '一言でいうと、盤面に置く装置。台そのものを改造して、玉の流れや稼ぎを良くする。' },
+    { id: 'omamori', t: 'お守り', d: '一言でいうと、持っているだけでずっと効く応援。一度手に入れれば、以後は自動で働き続けてくれる。' },
   ] },
   { g: '当たりの仕組み', terms: [
-    { id: 'sanzoroi', t: '3揃い（さんぞろい）', d: 'リールの3つの窓に同じ絵柄が揃うこと=当たり。その絵柄の効果が発動する。' },
-    { id: 'yaku', t: '役（やく）', d: '特定の絵柄の組み合わせで成立する特別な当たり。「カテゴリ役」と「レア固定役」がある。詳しくは役ガイド。' },
-    { id: 'category', t: 'カテゴリ', d: '絵柄の系統。果物🍒/植物🍀/動物🐾/天体🌙/財宝💎/博打🎲/祭🎆/仕掛🔧の8つ。同じ系統を3つ揃えるとカテゴリ役になる(例: 果物×3)。' },
-    { id: 'synergy', t: 'シナジー', d: '手持ちの相性の良い組み合わせ。成立すると全獲得に「相乗」倍率が乗る。選ぶ時に「シナジー成立」表示が出る。' },
-    { id: 'rush', t: 'RUSH（ラッシュ）', d: '連チャン。一定回数のあいだ当たりが確定して連続する。7絵柄や大当り役で突入。' },
-    { id: 'fever', t: 'FEVER（フィーバー）', d: '爆発タイム。一定発数のあいだ全獲得×2＋高速連射。発動条件は盤面のチューリップ🌷を50回ヒットすること。盤面左右のデフォルトのチューリップに加え、役物「ミニチューリップ」を設置すると貯まりが速くなる。液晶下のゲージ🌷が50/50で突入。' },
-    { id: 'colorSyn', t: '色共鳴（いろきょうめい）', d: '撃った玉の色と、揃った絵柄の系統色が一致すると追加倍率。色玉を絵柄の色に合わせると強い。' },
+    { id: 'sanzoroi', t: '3揃い（さんぞろい）', d: '一言でいうと、同じ絵柄が3つ並ぶこと。いちばん基本の当たりで、その絵柄の効果が発動して玉がもらえる。' },
+    { id: 'yaku', t: '役（やく）', d: '一言でいうと、当たりの種類。決まった絵柄の組み合わせが揃うと成立する。狙える役はカードや役ガイドで見られる。' },
+    { id: 'category', t: 'カテゴリ', d: '一言でいうと、絵柄の系統。果物🍒 植物🍀 動物🐾 天体🌙 財宝💎 博打🎲 祭🎆 仕掛🔧の8つ。同じ系統3つで役になる。' },
+    { id: 'synergy', t: 'シナジー', d: '一言でいうと、持ち物どうしの相性。相性のいい組み合わせを揃えると「相乗」の倍率が上がる。' },
+    { id: 'rush', t: 'RUSH（ラッシュ）', d: '一言でいうと、連チャン。当たりが立て続けに出るボーナスタイム。大当り役などで突入する。' },
+    { id: 'fever', t: 'FEVER（フィーバー）', d: '一言でいうと、お祭りタイム。盤面のチューリップ🌷に玉が50回入ると発動し、しばらく獲得2倍+高速連射になる。' },
+    { id: 'colorSyn', t: '色共鳴（いろきょうめい）', d: '一言でいうと、色合わせボーナス。撃った玉の色と、揃った絵柄の系統色が同じだと、もらえる玉が増える。' },
   ] },
 ];
 function renderGlossary() {
@@ -5131,6 +5412,18 @@ document.getElementById('clearRetryBtn').onclick = () => { S.loop = 0; resetGame
 document.getElementById('draftSkip').onclick = () => closeDraft();
 document.getElementById('shopNext').onclick = () => closeShop();
 document.getElementById('plCancel').onclick = () => cancelPlacement();
+{ // モバイル: 下部バーは普段ハンドルだけ(盤面フルスクリーン)。タップで操作パネル展開
+  const bh = document.getElementById('barHandle');
+  const bb = document.getElementById('bottomBar');
+  if (bh && bb) {
+    if (window.innerWidth <= 940) bb.classList.add('collapsed');
+    bh.onclick = () => {
+      const c = bb.classList.toggle('collapsed');
+      bh.textContent = c ? '🎮 操作 ▲' : '✕ とじる ▼';
+      sfx('tick');
+    };
+  }
+}
 window.addEventListener('resize', () => { if (S.placing) layoutPlaceSlots(); });
 document.getElementById('removeCancel').onclick = () => {
   document.getElementById('removeOverlay').classList.remove('show');
