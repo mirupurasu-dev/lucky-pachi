@@ -1899,16 +1899,17 @@ function openSymbolRemove(opts = {}) {
 
 // ---------- ドラフト＆ショップ(レアリティ制) ----------
 function rollRarity() {
-  const lg = Math.min(0.12, 0.04 + S.stage * 0.007); // 後半ほどレジェンドが出やすい
-  const rw = Math.min(0.5, 0.28 + mods().rareBias);  // 福引補助券系でレア率UP
+  // 5面以降は固定レート: レジェンド15%(3/20)・レア35%(7/20)・ノーマル50%(10/20)
+  const lg = S.stage >= 5 ? 0.15 : Math.min(0.12, 0.04 + S.stage * 0.007);
+  const rw = Math.min(0.5, (S.stage >= 5 ? 0.35 : 0.28) + mods().rareBias); // 福引補助券系でレア率UP
   const r = rng();
   return r < lg ? 'legend' : r < lg + rw ? 'rare' : 'normal';
 }
-function rollDraftCard(depth = 0) {
+function rollDraftCard(depth = 0, forceRarity) {
   if (depth > 10) { // フォールバック
     return { kind: 'symbol', rarity: 'normal', id: 'cherry', name: SYMBOLS.cherry.name, desc: SYMBOLS.cherry.desc, glyph: SYMBOLS.cherry.glyph };
   }
-  const rar = rollRarity();
+  const rar = forceRarity || rollRarity();
   const r = rng();
   // (絵柄はがしチケットは廃止。間引きは屋台で3面に1回だけ = デッキ構築を主役に)
   if (r < 0.35) {
@@ -1933,7 +1934,7 @@ function rollDraftCard(depth = 0) {
     }
   }
   const avail = RELICS.filter(x => x.rarity === rar && !S.relics.some(o => o.id === x.id));
-  if (avail.length === 0) return rollDraftCard(depth + 1);
+  if (avail.length === 0) return rollDraftCard(depth + 1, forceRarity);
   const rel = pick(avail);
   return { kind: 'relic', rarity: rar, id: rel.id, name: rel.name, desc: rel.desc, icon: rel.icon, rel };
 }
@@ -2124,9 +2125,12 @@ function openDraft() {
   box.innerHTML = '';
   const seen = new Set();
   const count = 3; // 選択肢は常に3つまで
+  // 4面クリア後は3択のうち1枚だけレジェンドを確定で混ぜる(覚醒役の主が早めに手に入るように)
+  const legendSlot = (S.stage === 4 && !S.free) ? ((rng() * count) | 0) : -1;
   for (let i = 0; i < count; i++) {
-    let card = rollDraftCard(), guard = 0;
-    while (seen.has(card.kind + card.id) && guard++ < 15) card = rollDraftCard();
+    const forceRar = i === legendSlot ? 'legend' : undefined;
+    let card = rollDraftCard(0, forceRar), guard = 0;
+    while (seen.has(card.kind + card.id) && guard++ < 15) card = rollDraftCard(0, forceRar);
     seen.add(card.kind + card.id);
     const el = document.createElement('button');
     el.className = `draftCard ${card.rarity} dealing`;
@@ -2197,9 +2201,14 @@ function openShop() {
   renderShop();
   document.getElementById('shopOverlay').classList.add('show');
 }
+function renderShopInv() {
+  const map = { siDeck: deckChipsHTML(), siReel: reelChipsHTML(), siRelic: relicChipsHTML(), siPart: partChipsHTML() };
+  for (const id in map) { const el = document.getElementById(id); if (el) el.innerHTML = map[id]; }
+}
 function renderShop() {
   document.getElementById('shopSub').textContent =
     `持ち玉 ${S.balls}玉 ／ 次の納品 ${S.free ? 800 : quotaFor(S.stage + 1)}玉`;
+  renderShopInv();
   const box = document.getElementById('shopItems');
   box.innerHTML = '';
   for (const item of shopStock) {
@@ -2485,29 +2494,38 @@ function updateHUD() {
     for (let i = 0; i < pwb.children.length; i++) pwb.children[i].classList.toggle('on', i < on);
   }
 }
-function renderCollections() {
-  // 玉デッキ
+// 持ちアイテムのチップHTML(サイドパネルと屋台の「持ち物」で共用)
+function deckChipsHTML() {
   const counts = {};
   for (const d of S.deck) counts[d] = (counts[d] || 0) + 1;
-  document.getElementById('deckChips').innerHTML = Object.entries(counts).map(([id, n]) => {
+  return Object.entries(counts).map(([id, n]) => {
     const b = BALLS[id];
     return `<span class="chip"><span class="dot" style="background:${b.color};color:${b.color}"></span>${b.name}<span class="cnt">×${n}</span><span class="tip">${b.desc}</span></span>`;
   }).join('');
-  // リール構成
-  document.getElementById('symChips').innerHTML = Object.entries(S.symbolPool)
+}
+function reelChipsHTML() {
+  return Object.entries(S.symbolPool)
     .filter(([, n]) => n > 0)
     .map(([id, n]) => `<span class="chip sym">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}</span></span>`)
     .join('');
-  // お守り
-  document.getElementById('relicChips').innerHTML = S.relics.length
+}
+function relicChipsHTML() {
+  return S.relics.length
     ? S.relics.map(r => `<span class="chip">${r.icon} ${r.name}<span class="tip">${r.desc}</span></span>`).join('')
     : '<span style="color:var(--dim);font-size:10px;font-weight:600">まだ何もない</span>';
-  // 盤面役物
-  const pEl = document.getElementById('partChips');
-  if (pEl) pEl.innerHTML = S.parts.length
+}
+function partChipsHTML() {
+  return S.parts.length
     ? S.parts.map(p => `<span class="chip">${p.icon} ${p.name}<span class="tip">${p.desc}</span></span>`).join('')
       + (freeSlots().length ? `<span class="chip" style="opacity:.5">空き ×${freeSlots().length}</span>` : '')
     : '<span style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — 面クリア後のごほうびや屋台で、装置を置ける</span>';
+}
+function renderCollections() {
+  document.getElementById('deckChips').innerHTML = deckChipsHTML();
+  document.getElementById('symChips').innerHTML = reelChipsHTML();
+  document.getElementById('relicChips').innerHTML = relicChipsHTML();
+  const pEl = document.getElementById('partChips');
+  if (pEl) pEl.innerHTML = partChipsHTML();
   // シナジー(相乗)
   const syEl = document.getElementById('synChips');
   if (syEl) {
@@ -5464,6 +5482,10 @@ document.getElementById('nextLoopBtn').onclick = () => { S.loop++; resetGame(); 
 document.getElementById('clearRetryBtn').onclick = () => { S.loop = 0; resetGame(); };
 document.getElementById('draftSkip').onclick = () => closeDraft();
 document.getElementById('shopNext').onclick = () => closeShop();
+document.getElementById('shopInvToggle').onclick = () => {
+  document.getElementById('shopInv').classList.toggle('collapsed');
+  sfx('tick');
+};
 document.getElementById('plCancel').onclick = () => cancelPlacement();
 { // モバイル: 下部バーは普段ハンドルだけ(盤面フルスクリーン)。タップで操作パネル展開
   const bh = document.getElementById('barHandle');
@@ -5503,6 +5525,7 @@ window.__game = {
   forceWin(sym) { S.hold.push({ ball: 'shiro' }); const o = { kind: 3, symbol: sym || 'seven' }; const f = facesFor(o); S.spin = { faces: f, out: o, ball: 'shiro', t: 99, stopAt: [0, 0, 0], reach: true, reachPlayed: true }; resolveSpin(); },
   forceRecipe(name) { const rc = RECIPES.find(r => r.name === name) || RECIPES[0]; S.hold.push({ ball: 'shiro' }); const o = { kind: 'recipe', recipe: rc }; const f = facesFor(o); S.spin = { faces: f, out: o, ball: 'shiro', t: 99, stopAt: [0, 0, 0], reach: true, reachPlayed: true }; resolveSpin(); return { name: rc.name, faces: S.lastDigits }; },
   goStage(n) { startStage(n); },
+  openDraft, rollRarity,
   installPart, installPartAt, PARTS, PART_SLOTS, freeSlots,
   acquire, synDirty, activeSynergies, synergyMult, synergiesGainedBy, synergyGainHTML, RECIPES, SYNERGIES, recipeReady,
   autoBuild(pool) { // テスト/即スタート用: 初期リールを一括設定して第一面へ

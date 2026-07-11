@@ -510,6 +510,23 @@
   }
   .soldStamp.fresh { animation: stampPop .35s cubic-bezier(.2,1.6,.4,1); }
   @keyframes stampPop { 0% { scale: 2.6; opacity: 0; } 55% { opacity: 1; } 100% { scale: 1; } }
+  /* 屋台の「今の持ち物」パネル(折りたたみ) */
+  #shopInv { margin: 4px 0 10px; text-align: left; }
+  #shopInvToggle {
+    display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
+    padding: 8px 12px; cursor: pointer; font-family: inherit; font-weight: 800;
+    font-size: 12px; color: var(--text);
+  }
+  #shopInvToggle .siArrow { color: var(--dim); font-size: 10px; transition: transform .2s; }
+  #shopInv:not(.collapsed) #shopInvToggle .siArrow { transform: rotate(180deg); }
+  #shopInvBody {
+    overflow: hidden; display: grid; gap: 9px;
+    padding: 10px 11px; margin-top: 6px;
+    background: rgba(255,255,255,.02); border: 1px solid var(--line); border-radius: 9px;
+  }
+  #shopInv.collapsed #shopInvBody { display: none; }
+  .siGroup h4 { margin: 0 0 4px; font-size: 10px; font-weight: 800; color: var(--dim); letter-spacing: .04em; }
   /* 用語集(HUDの語タップで開く) */
   #glossaryOverlay { z-index: 82; }
   .glBody { max-height: 62vh; overflow-y: auto; text-align: left; margin: 10px 0 12px; padding-right: 4px; }
@@ -951,6 +968,15 @@
       <div class="inner">
         <h1 style="font-size:24px">闇改造<span class="green">屋台</span></h1>
         <p id="shopSub" style="margin-top:4px"></p>
+        <div id="shopInv" class="collapsed">
+          <button id="shopInvToggle" type="button">🎒 今の持ち物を見る<span class="siArrow">▼</span></button>
+          <div id="shopInvBody">
+            <div class="siGroup"><h4>玉デッキ</h4><div class="chipRow" id="siDeck"></div></div>
+            <div class="siGroup"><h4>リール構成（揃うと発動）</h4><div class="chipRow" id="siReel"></div></div>
+            <div class="siGroup"><h4>お守り</h4><div class="chipRow" id="siRelic"></div></div>
+            <div class="siGroup"><h4>盤面役物</h4><div class="chipRow" id="siPart"></div></div>
+          </div>
+        </div>
         <div id="shopItems"></div>
         <button class="bigBtn" id="shopNext" style="margin-top:14px;padding:11px 34px;font-size:13px">次の面へ</button>
       </div>
