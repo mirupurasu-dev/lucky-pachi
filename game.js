@@ -300,6 +300,12 @@ function roleYieldText(rc) {
   if (eff.t === 'feverStart') return '即FEVER突入';
   if (eff.t === 'hesoPayPerm') return `ヘソ賞球+${eff.v}(永続)`;
   if (eff.t === 'comboActivate') return '祭コンボ発動(連チャンで倍率UP)';
+  // coinsRangeは平均値ではなく実際の乱数幅をそのまま見せる(中央値を「約N玉」と出すと誤解を招くため)
+  if (eff.t === 'coinsRange') {
+    const tot = effMult() * synergyMult() * (S.fever ? 2 : 1) * (S.winBoostN > 0 ? (S.winBoostV || 1) : 1);
+    const scale = v => Math.round(v * tot * CFG.payScale * (1 + CFG.stageCoinRamp * ((S.stage || 1) - 1)));
+    return `${scale(eff.min).toLocaleString()}〜${scale(eff.max).toLocaleString()}玉のランダム`;
+  }
   // multi内の「丸ごと別の仕組みに変わる」系は、玉数の見積もりより先に見出しとして出す
   if (eff.t === 'multi') {
     const f = t => eff.list.find(e => e.t === t);
@@ -5383,7 +5389,7 @@ function guideRowHTML(rc) {
   const ready = inRun && recipeReady(rc);
   const eff = rc.desc.includes('→') ? rc.desc.split('→').pop().trim() : rc.desc;
   const yt = roleYieldText(rc);
-  const goldY = yt.startsWith('約') ? ` <span class="gyield">${yt}</span>` : '';
+  const goldY = (yt.startsWith('約') || yt.endsWith('のランダム')) ? ` <span class="gyield">${yt}</span>` : '';
   return `<div class="gRow ${ready ? 'ready' : ''}"><div class="gtx">` +
     `<div class="gnm">${rc.name}${ready ? '<span class="rd">狙える</span>' : ''}<span class="gt tier-${cls}">${TIER_LABEL[rc.tier] || rc.tier || ''}</span></div>` +
     `<div class="gpat">${recipePatternHTML(rc)} <span class="garrow">→</span> ${eff}${goldY}</div>` +
