@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.mirupurasu.luckypachi",
+    "sha256_cert_fingerprints": ["F7:3A:66:F9:0F:8F:41:3D:6B:22:CD:C3:70:05:F4:0F:B7:DD:4F:95:66:73:98:AC:CA:A0:BE:F7:32:48:CD:13"]
+  }
+}]
