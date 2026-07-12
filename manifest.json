@@ -1,0 +1,20 @@
+{
+  "name": "幸運のパチンコ",
+  "short_name": "幸運のパチンコ",
+  "description": "和風パチンコ風ローグライク。系統を集めて役を揃え、10面の納品ノルマを乗り越えろ。",
+  "start_url": "./index.html?source=pwa",
+  "id": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0c0b",
+  "theme_color": "#0a0c0b",
+  "lang": "ja",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/icon-192-any.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512-any.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

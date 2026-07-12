@@ -8,6 +8,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0c0b">
+<meta name="description" content="和風パチンコ風ローグライク。系統を集めて役を揃え、10面の納品ノルマを乗り越えろ。">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="assets/icon-192-any.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Reggae+One&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
@@ -1123,5 +1128,10 @@
 </div>
 <div id="lever"><div class="lvKnob"></div><div class="lvVal">AUTO</div></div>
 <script src="game.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+</script>
 </body>
 </html>
