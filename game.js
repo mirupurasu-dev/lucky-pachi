@@ -224,9 +224,9 @@ const RECIPES = [
   { name: '果実の恵み', family: 'カテゴリ役', tier: '中',   need: [{ cat: 'fruit', n: 3 }],    desc: '果物×3 → +130玉',                eff: { t: 'coins', v: 130 } },
   { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],    desc: '植物×3 → 運+0.5＆+340玉×倍率',   eff: { t: 'multi', list: [{ t: 'luck', v: 0.5 }, { t: 'coins', v: 340 }] } },
   { name: '獣の群れ',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'animal', n: 3 }],   desc: '動物×3 → +220玉＆発射+8',        eff: { t: 'multi', list: [{ t: 'coins', v: 220 }, { t: 'shots', v: 8 }] } },
-  { name: '天の采配',   family: 'カテゴリ役', tier: '倍率', need: [{ cat: 'sky', n: 3 }],      desc: '天体×3 → 倍率+0.7',              eff: { t: 'mult', v: 0.7 } },
+  { name: '天の采配',   family: 'カテゴリ役', tier: '納品減', need: [{ cat: 'sky', n: 3 }],      desc: '天体×3 → 納品-10%(その面だけ、次の面でリセット)', eff: { t: 'quotaCut', v: 0.10 } },
   { name: '千両役者',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'treasure', n: 3 }], desc: '財宝×3 → +450玉',                eff: { t: 'coins', v: 450 } },
-  { name: '大博打',     family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'luck', n: 3 }],     desc: '博打×3 → +50〜850玉',            eff: { t: 'coinsRange', min: 50, max: 850 } },
+  { name: '大博打',     family: 'カテゴリ役', tier: '大振れ', need: [{ cat: 'luck', n: 3 }],     desc: '博打×3 → +30〜1500玉(運試し・博打覚醒のしょぼい版)', eff: { t: 'coinsRange', min: 30, max: 1500 } },
   { name: '宵祭り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'festival', n: 3 }], desc: '祭×3 → +400玉×倍率＆シャワー4発', eff: { t: 'multi', list: [{ t: 'coins', v: 400 }, { t: 'shower', v: 4 }] } },
   { name: '絡繰の妙',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'tool', n: 3 }],     desc: '仕掛×3 → 納品-15%＆白玉間引き',  eff: { t: 'multi', list: [{ t: 'quotaCut', v: 0.15 }, { t: 'thinDeck', c: 15 }] } },
   // ══ 覚醒役: 系統×2＋その系統の「主」レジェンド(1ルールは共通)。ただし発動する特殊能力は系統ごとに別物 ══
@@ -234,10 +234,10 @@ const RECIPES = [
   { name: 'フルーツ覚醒', family: '覚醒役', tier: 'シャワー', need: [{ cat: 'fruit', n: 2 }, { id: 'banana', n: 1 }],      desc: '果物×2＋🍌黄金バナナ → 玉シャワー8発＆+105玉', eff: { t: 'multi', list: [{ t: 'shower', v: 8 }, { t: 'coins', v: 105 }] } },
   { name: '花木覚醒',   family: '覚醒役', tier: '永続成長', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],      desc: '植物×2＋🌳世界樹 → ヘソ賞球+3(永続)＆運+0.2',   eff: { t: 'multi', list: [{ t: 'hesoPayPerm', v: 3 }, { t: 'luck', v: 0.2 }] } },
   { name: '百獣覚醒',   family: '覚醒役', tier: 'フィーバー', need: [{ cat: 'animal', n: 2 }, { id: 'ryu', n: 1 }],       desc: '動物×2＋🐉龍 → 即FEVER突入＆+55玉',       eff: { t: 'multi', list: [{ t: 'feverStart' }, { t: 'coins', v: 55 }] } },
-  { name: '天体覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'sky', n: 2 }, { id: 'taiyo', n: 1 }],          desc: '天体×2＋🌞太陽 → 倍率+0.85(加算)＆運+0.15',     eff: { t: 'multi', list: [{ t: 'mult', v: 0.85 }, { t: 'luck', v: 0.15 }] } },
+  { name: '天体覚醒',   family: '覚醒役', tier: '納品減', need: [{ cat: 'sky', n: 2 }, { id: 'taiyo', n: 1 }],          desc: '天体×2＋🌞太陽 → 納品-30%(その面だけ、次の面でリセット)', eff: { t: 'quotaCut', v: 0.30 } },
   { name: '財宝覚醒',   family: '覚醒役', tier: '固定大当り', need: [{ cat: 'treasure', n: 2 }, { id: 'crown', n: 1 }],     desc: '財宝×2＋👑王冠 → 一撃+1540玉(倍率は伸ばさない、その場の大金)', eff: { t: 'coins', v: 1540 } },
-  { name: '博打覚醒',   family: '覚醒役', tier: '大振れ', need: [{ cat: 'luck', n: 2 }, { id: 'joker', n: 1 }],         desc: '博打×2＋🃏ジョーカー → +70〜2450玉(運試し)', eff: { t: 'coinsRange', min: 70, max: 2450 } },
-  { name: '宴覚醒',     family: '覚醒役', tier: '共鳴', need: [{ cat: 'festival', n: 2 }, { id: 'shakudama', n: 1 }], desc: '祭×2＋🎆尺玉 → リールの系統数だけ増える一撃(いろいろ集めた多趣味なビルドほど強い)', eff: { t: 'comboBonus', per: 245 } },
+  { name: '博打覚醒',   family: '覚醒役', tier: '大振れ', need: [{ cat: 'luck', n: 2 }, { id: 'joker', n: 1 }],         desc: '博打×2＋🃏ジョーカー → +100〜20000玉(一撃勝負・運要素強め)', eff: { t: 'coinsRange', min: 100, max: 20000 } },
+  { name: '宴覚醒',     family: '覚醒役', tier: 'コンボ', need: [{ cat: 'festival', n: 2 }, { id: 'shakudama', n: 1 }], desc: '祭×2＋🎆尺玉 → 残り全面「祭コンボ」有効化。3揃い/役が連チャンするたび倍率+0.4(最大+2.0)、2揃い/ハズレで途切れて0に戻る', eff: { t: 'comboActivate' } },
   { name: '絡繰覚醒',   family: '覚醒役', tier: '設置', need: [{ cat: 'tool', n: 2 }, { id: 'karakuri', n: 1 }],      desc: '仕掛×2＋🏯絡繰城 → 役物を1つ無料設置',   eff: { t: 'partGift', c: 42 } },
   // ══ 特殊役: 見た瞬間わかるアイコン級だけを6つ。滅多に出ないがめっちゃ跳ねる ══
   { name: '大当り777',   family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 3 }],                                desc: '７×3 → 超RUSH 10R',           eff: { t: 'rush', v: 10 } },
@@ -284,10 +284,6 @@ function effBaseCoins(eff) {
   if (eff.t === 'coinsRange') return (eff.min + eff.max) / 2;
   if (eff.t === 'shots') return eff.c || 0;
   if (eff.t === 'thinDeck' || eff.t === 'rewriteHold') return eff.c || 0;
-  if (eff.t === 'comboBonus') {
-    const cats = new Set(Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0).map(id => SYMBOL_CAT[id]).filter(Boolean));
-    return eff.per * Math.max(1, cats.size);
-  }
   if (eff.t === 'multi') return eff.list.reduce((s, e) => s + effBaseCoins(e), 0);
   return 0;
 }
@@ -303,6 +299,7 @@ function roleYieldText(rc) {
   if (eff.t === 'partGift') return '役物を1つ設置';
   if (eff.t === 'feverStart') return '即FEVER突入';
   if (eff.t === 'hesoPayPerm') return `ヘソ賞球+${eff.v}(永続)`;
+  if (eff.t === 'comboActivate') return '祭コンボ発動(連チャンで倍率UP)';
   // multi内の「丸ごと別の仕組みに変わる」系は、玉数の見積もりより先に見出しとして出す
   if (eff.t === 'multi') {
     const f = t => eff.list.find(e => e.t === t);
@@ -757,7 +754,7 @@ function mods() {
   return m;
 }
 function effLuck() { return S.luck + mods().luckAdd; }
-function effMult() { return S.mult + mods().multAdd; }
+function effMult() { return S.mult + mods().multAdd + (S.comboBonusMult || 0); }
 function hesoHalfW() {
   let w = CFG.hesoHalfW * mods().hesoMult * Math.pow(0.985, S.loop);
   if (S.rush) w *= CFG.hesoBoostInRush;
@@ -1438,6 +1435,23 @@ function spinStep(dt) {
     resolveSpin();
   }
 }
+// 宴覚醒コンボ: 3揃い/役が連チャンするたび倍率が伸び、2揃い/ハズレで途切れて0に戻る
+const FEST_COMBO_STEP = 0.4, FEST_COMBO_CAP = 5;
+function festComboStep(isBigWin) {
+  if (!S.festComboActive) return;
+  if (isBigWin) {
+    S.festStreak = (S.festStreak || 0) + 1;
+    S.comboBonusMult = +(Math.min(FEST_COMBO_CAP, S.festStreak) * FEST_COMBO_STEP).toFixed(2);
+    if (!S.simMode) {
+      flashStat('multChip');
+      if (S.festStreak >= 2) fx.floatText(BLOCK.x + BLOCK.w / 2, BLOCK.y - 14, `祭連チャン×${S.festStreak}！`, '#ff8aff');
+    }
+  } else if (S.festStreak > 0) {
+    if (!S.simMode) fx.floatText(BLOCK.x + BLOCK.w / 2, BLOCK.y - 14, '連チャン途切れ…', '#8a8f9c');
+    S.festStreak = 0;
+    S.comboBonusMult = 0;
+  }
+}
 function resolveSpin() {
   const sp = S.spin;
   S.spin = null;
@@ -1446,6 +1460,7 @@ function resolveSpin() {
     document.getElementById('vignette').classList.remove('on');
     hidePushBtn(); hideRenStamp();
   }
+  festComboStep(sp.out.kind === 3 || sp.out.kind === 'recipe');
   if (sp.out.kind === 3) applyThree(sp.out.symbol, sp.ball);
   else if (sp.out.kind === 'recipe') applyRecipe(sp.out.recipe, sp.ball);
   else if (sp.out.kind === 2) applyTwo(sp.out.symbol, sp.ball);
@@ -1532,16 +1547,11 @@ function runEffect(d, srcBall, big, symId) {
   };
   const BW = () => { if (big) sfx('bigwin'); };
   switch (d.t) {
-    // 宴覚醒: 今リールにある「系統の種類数」だけ増える一撃(多趣味なほど跳ねる。祭単色より、いろいろ集めた方が強い)
-    case 'comboBonus': {
-      const cats = new Set(Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0).map(id => SYMBOL_CAT[id]).filter(Boolean));
-      const n = Math.max(1, cats.size);
-      const tag = winMultTag();
-      const v = gainBalls(d.per * n, srcBall);
-      if (big && S.winFx) S.winFx.amount = v;
-      F(`${n}系統ぶん共鳴！+${v}玉${tag}${big ? '！' : ''}`);
-      if (big) fx.coinFly(230, 200, Math.min(24, 6 + ((v / 40) | 0)));
-      celebrate(v);
+    // 宴覚醒: 残り面すべて「祭コンボ」が有効になる(3揃い/役が連チャンするたび倍率が伸び、途切れると0に戻る)
+    case 'comboActivate': {
+      S.festComboActive = true;
+      F('祭コンボ 発動！連チャンで倍率UP', '#ff8aff');
+      if (!S.simMode) fx.cutin('祭コンボ突入！連チャンで倍率UP', true);
       BW(); break;
     }
     case 'coins': {
@@ -2471,6 +2481,7 @@ function resetGame(opts = {}) {
     particles: [], floats: [], rings: [], coins: [], confetti: [], ambient: [], rockets: [],
     coinRain: [], celebrate: null, rushWon: 0,
     fever: null, feverGauge: 0,
+    festComboActive: false, festStreak: 0, comboBonusMult: 0, // 宴覚醒: 連チャンで倍率が伸び、途切れると0に戻る
     shake: 0, boardFlash: 0, lastDigits: null,
     timeScale: 1, tsTimer: 0, aberr: 0, glitchT: 0,
     cam: { z: 1, py: 390, punch: 0, rot: 0 },
@@ -5407,7 +5418,7 @@ const TUT_PAGES = [
   { ico: "⏱️", h: "30秒でわかる遊び方", html: "玉はこのゲームのお金。増やして、面の終わりに<b>家賃(ノルマ)を玉で支払います</b>。払えたら次の面へ、足りないと閉店(ゲームオーバー)。全10面。撃つのは全部おまかせで、あなたは<b>「何を集めるか」選ぶだけ</b>。", flow: [["撃つ", "玉は全自動で飛んでいく"], ["入る", "真ん中の穴「ヘソ」に入るとスロットが回る"], ["揃う", "絵柄が揃うと当たり。玉がドッと増える"], ["払う", "面の終わりに家賃(ノルマ)を納めて次へ"]] },
   { ico: "🎰", h: "当たりの正体は「役」", html: "スロットの3つの窓に、決まった組み合わせの絵柄が出ると当たり。これを<b>「役」</b>と呼びます。ぴったり同じ絵柄じゃなくてOK。<b>同じ系統(仲間)を3つ</b>集めれば役になります。系統は果物🍒 植物🍀 動物🐾 天体🌙 財宝💎 博打🎲 祭🎆 仕掛🔧の8つ。", ex: ["🍒🍇🍉", "バラバラでも全部果物の仲間。これで当たり!"] },
   { ico: "🛒", h: "集める物は4種類", html: "面をクリアするたび、ご褒美を<b>1つ無料</b>で持ち帰れます。屋台では玉を使った買い物も。選べるのはこの4種類。", flow: [["絵柄", "スロットに追加。同じ絵柄を増やすほど揃いやすい"], ["特殊な玉", "撃つ玉そのものが強くなる"], ["お守り", "持っているだけでずっと効く応援"], ["役物", "盤面に置く装置。台そのものを改造できる"]] },
-  { ico: "💥", h: "覚醒役はカテゴリごとに個性が違う", html: "系統の絵柄を2つ＋その系統の<b>主レジェンド</b>を揃えると「覚醒役」が発動。中身はカテゴリごとに全然違う特殊能力です。天体は<b>倍率が上がる</b>、財宝は<b>その場で大金</b>、博打は<b>大振れの一撃</b>、仕掛は<b>役物が無料設置</b>、祭は<b>ノルマが軽くなる</b>…など。倍率は上がった分、当たりでもらえる玉が全部この倍になります(<b>×2なら100玉が200玉</b>)。相性のいい組み合わせ・玉と絵柄の色合わせ・FEVERも掛け算で重なるので、育てたビルドの個性がハマると一気に爆発します。", ex: ["🌙🌙🌞", "天体2つ＋主のレジェンド(太陽)＝倍率が上がる「天体覚醒」"] },
+  { ico: "💥", h: "覚醒役はカテゴリごとに個性が違う", html: "系統の絵柄を2つ＋その系統の<b>主レジェンド</b>を揃えると「覚醒役」が発動。中身はカテゴリごとに全然違う特殊能力です。天体は<b>納品が軽くなる</b>、財宝は<b>その場で大金</b>、博打は<b>大振れの一撃</b>、仕掛は<b>役物が無料設置</b>、祭は<b>連チャンで倍率が伸びる</b>…など。倍率が上がった分、当たりでもらえる玉が全部この倍になります(<b>×2なら100玉が200玉</b>)。相性のいい組み合わせ・玉と絵柄の色合わせ・FEVERも掛け算で重なるので、育てたビルドの個性がハマると一気に爆発します。", ex: ["🔔🔔🎆", "祭2つ＋主のレジェンド(尺玉)＝連チャンで倍率が伸びる「宴覚醒」"] },
   { ico: "🏮", h: "さあ、開店", html: "分からない言葉が出たら、画面の表示(運・倍率・玉デッキなど)を<b>そのままタップ</b>。説明がすぐ開きます。役の一覧は役ガイド、言葉の意味は📚用語集に。<br>まずは同じ系統を3つ。それだけで玉は増え始めます。増やして、家賃を払って、爆発させろ。", last: true },
 ];
 let tutIdx = 0;
@@ -5440,7 +5451,7 @@ const GLOSSARY = [
   ] },
   { g: 'ステータス（右上の3つ）', terms: [
     { id: 'un', t: '運（うん）', d: '一言でいうと、絵柄の揃いやすさ。クローバー🍀などで上がる。高いほど当たりが出やすくなる。' },
-    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄(🌙🌞)や「天体覚醒」で上がる。覚醒役は系統ごとに効果が違い、倍率が上がるのは天体だけ。' },
+    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄(🌙)で上がる。「宴覚醒」は連チャン中だけ一時的に上がる(途切れると0に戻る)。覚醒役は系統ごとに効果が違う。' },
     { id: 'total', t: '合計倍率（今、何倍か）', d: '一言でいうと、いまの倍率ぜんぶの掛け算。倍率×相乗×FEVER×役倍率をまとめた数字で、画面右上にいつも出ている。' },
     { id: 'soujou', t: '相乗（そうじょう）', d: '一言でいうと、相性ボーナスの倍率。相性のいい持ち物の組み合わせ(シナジー)が成立すると上がる。' },
     { id: 'yakubairitsu', t: '役倍率（やくばいりつ）', d: '一言でいうと、一時的なブースト。金龍昇天(🐉×2)の「次の当たり×4」のように、次の当たりを丸ごと何倍にもする。' },
