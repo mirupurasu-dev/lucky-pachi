@@ -16,9 +16,9 @@ const CFG = {
   fireInterval: 0.4,            // 自動発射間隔(秒)
   startBalls: 400,
   shotsPerStage: 170,
-  quotas: [500, 650, 850, 1500, 2800, 5000, 9000, 15000, 24000, 40000], // ゴミ経済: 1-3面は低くフラット(積む期間)、4面以降で雪だるま前提に急ランプ
-  stageCoinRamp: 0.11,          // 面ごとに全獲得+11%(台の出玉エスカレーター)
-  payScale: 3.45,               // 払い出し全体スケール(高ノルマ調整の主ノブ。autoRunで実測調整)
+  quotas: [500, 650, 850, 1700, 3400, 6800, 13600, 26000, 50000, 95000], // ゴミ経済: 1-3面は低くフラット(積む期間)、4面以降を急勾配化(クリア率を大きく下げる調整)
+  stageCoinRamp: 0.06,           // 面ごとに全獲得+6%(台の出玉エスカレーター。旧0.11から緩和)
+  payScale: 2.8,                 // 払い出し全体スケール(高ノルマ調整の主ノブ。旧3.45から圧縮)
   hesoPay: 4, tulipPay: 5,
   attackerPay: 18, countPerRound: 9, roundTimeout: 6,
   rushRounds7: 6, rushRoundsBar: 4,
@@ -121,15 +121,15 @@ const SYMBOLS = {
   kumo: { glyph: "☁️", name: "雲", color: "#b0bec5", rarity: "normal", three: {"t":"shots","v":2,"c":12}, two: {"t":"coins","v":2}, desc: "3揃い: +12玉＆発射+2 / 2揃い: +2玉" },
   chochin: { glyph: "🏮", name: "提灯", color: "#ff7043", rarity: "normal", three: {"t":"shots","v":8,"c":6}, two: {"t":"coins","v":2}, desc: "3揃い: +6玉＆発射+8 / 2揃い: +2玉" },
   // 百獣・財宝・天体はノーマル絵柄が1種類しかなく開始直後に系統を組めなかった(実測クリア率40〜67%)ため、各+3種を追加
-  kaeru:   { glyph: '🐸', name: '蛙',       color: '#7cb342', rarity: 'normal', three: { t: 'coins', v: 12 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +12玉×倍率(無事帰る) / 2揃い: +3玉' },
-  kitsune: { glyph: '🦊', name: '狐',       color: '#f4a340', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.2 }, { t: 'coins', v: 8 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.03 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 運+0.2＆+8玉 / 2揃い: 運+0.03＆+2玉' },
-  koi:     { glyph: '🐟', name: '鯉',       color: '#e2725b', rarity: 'normal', three: { t: 'shots', v: 5, c: 10 }, two: { t: 'shots', v: 1, c: 3 }, desc: '3揃い: +10玉＆発射+5(滝を昇る) / 2揃い: +3玉＆発射+1' },
-  shuugi:  { glyph: '🧧', name: '祝儀袋',   color: '#e5383b', rarity: 'normal', three: { t: 'coins', v: 12 }, two: { t: 'coins', v: 3 }, desc: '3揃い: +12玉×倍率 / 2揃い: +3玉' },
-  tsubo:   { glyph: '🏺', name: '壺',       color: '#e0b04c', rarity: 'normal', three: { t: 'multi', list: [{ t: 'quotaCut', v: 0.05 }, { t: 'coins', v: 5 }] }, two: { t: 'multi', list: [{ t: 'quotaCut', v: 0.01 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 納品-5%＆+5玉 / 2揃い: -1%＆+1玉' },
-  satsu:   { glyph: '💴', name: '札束',     color: '#6fbf73', rarity: 'normal', three: { t: 'shots', v: 6, c: 10 }, two: { t: 'shots', v: 1, c: 3 }, desc: '3揃い: +10玉＆発射+6 / 2揃い: +3玉＆発射+1' },
-  tako:    { glyph: '🪁', name: '凧',       color: '#e15554', rarity: 'normal', three: { t: 'shots', v: 5, c: 10 }, two: { t: 'shots', v: 1, c: 3 }, desc: '3揃い: +10玉＆発射+5(高く舞う) / 2揃い: +3玉＆発射+1' },
-  hato:    { glyph: '🕊️', name: '鳩',       color: '#90a4d4', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.2 }, { t: 'coins', v: 7 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.03 }, { t: 'coins', v: 2 }] }, desc: '3揃い: 運+0.2＆+7玉 / 2揃い: 運+0.03＆+2玉' },
-  furin:   { glyph: '🎐', name: '風鈴',     color: '#9d7fd6', rarity: 'normal', three: { t: 'multi', list: [{ t: 'mult', v: 0.2 }, { t: 'coins', v: 6 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.04 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 倍率+0.2＆+6玉(涼やかな音) / 2揃い: +0.04＆+1玉' },
+  kaeru:   { glyph: '🐸', name: '蛙',       color: '#7cb342', rarity: 'normal', three: { t: 'coins', v: 9 }, two: { t: 'coins', v: 2 }, desc: '3揃い: +9玉×倍率(無事帰る) / 2揃い: +2玉' },
+  kitsune: { glyph: '🦊', name: '狐',       color: '#f4a340', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.15 }, { t: 'coins', v: 6 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.02 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 運+0.15＆+6玉 / 2揃い: 運+0.02＆+1玉' },
+  koi:     { glyph: '🐟', name: '鯉',       color: '#e2725b', rarity: 'normal', three: { t: 'shots', v: 4, c: 7 }, two: { t: 'shots', v: 1, c: 2 }, desc: '3揃い: +7玉＆発射+4(滝を昇る) / 2揃い: +2玉＆発射+1' },
+  shuugi:  { glyph: '🧧', name: '祝儀袋',   color: '#e5383b', rarity: 'normal', three: { t: 'coins', v: 9 }, two: { t: 'coins', v: 2 }, desc: '3揃い: +9玉×倍率 / 2揃い: +2玉' },
+  tsubo:   { glyph: '🏺', name: '壺',       color: '#e0b04c', rarity: 'normal', three: { t: 'multi', list: [{ t: 'quotaCut', v: 0.035 }, { t: 'coins', v: 4 }] }, two: { t: 'multi', list: [{ t: 'quotaCut', v: 0.01 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 納品-3.5%＆+4玉 / 2揃い: -1%＆+1玉' },
+  satsu:   { glyph: '💴', name: '札束',     color: '#6fbf73', rarity: 'normal', three: { t: 'shots', v: 4, c: 7 }, two: { t: 'shots', v: 1, c: 2 }, desc: '3揃い: +7玉＆発射+4 / 2揃い: +2玉＆発射+1' },
+  tako:    { glyph: '🪁', name: '凧',       color: '#e15554', rarity: 'normal', three: { t: 'shots', v: 4, c: 7 }, two: { t: 'shots', v: 1, c: 2 }, desc: '3揃い: +7玉＆発射+4(高く舞う) / 2揃い: +2玉＆発射+1' },
+  hato:    { glyph: '🕊️', name: '鳩',       color: '#90a4d4', rarity: 'normal', three: { t: 'multi', list: [{ t: 'luck', v: 0.15 }, { t: 'coins', v: 5 }] }, two: { t: 'multi', list: [{ t: 'luck', v: 0.02 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 運+0.15＆+5玉 / 2揃い: 運+0.02＆+1玉' },
+  furin:   { glyph: '🎐', name: '風鈴',     color: '#9d7fd6', rarity: 'normal', three: { t: 'multi', list: [{ t: 'mult', v: 0.15 }, { t: 'coins', v: 4 }] }, two: { t: 'multi', list: [{ t: 'mult', v: 0.03 }, { t: 'coins', v: 1 }] }, desc: '3揃い: 倍率+0.15＆+4玉(涼やかな音) / 2揃い: +0.03＆+1玉' },
 };
 
 // ---------- 絵柄の色系統(色共鳴玉とのビルド相乗に使う) ----------
@@ -170,7 +170,7 @@ function dexHas(type, id) { return !!META.dex[`${type}:${id}`]; }
 // ---------- 難易度(ノルマ倍率) ----------
 const DIFFS = [
   { key: 'easy',   label: 'やさしい', mult: 0.62, color: '#7ef0a8', note: '納品ノルマ -38%' },
-  { key: 'normal', label: 'ふつう',   mult: 1.0,  color: '#ffd76a', note: '標準バランス（クリア率約20%）' },
+  { key: 'normal', label: 'ふつう',   mult: 1.3,  color: '#ffd76a', note: '標準バランス（クリア率約20%）' },
   { key: 'hard',   label: 'むずかしい', mult: 1.5, color: '#ff8a3d', note: '納品ノルマ +50%' },
   { key: 'oni',    label: '鬼',       mult: 2.3,  color: '#ff5252', note: '納品ノルマ +130%・玄人向け' },
 ];
@@ -229,15 +229,16 @@ const RECIPES = [
   { name: '大博打',     family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'luck', n: 3 }],     desc: '博打×3 → +50〜850玉',            eff: { t: 'coinsRange', min: 50, max: 850 } },
   { name: '宵祭り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'festival', n: 3 }], desc: '祭×3 → +400玉×倍率＆シャワー4発', eff: { t: 'multi', list: [{ t: 'coins', v: 400 }, { t: 'shower', v: 4 }] } },
   { name: '絡繰の妙',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'tool', n: 3 }],     desc: '仕掛×3 → 納品-15%＆白玉間引き',  eff: { t: 'multi', list: [{ t: 'quotaCut', v: 0.15 }, { t: 'thinDeck', c: 15 }] } },
-  // ══ 覚醒役: 系統×2＋その系統の「主」レジェンド(これも全系統同じ1ルール)。倍率が掛け算で跳ねる ══
-  { name: 'フルーツ覚醒', family: '覚醒役', tier: '倍率', need: [{ cat: 'fruit', n: 2 }, { id: 'banana', n: 1 }],      desc: '果物×2＋🍌黄金バナナ → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
-  { name: '花木覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],      desc: '植物×2＋🌳世界樹 → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
-  { name: '百獣覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'animal', n: 2 }, { id: 'ryu', n: 1 }],         desc: '動物×2＋🐉龍 → 倍率×1.5(乗算)',       eff: { t: 'multMult', v: 1.5 } },
-  { name: '天体覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'sky', n: 2 }, { id: 'taiyo', n: 1 }],          desc: '天体×2＋🌞太陽 → 倍率×1.5(乗算)',     eff: { t: 'multMult', v: 1.5 } },
-  { name: '財宝覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'treasure', n: 2 }, { id: 'crown', n: 1 }],     desc: '財宝×2＋👑王冠 → 倍率×1.5(乗算)',     eff: { t: 'multMult', v: 1.5 } },
-  { name: '博打覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'luck', n: 2 }, { id: 'joker', n: 1 }],         desc: '博打×2＋🃏ジョーカー → 倍率×1.5(乗算)', eff: { t: 'multMult', v: 1.5 } },
-  { name: '宴覚醒',     family: '覚醒役', tier: '倍率', need: [{ cat: 'festival', n: 2 }, { id: 'shakudama', n: 1 }], desc: '祭×2＋🎆尺玉 → 倍率×1.5(乗算)',       eff: { t: 'multMult', v: 1.5 } },
-  { name: '絡繰覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'tool', n: 2 }, { id: 'karakuri', n: 1 }],      desc: '仕掛×2＋🏯絡繰城 → 倍率×1.5(乗算)',   eff: { t: 'multMult', v: 1.5 } },
+  // ══ 覚醒役: 系統×2＋その系統の「主」レジェンド(1ルールは共通)。ただし発動する特殊能力は系統ごとに別物 ══
+  // 果物=シャワー系／花木=永続成長系／百獣=フィーバー系／天体=倍率系(加算・安全)／財宝=固定でかい系／博打=大振れ乱数系／祭=納品数減らし系／仕掛=設置型系
+  { name: 'フルーツ覚醒', family: '覚醒役', tier: 'シャワー', need: [{ cat: 'fruit', n: 2 }, { id: 'banana', n: 1 }],      desc: '果物×2＋🍌黄金バナナ → 玉シャワー8発＆+105玉', eff: { t: 'multi', list: [{ t: 'shower', v: 8 }, { t: 'coins', v: 105 }] } },
+  { name: '花木覚醒',   family: '覚醒役', tier: '永続成長', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],      desc: '植物×2＋🌳世界樹 → ヘソ賞球+3(永続)＆運+0.2',   eff: { t: 'multi', list: [{ t: 'hesoPayPerm', v: 3 }, { t: 'luck', v: 0.2 }] } },
+  { name: '百獣覚醒',   family: '覚醒役', tier: 'フィーバー', need: [{ cat: 'animal', n: 2 }, { id: 'ryu', n: 1 }],       desc: '動物×2＋🐉龍 → 即FEVER突入＆+55玉',       eff: { t: 'multi', list: [{ t: 'feverStart' }, { t: 'coins', v: 55 }] } },
+  { name: '天体覚醒',   family: '覚醒役', tier: '倍率', need: [{ cat: 'sky', n: 2 }, { id: 'taiyo', n: 1 }],          desc: '天体×2＋🌞太陽 → 倍率+0.85(加算)＆運+0.15',     eff: { t: 'multi', list: [{ t: 'mult', v: 0.85 }, { t: 'luck', v: 0.15 }] } },
+  { name: '財宝覚醒',   family: '覚醒役', tier: '固定大当り', need: [{ cat: 'treasure', n: 2 }, { id: 'crown', n: 1 }],     desc: '財宝×2＋👑王冠 → 一撃+1540玉(倍率は伸ばさない、その場の大金)', eff: { t: 'coins', v: 1540 } },
+  { name: '博打覚醒',   family: '覚醒役', tier: '大振れ', need: [{ cat: 'luck', n: 2 }, { id: 'joker', n: 1 }],         desc: '博打×2＋🃏ジョーカー → +70〜2450玉(運試し)', eff: { t: 'coinsRange', min: 70, max: 2450 } },
+  { name: '宴覚醒',     family: '覚醒役', tier: '共鳴', need: [{ cat: 'festival', n: 2 }, { id: 'shakudama', n: 1 }], desc: '祭×2＋🎆尺玉 → リールの系統数だけ増える一撃(いろいろ集めた多趣味なビルドほど強い)', eff: { t: 'comboBonus', per: 245 } },
+  { name: '絡繰覚醒',   family: '覚醒役', tier: '設置', need: [{ cat: 'tool', n: 2 }, { id: 'karakuri', n: 1 }],      desc: '仕掛×2＋🏯絡繰城 → 役物を1つ無料設置',   eff: { t: 'partGift', c: 42 } },
   // ══ 特殊役: 見た瞬間わかるアイコン級だけを6つ。滅多に出ないがめっちゃ跳ねる ══
   { name: '大当り777',   family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 3 }],                                desc: '７×3 → 超RUSH 10R',           eff: { t: 'rush', v: 10 } },
   { name: 'ラッキーセブン', family: '大当り役', tier: '爆発', need: [{ id: 'seven', n: 2 }, { id: 'clover', n: 1 }],     desc: '７🍀７ → 超RUSH 8R',          eff: { t: 'rush', v: 8 } },
@@ -283,6 +284,10 @@ function effBaseCoins(eff) {
   if (eff.t === 'coinsRange') return (eff.min + eff.max) / 2;
   if (eff.t === 'shots') return eff.c || 0;
   if (eff.t === 'thinDeck' || eff.t === 'rewriteHold') return eff.c || 0;
+  if (eff.t === 'comboBonus') {
+    const cats = new Set(Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0).map(id => SYMBOL_CAT[id]).filter(Boolean));
+    return eff.per * Math.max(1, cats.size);
+  }
   if (eff.t === 'multi') return eff.list.reduce((s, e) => s + effBaseCoins(e), 0);
   return 0;
 }
@@ -295,6 +300,19 @@ function roleYieldText(rc) {
   if (eff.t === 'rush') return `RUSH ${eff.v}R`;
   if (eff.t === 'ballsPct') return `持ち玉${Math.round(eff.v * 100)}%`;
   if (eff.t === 'joker') return 'ランダム超級';
+  if (eff.t === 'partGift') return '役物を1つ設置';
+  if (eff.t === 'feverStart') return '即FEVER突入';
+  if (eff.t === 'hesoPayPerm') return `ヘソ賞球+${eff.v}(永続)`;
+  // multi内の「丸ごと別の仕組みに変わる」系は、玉数の見積もりより先に見出しとして出す
+  if (eff.t === 'multi') {
+    const f = t => eff.list.find(e => e.t === t);
+    if (f('multMult')) return `倍率×${f('multMult').v}`;
+    if (f('mult')) return `倍率+${f('mult').v}`;
+    if (f('rush')) return `RUSH ${f('rush').v}R`;
+    if (f('partGift')) return '役物を1つ設置';
+    if (f('feverStart')) return '即FEVER突入';
+    if (f('hesoPayPerm')) return `ヘソ賞球+${f('hesoPayPerm').v}(永続)`;
+  }
   const base = effBaseCoins(eff);
   if (base > 0) {
     const tot = effMult() * synergyMult() * (S.fever ? 2 : 1) * (S.winBoostN > 0 ? (S.winBoostV || 1) : 1);
@@ -303,12 +321,12 @@ function roleYieldText(rc) {
   }
   if (eff.t === 'multi') {
     const f = t => eff.list.find(e => e.t === t);
-    if (f('multMult')) return `倍率×${f('multMult').v}`;
-    if (f('mult')) return `倍率+${f('mult').v}`;
-    if (f('rush')) return `RUSH ${f('rush').v}R`;
     if (f('shower')) return `玉シャワー${f('shower').v}発`;
+    if (f('quotaCut')) return `納品-${Math.round(f('quotaCut').v * 100)}%`;
+    if (f('luck')) return `運+${f('luck').v}`;
   }
   if (eff.t === 'shower') return `玉シャワー${eff.v}発`;
+  if (eff.t === 'quotaCut') return `納品-${Math.round(eff.v * 100)}%`;
   return '';
 }
 
@@ -1514,6 +1532,18 @@ function runEffect(d, srcBall, big, symId) {
   };
   const BW = () => { if (big) sfx('bigwin'); };
   switch (d.t) {
+    // 宴覚醒: 今リールにある「系統の種類数」だけ増える一撃(多趣味なほど跳ねる。祭単色より、いろいろ集めた方が強い)
+    case 'comboBonus': {
+      const cats = new Set(Object.keys(S.symbolPool).filter(id => S.symbolPool[id] > 0).map(id => SYMBOL_CAT[id]).filter(Boolean));
+      const n = Math.max(1, cats.size);
+      const tag = winMultTag();
+      const v = gainBalls(d.per * n, srcBall);
+      if (big && S.winFx) S.winFx.amount = v;
+      F(`${n}系統ぶん共鳴！+${v}玉${tag}${big ? '！' : ''}`);
+      if (big) fx.coinFly(230, 200, Math.min(24, 6 + ((v / 40) | 0)));
+      celebrate(v);
+      BW(); break;
+    }
     case 'coins': {
       const tag = winMultTag(); // 倍率適用前に計算(gainBallsでmultが変わる前提はないが表示整合のため)
       const v = gainBalls(d.v, srcBall);
@@ -1609,6 +1639,28 @@ function runEffect(d, srcBall, big, symId) {
       } else { const v = gainBalls(50, srcBall); F(`+${v}玉`); }
       BW(); break;
     }
+    // 絡繰覚醒: 空きスロットに役物を1つ無料設置(レア/レジェンド優先、埋まっていれば玉で代替)
+    case 'partGift': {
+      const slots = freeSlots();
+      if (slots.length > 0) {
+        const owned = new Set(S.parts.map(p => p.id));
+        const cand = Object.keys(PARTS).filter(id => !owned.has(id));
+        const weighted = [];
+        for (const id of cand) {
+          const w = PARTS[id].rarity === 'legend' ? 4 : PARTS[id].rarity === 'rare' ? 2 : 1;
+          for (let i = 0; i < w; i++) weighted.push(id);
+        }
+        if (weighted.length) {
+          const id = pick(weighted);
+          installPartAt(id, pick(slots));
+          F(`役物「${PARTS[id].name}」設置！`);
+          if (!S.simMode) renderCollections();
+        } else { const v = gainBalls(d.c || 60, srcBall); F(`+${v}玉`); }
+      } else { const v = gainBalls(d.c || 60, srcBall); F(`+${v}玉(スロット満杯)`); }
+      BW(); break;
+    }
+    // 百獣覚醒: 即座にFEVER突入(既にFEVER中なら延長)
+    case 'feverStart': startFever(); BW(); break;
     case 'multi': for (const sub of d.list) runEffect(sub, srcBall, false, symId); BW(); break;
     case 'joker': {
       const pool = [
@@ -1729,7 +1781,7 @@ function loopMultAt(loop) {
 function loopMult() { return loopMultAt(S.loop); }
 function quotaFor(stage) {
   const base = CFG.quotas[Math.min(stage - 1, CFG.quotas.length - 1)];
-  const diff = (S.simMode || S.allUnlock) ? 1 : curDiff().mult; // 計測(autoRun)は常にふつう基準
+  const diff = (S.simMode || S.allUnlock) ? (S.testDiffMult || 1) : curDiff().mult; // 計測(autoRun)は常にふつう基準(S.testDiffMultで上書き可)
   return Math.max(50, Math.round(base * mods().quotaMult * loopMult() * diff));
 }
 function stageShots(m) {
@@ -5355,7 +5407,7 @@ const TUT_PAGES = [
   { ico: "⏱️", h: "30秒でわかる遊び方", html: "玉はこのゲームのお金。増やして、面の終わりに<b>家賃(ノルマ)を玉で支払います</b>。払えたら次の面へ、足りないと閉店(ゲームオーバー)。全10面。撃つのは全部おまかせで、あなたは<b>「何を集めるか」選ぶだけ</b>。", flow: [["撃つ", "玉は全自動で飛んでいく"], ["入る", "真ん中の穴「ヘソ」に入るとスロットが回る"], ["揃う", "絵柄が揃うと当たり。玉がドッと増える"], ["払う", "面の終わりに家賃(ノルマ)を納めて次へ"]] },
   { ico: "🎰", h: "当たりの正体は「役」", html: "スロットの3つの窓に、決まった組み合わせの絵柄が出ると当たり。これを<b>「役」</b>と呼びます。ぴったり同じ絵柄じゃなくてOK。<b>同じ系統(仲間)を3つ</b>集めれば役になります。系統は果物🍒 植物🍀 動物🐾 天体🌙 財宝💎 博打🎲 祭🎆 仕掛🔧の8つ。", ex: ["🍒🍇🍉", "バラバラでも全部果物の仲間。これで当たり!"] },
   { ico: "🛒", h: "集める物は4種類", html: "面をクリアするたび、ご褒美を<b>1つ無料</b>で持ち帰れます。屋台では玉を使った買い物も。選べるのはこの4種類。", flow: [["絵柄", "スロットに追加。同じ絵柄を増やすほど揃いやすい"], ["特殊な玉", "撃つ玉そのものが強くなる"], ["お守り", "持っているだけでずっと効く応援"], ["役物", "盤面に置く装置。台そのものを改造できる"]] },
-  { ico: "💥", h: "倍率で雪だるま", html: "<b>倍率</b>は、当たりでもらえる玉が全部この倍になる数字。<b>×2なら、100玉の当たりが200玉</b>に。天体絵柄🌙や役で上がります。さらに相性のいい組み合わせ・玉と絵柄の色合わせ・FEVERも<b>全部掛け算</b>。1つ1つは小さくても、重なると150倍級の爆発が起きて脳汁が出ます。", ex: ["🍒🍒🍌", "果物2つ＋主のレジェンド(黄金バナナ)＝倍率が掛け算で増える「覚醒役」"] },
+  { ico: "💥", h: "覚醒役はカテゴリごとに個性が違う", html: "系統の絵柄を2つ＋その系統の<b>主レジェンド</b>を揃えると「覚醒役」が発動。中身はカテゴリごとに全然違う特殊能力です。天体は<b>倍率が上がる</b>、財宝は<b>その場で大金</b>、博打は<b>大振れの一撃</b>、仕掛は<b>役物が無料設置</b>、祭は<b>ノルマが軽くなる</b>…など。倍率は上がった分、当たりでもらえる玉が全部この倍になります(<b>×2なら100玉が200玉</b>)。相性のいい組み合わせ・玉と絵柄の色合わせ・FEVERも掛け算で重なるので、育てたビルドの個性がハマると一気に爆発します。", ex: ["🌙🌙🌞", "天体2つ＋主のレジェンド(太陽)＝倍率が上がる「天体覚醒」"] },
   { ico: "🏮", h: "さあ、開店", html: "分からない言葉が出たら、画面の表示(運・倍率・玉デッキなど)を<b>そのままタップ</b>。説明がすぐ開きます。役の一覧は役ガイド、言葉の意味は📚用語集に。<br>まずは同じ系統を3つ。それだけで玉は増え始めます。増やして、家賃を払って、爆発させろ。", last: true },
 ];
 let tutIdx = 0;
@@ -5388,7 +5440,7 @@ const GLOSSARY = [
   ] },
   { g: 'ステータス（右上の3つ）', terms: [
     { id: 'un', t: '運（うん）', d: '一言でいうと、絵柄の揃いやすさ。クローバー🍀などで上がる。高いほど当たりが出やすくなる。' },
-    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄(🌙🌞)や「覚醒役」で上がる。' },
+    { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄(🌙🌞)や「天体覚醒」で上がる。覚醒役は系統ごとに効果が違い、倍率が上がるのは天体だけ。' },
     { id: 'total', t: '合計倍率（今、何倍か）', d: '一言でいうと、いまの倍率ぜんぶの掛け算。倍率×相乗×FEVER×役倍率をまとめた数字で、画面右上にいつも出ている。' },
     { id: 'soujou', t: '相乗（そうじょう）', d: '一言でいうと、相性ボーナスの倍率。相性のいい持ち物の組み合わせ(シナジー)が成立すると上がる。' },
     { id: 'yakubairitsu', t: '役倍率（やくばいりつ）', d: '一言でいうと、一時的なブースト。金龍昇天(🐉×2)の「次の当たり×4」のように、次の当たりを丸ごと何倍にもする。' },
