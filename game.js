@@ -222,7 +222,7 @@ function symCat(id) { return SYMBOL_CAT[id] || null; }
 const RECIPES = [
   // ══ 系統役: 同じ系統を3つ揃えるだけ(覚えるルールは1つ) ══
   { name: '果実の恵み', family: 'カテゴリ役', tier: '中',   need: [{ cat: 'fruit', n: 3 }],    desc: '果物×3 → +130玉',                eff: { t: 'coins', v: 130 } },
-  { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],    desc: '植物×3 → 運+0.5＆+340玉×倍率',   eff: { t: 'multi', list: [{ t: 'luck', v: 0.5 }, { t: 'coins', v: 340 }] } },
+  { name: '花盛り',     family: 'カテゴリ役', tier: '中',   need: [{ cat: 'plant', n: 3 }],    desc: '植物×3 → 運+0.15＆+130玉×倍率',   eff: { t: 'multi', list: [{ t: 'luck', v: 0.15 }, { t: 'coins', v: 130 }] } },
   { name: '獣の群れ',   family: 'カテゴリ役', tier: '中',   need: [{ cat: 'animal', n: 3 }],   desc: '動物×3 → +220玉＆発射+8',        eff: { t: 'multi', list: [{ t: 'coins', v: 220 }, { t: 'shots', v: 8 }] } },
   { name: '天の采配',   family: 'カテゴリ役', tier: '納品減', need: [{ cat: 'sky', n: 3 }],      desc: '天体×3 → 納品-10%(その面だけ、次の面でリセット)', eff: { t: 'quotaCut', v: 0.10 } },
   { name: '千両役者',   family: 'カテゴリ役', tier: '爆発', need: [{ cat: 'treasure', n: 3 }], desc: '財宝×3 → +450玉',                eff: { t: 'coins', v: 450 } },
@@ -232,7 +232,7 @@ const RECIPES = [
   // ══ 覚醒役: 系統×2＋その系統の「主」レジェンド(1ルールは共通)。ただし発動する特殊能力は系統ごとに別物 ══
   // 果物=シャワー系／花木=永続成長系／百獣=フィーバー系／天体=倍率系(加算・安全)／財宝=固定でかい系／博打=大振れ乱数系／祭=納品数減らし系／仕掛=設置型系
   { name: 'フルーツ覚醒', family: '覚醒役', tier: 'シャワー', need: [{ cat: 'fruit', n: 2 }, { id: 'banana', n: 1 }],      desc: '果物×2＋🍌黄金バナナ → 玉シャワー8発＆+105玉', eff: { t: 'multi', list: [{ t: 'shower', v: 8 }, { t: 'coins', v: 105 }] } },
-  { name: '花木覚醒',   family: '覚醒役', tier: '永続成長', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],      desc: '植物×2＋🌳世界樹 → ヘソ賞球+3(永続)＆運+0.2',   eff: { t: 'multi', list: [{ t: 'hesoPayPerm', v: 3 }, { t: 'luck', v: 0.2 }] } },
+  { name: '花木覚醒',   family: '覚醒役', tier: '永続成長', need: [{ cat: 'plant', n: 2 }, { id: 'sekaiju', n: 1 }],      desc: '植物×2＋🌳世界樹 → ヘソ賞球+1(永続)＆運+0.15',   eff: { t: 'multi', list: [{ t: 'hesoPayPerm', v: 1 }, { t: 'luck', v: 0.15 }] } },
   { name: '百獣覚醒',   family: '覚醒役', tier: 'フィーバー', need: [{ cat: 'animal', n: 2 }, { id: 'ryu', n: 1 }],       desc: '動物×2＋🐉龍 → 即FEVER突入＆+55玉',       eff: { t: 'multi', list: [{ t: 'feverStart' }, { t: 'coins', v: 55 }] } },
   { name: '天体覚醒',   family: '覚醒役', tier: '納品減', need: [{ cat: 'sky', n: 2 }, { id: 'taiyo', n: 1 }],          desc: '天体×2＋🌞太陽 → 納品-30%(その面だけ、次の面でリセット)', eff: { t: 'quotaCut', v: 0.30 } },
   { name: '財宝覚醒',   family: '覚醒役', tier: '固定大当り', need: [{ cat: 'treasure', n: 2 }, { id: 'crown', n: 1 }],     desc: '財宝×2＋👑王冠 → 一撃+1540玉(倍率は伸ばさない、その場の大金)', eff: { t: 'coins', v: 1540 } },
@@ -2595,7 +2595,7 @@ function deckChipsHTML() {
 function reelChipsHTML() {
   return Object.entries(S.symbolPool)
     .filter(([, n]) => n > 0)
-    .map(([id, n]) => `<span class="chip sym">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}</span></span>`)
+    .map(([id, n]) => `<span class="chip sym tapInfo" data-sym="${id}" role="button" tabindex="0">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}<br><span class="tapHint">タップで狙える役をぜんぶ見る</span></span></span>`)
     .join('');
 }
 function relicChipsHTML() {
@@ -5497,6 +5497,21 @@ function openGlossary(anchor) {
     const b = document.getElementById('glossaryBody'); if (b) b.scrollTop = 0;
   }
 }
+// リール構成チップをタップ → その絵柄の「狙える役」フル説明を出す
+function openSymDetail(id) {
+  const s = SYMBOLS[id];
+  if (!s) return;
+  const n = S.symbolPool[id] || 0;
+  document.getElementById('sdGlyph').textContent = s.glyph;
+  document.getElementById('sdName').innerHTML = `${s.name}<span class="sdCnt">リールに ×${n}</span>`;
+  document.getElementById('sdDesc').textContent = s.desc;
+  const roles = symbolRoleTagsHTML(id);
+  document.getElementById('sdBody').innerHTML = roles ||
+    '<div class="sdNone">この絵柄が絡む特殊役はまだ無い。同じ絵柄を重ねて3揃いを狙おう。</div>';
+  const b = document.getElementById('sdBody'); if (b) b.scrollTop = 0;
+  document.getElementById('symDetailOverlay').classList.add('show');
+}
+function closeSymDetail() { document.getElementById('symDetailOverlay').classList.remove('show'); }
 function updateDiffBtn() {
   const b = document.getElementById('diffBtn');
   const d = curDiff();
@@ -5561,6 +5576,15 @@ document.getElementById('glossaryBtn').onclick = () => openGlossary();
 document.getElementById('glossaryClose').onclick = () => document.getElementById('glossaryOverlay').classList.remove('show');
 // HUDの用語・パネル見出しをタップ → その語の説明を用語集で開く
 document.querySelectorAll('[data-gl]').forEach(el => el.addEventListener('click', () => openGlossary(el.dataset.gl)));
+// リール構成チップ(sym)をタップ → 狙える役のフル説明ポップアップ。チップは動的に描き直すので委譲で拾う
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip.sym[data-sym]');
+  if (chip) { e.stopPropagation(); openSymDetail(chip.dataset.sym); }
+});
+document.getElementById('sdClose').onclick = () => closeSymDetail();
+document.getElementById('symDetailOverlay').addEventListener('click', e => {
+  if (e.target.id === 'symDetailOverlay') closeSymDetail(); // 背景タップで閉じる
+});
 document.getElementById('tutBtn').onclick = () => openTut();
 document.getElementById('tutSkip').onclick = () => closeTut();
 document.getElementById('tutNext').onclick = () => {

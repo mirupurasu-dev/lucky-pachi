@@ -17,6 +17,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Reggae+One&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 <style>
+  /* にくまるフォント(07NikumaruFont / M+準拠・商用可) ローカル同梱。本文＆見出しの丸ゴシック */
+  @font-face {
+    font-family: 'Nikumaru';
+    src: url('assets/nikumaru.woff2') format('woff2');
+    font-weight: 400 900;
+    font-display: swap;
+  }
   :root {
     --bg: #0a0c0b;
     --panel: #14171599;
@@ -27,8 +34,8 @@
     --accent: #29e07c;      /* 面テーマでJSから書き換わる */
     --accent2: #159254;
     --danger: #ff4d5e;
-    --f-base: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-    --f-disp: 'Reggae One', 'Zen Kaku Gothic New', sans-serif;
+    --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    --f-disp: 'Nikumaru', 'Reggae One', 'Zen Kaku Gothic New', sans-serif;
     --f-num: 'Orbitron', 'Courier New', monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -149,9 +156,20 @@
   }
   .overlay.show { display: flex; }
   .overlay .inner { text-align: center; padding: 20px; width: 100%; max-width: 430px; }
-  .overlay h1 { font-size: 38px; font-weight: 400; letter-spacing: .05em; line-height: 1.3; font-family: var(--f-disp); }
-  .overlay h1 .green { color: var(--accent); }
-  .overlay h1 .red { color: var(--danger); }
+  /* タイトルは にくまる を土台に「3D太字ゴールド丸文字」加工 */
+  .overlay h1 {
+    font-size: 38px; font-weight: 400; letter-spacing: .04em; line-height: 1.28; font-family: var(--f-disp);
+    color: #ffce5c;
+    background: linear-gradient(180deg, #fff8db 0%, #ffe58c 40%, #ffd15a 51%, #f4b53a 53%, #ffcf5e 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 3px #6e4415; paint-order: stroke fill;
+    filter:
+      drop-shadow(0 1px 0 #7a4e18) drop-shadow(0 2px 0 #6e4415)
+      drop-shadow(0 3px 0 #5a380f) drop-shadow(0 5px 4px rgba(0,0,0,.55));
+  }
+  /* 意味を持つ色見出しは色を保ったまま3D立体だけ乗せる */
+  .overlay h1 .green { color: var(--accent); background: none; -webkit-text-fill-color: var(--accent); }
+  .overlay h1 .red { color: var(--danger); background: none; -webkit-text-fill-color: var(--danger); }
   .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
   .overlay p b { color: var(--text); }
   /* 選択の確認ダイアログ */
@@ -169,6 +187,21 @@
   .cf-btns { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 16px; }
   .cf-btns .bigBtn { margin-top: 0; padding: 12px 28px; font-size: 13px; }
   .cf-btns .ghostBtn { margin-top: 0; }
+  /* リール絵柄の詳細ポップアップ(チップをタップ) */
+  #symDetailOverlay { z-index: 86; }
+  .sd-inner { max-width: 360px; background: linear-gradient(180deg,#171b16,#0e120d); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; display: flex; flex-direction: column; }
+  .sd-glyph { font-size: 44px; line-height: 1; }
+  .sd-name { font-size: 18px; font-weight: 900; margin-top: 4px; }
+  .sd-name .sdCnt { display: block; font-size: 11px; font-weight: 700; color: var(--dim); margin-top: 2px; }
+  .sd-desc { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; margin-top: 8px; }
+  .sd-body { max-height: 54vh; overflow-y: auto; margin: 10px 0 4px; }
+  .sd-body .roleTags { border-top: none; margin-top: 0; padding-top: 0; }
+  .sd-body .roleTags .rth { font-size: 10px; }
+  .sd-body .roleTags .rt { font-size: 12px; line-height: 1.5; }
+  .sd-body .roleTags .rt .rc, .sd-body .roleTags .rt .ry { font-size: 12px; }
+  .sd-body .sdNone { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; }
+  .chip.sym.tapInfo { cursor: pointer; }
+  .chip .tapHint { display: block; margin-top: 4px; color: var(--accent); font-weight: 800; font-size: 10px; }
   /* 盤面役物: 設置場所を選ぶモード */
   #placeOverlay { position: absolute; inset: 0; z-index: 70; display: none; }
   #placeOverlay.show { display: block; }
@@ -330,22 +363,23 @@
   #draftCards { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
   .draftCard {
     width: 128px; background: linear-gradient(170deg, #1b201d, #101312);
-    border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px 12px;
+    /* レア度ごとの和風フレーム(画像)を枠に。中央は塗らずカード地を活かす */
+    border: 13px solid transparent; border-image: url(assets/frame_normal_art.webp) 210 stretch;
+    border-radius: 13px; padding: 6px 7px 7px;
     cursor: pointer; font-family: inherit; color: var(--text); text-align: center;
-    transition: transform .15s, border-color .15s, box-shadow .15s;
+    transition: transform .15s, box-shadow .15s;
   }
   .draftCard:hover {
     transform: translateY(-6px) scale(1.04);
-    border-color: var(--accent);
     box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent);
   }
   .draftCard .kind { font-size: 9px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
-  .draftCard.rare { border-color: #38c8ff66; }
-  .draftCard.rare .kind { color: #38c8ff; }
-  .draftCard.rare:hover { border-color: #38c8ff; box-shadow: 0 10px 30px #38c8ff40; }
-  .draftCard.legend { border-color: #ff4dff88; box-shadow: 0 0 16px #ff4dff2e; }
-  .draftCard.legend .kind { color: #ff4dff; }
-  .draftCard.legend:hover { border-color: #ff4dff; box-shadow: 0 10px 34px #ff4dff55; }
+  .draftCard.rare { border-image-source: url(assets/frame_rare_art.webp); }
+  .draftCard.rare .kind { color: #6fb7ff; }
+  .draftCard.rare:hover { box-shadow: 0 10px 30px #2b6cff40; }
+  .draftCard.legend { border-image-source: url(assets/frame_legend_art.webp); }
+  .draftCard.legend .kind { color: #ffcf5a; }
+  .draftCard.legend:hover { box-shadow: 0 10px 34px #ffb84a55; }
   .shopItem .rar { font-size: 9px; font-weight: 900; letter-spacing: .12em; margin-right: 4px; }
   .draftCard .icon { font-size: 34px; line-height: 1.6; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 60%, transparent)); }
   .draftCard .icon .dot2 { display: inline-block; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 14px currentColor; }
@@ -497,8 +531,8 @@
     animation-duration: 1.8s;
   }
   @keyframes frameSpin { to { --ang: 360deg; } }
-  .draftCard.rare { box-shadow: 0 0 20px rgba(56,200,255,.4); }
-  .draftCard.legend { box-shadow: 0 0 28px rgba(255,77,255,.55), 0 0 60px rgba(255,77,255,.2); }
+  .draftCard.rare { box-shadow: 0 0 18px rgba(60,130,255,.35); }
+  .draftCard.legend { box-shadow: 0 0 26px rgba(255,180,70,.5), 0 0 60px rgba(255,180,70,.18); }
   /* 銭飛翔+売約ハンコ */
   .flyCoin {
     position: fixed; top: 0; left: 0; width: 15px; height: 15px; border-radius: 50%;
@@ -830,6 +864,59 @@
     .draftCard .ds { font-size: 9.5px; min-height: 38px; }
     #buildGrid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
     .buildCard .d { font-size: 8px; }
+
+    /* ===== 選択オーバーレイ: 必ず1画面に収める(スクロール禁止・カードは等寸固定) ===== */
+    .overlay.fit .inner {
+      max-width: 100%; width: 100%; height: 100%; max-height: 100%;
+      padding: calc(8px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
+      overflow: hidden; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    }
+    .overlay.fit .inner > * { flex: 0 0 auto; margin: 0 !important; }
+    .overlay.fit .inner > h1 { font-size: 20px; line-height: 1.15; }
+    /* 説明文は最大2行にクランプ(縦を最も食う元凶) */
+    .overlay.fit .inner > p {
+      font-size: 10px; line-height: 1.45; color: var(--dim);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    /* 「持ち物を見る」は開いても内部だけスクロール(画面本体は動かさない) */
+    .overlay.fit #draftInvBody, .overlay.fit #shopInvBody { max-height: 24vh; overflow-y: auto; }
+    /* カード領域が残りの高さを吸い、その中で等寸に敷く。余れば中央寄せ */
+    .overlay.fit #draftCards, .overlay.fit #shopItems,
+    .overlay.fit #buildGrid, .overlay.fit #removeGrid {
+      flex: 1 1 auto; min-height: 0; margin: 0 !important; align-self: stretch;
+    }
+
+    /* 3択カード(戦利品/開始リール): 3枚を同じ幅・同じ高さに固定。中身に合わせつつ画面内で中央に */
+    .overlay.fit #draftCards { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 7px; }
+    .overlay.fit #draftCards .draftCard {
+      flex: 1 1 0; min-width: 0; width: auto; max-width: 33.4%;
+      height: min(100%, 320px); padding: 2px 2px 3px;
+      border-width: 10px; /* 小さいカードでは枠を少し細く(中身の幅を確保) */
+    }
+    .overlay.fit .draftCard, .overlay.fit .buildCard { display: flex; flex-direction: column; overflow: hidden; min-height: 0; position: relative; }
+    .overlay.fit .draftCard .cardInner, .overlay.fit .draftCard .cfFront { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; height: 100%; }
+    .overlay.fit .draftCard .ds { min-height: 0; flex: 0 0 auto; }
+    /* あふれた補足(狙える役/シナジー)は下端でフェードして自然にクリップ */
+    .overlay.fit .draftCard .roleTags, .overlay.fit .buildCard .roleTags,
+    .overlay.fit .draftCard .synGain { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+    .overlay.fit .draftCard::before, .overlay.fit .buildCard::before {
+      content: ''; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 22px; z-index: 4;
+      background: linear-gradient(transparent, #12150f 88%); pointer-events: none; border-radius: 0 0 11px 11px;
+    }
+
+    /* 開始リール: 3択を等寸で中央に(高さは上限つき) */
+    .overlay.fit #buildGrid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(0, 320px); gap: 6px; align-content: center; }
+    /* はがす: 候補数が可変。行を均等配分して常に画面内に収める */
+    .overlay.fit #removeGrid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; gap: 5px; align-content: center; }
+    .overlay.fit #buildGrid .buildCard, .overlay.fit #removeGrid .buildCard { position: relative; }
+    /* はがす画面は候補が多い→補足を隠して小さく敷き詰める */
+    .overlay.fit #removeGrid .roleTags { display: none; }
+    .overlay.fit #removeGrid .buildCard .d { display: none; }
+    .overlay.fit #removeGrid .buildCard::before { display: none; }
+
+    /* 屋台: 3〜4品を縦に等寸で並べる */
+    .overlay.fit #shopItems { display: flex; flex-direction: column; gap: 6px; justify-content: stretch; }
+    .overlay.fit #shopItems .shopItem { flex: 1 1 0; min-height: 0; overflow: hidden; }
   }
 
   #vignette {
@@ -950,7 +1037,7 @@
       </div>
     </div>
 
-    <div class="overlay" id="buildOverlay">
+    <div class="overlay fit" id="buildOverlay">
       <div class="inner" style="max-width:440px">
         <h1 style="font-size:22px" id="buildTitle">開始リールを組め</h1>
         <p id="buildSub" style="margin-top:4px"></p>
@@ -960,7 +1047,7 @@
       </div>
     </div>
 
-    <div class="overlay" id="draftOverlay">
+    <div class="overlay fit" id="draftOverlay">
       <div class="inner">
         <h1 style="font-size:24px"><span class="green">戦利品</span>を1つ選べ</h1>
         <p style="margin-top:4px">面クリアのご褒美。どれか1つ無料。REEL=スロットに絵柄を1個追加。同じ絵柄を2枚→3枚に増やすと、揃いやすさは倍以上に跳ね上がる。BALL=撃つ玉に特殊な玉を追加。RELIC=台そのものを改造。3つを組み合わせて、自分だけの台に育てよう。</p>
@@ -978,7 +1065,7 @@
       </div>
     </div>
 
-    <div class="overlay" id="shopOverlay">
+    <div class="overlay fit" id="shopOverlay">
       <div class="inner">
         <h1 style="font-size:24px">闇改造<span class="green">屋台</span></h1>
         <p id="shopSub" style="margin-top:4px"></p>
@@ -1014,7 +1101,7 @@
       </div>
     </div>
 
-    <div class="overlay" id="removeOverlay">
+    <div class="overlay fit" id="removeOverlay">
       <div class="inner" style="max-width:440px">
         <h1 style="font-size:22px">🧹 絵柄を<span class="green">1枚はがす</span></h1>
         <p style="margin-top:4px">絵柄をはがしてスロットをスッキリ。ライバルが減るぶん、残った絵柄がぐっと揃いやすくなる。</p>
@@ -1034,6 +1121,16 @@
           <button class="ghostBtn" id="cfCancel">やめる</button>
           <button class="bigBtn" id="cfOk">これにする</button>
         </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="symDetailOverlay">
+      <div class="inner sd-inner">
+        <div class="sd-glyph" id="sdGlyph"></div>
+        <div class="sd-name" id="sdName"></div>
+        <div class="sd-desc" id="sdDesc"></div>
+        <div class="sd-body" id="sdBody"></div>
+        <button class="ghostBtn" id="sdClose">とじる</button>
       </div>
     </div>
 
