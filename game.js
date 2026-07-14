@@ -4295,8 +4295,8 @@ function drawCabinetFX(c, dt) {
     c.beginPath(); c.arc(l.x, l.y, 4.2 + (S.beatT || 0) * 0.9, 0, 7); c.fill();
     c.shadowBlur = 0;
   }
-  // データカウンター(本物の7セグLEDフォント)
-  c.font = '12px "Nikumaru", monospace';
+  // データカウンター
+  c.font = '12px "Mochiy", monospace';
   c.textAlign = 'left'; c.textBaseline = 'middle';
   c.fillStyle = '#ff5252';
   c.shadowColor = '#ff5252'; c.shadowBlur = 6;
