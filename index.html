@@ -97,14 +97,13 @@
     color: #ffd24a; background: linear-gradient(#ffe987, #ffce39 55%, #ffb327);   /* 持ち玉 = 金→黄色グラデ */
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     text-shadow: 0 2px 3px rgba(0,0,0,.45); }
-  #balls .unit { font-size: 12px; color: var(--dim); -webkit-text-fill-color: var(--dim); margin-left: 3px; font-family: var(--f-base); font-weight: 800; }
-  /* 桁ごとに金グラデを持たせる(親のbackground-clipに依存するとroll中のtransformでクリップがズレて灰色に幽霊化するため) */
-  #balls .dg { font: inherit; letter-spacing: inherit; margin: 0;
+  #balls .unit { display: inline-block; width: 1em; margin-left: .25em; text-align: center; letter-spacing: 0;
+    font-size: 12px; color: var(--dim); -webkit-text-fill-color: var(--dim); font-family: var(--f-base); font-weight: 800; }
+  /* 桁ごとに金グラデ。桁は等幅スロット(.digits)で右寄せ→重なり/ガタつき無し */
+  #balls .dg { font: inherit; letter-spacing: 0; margin: 0;
     background: linear-gradient(#ffe987, #ffce39 55%, #ffb327);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   .statChip b { font-family: var(--f-num); font-weight: 600; font-size: 10.5px; }
-  #balls.bump { animation: bump .3s ease; }
-  @keyframes bump { 30% { transform: scale(1.12); } }
   #statChips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   .statChip {
     font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 6px;
@@ -1093,10 +1092,12 @@
 
   /* 持ち玉オドメーター */
   /* 桁は固定幅スロット(重なり/ガタつき防止)。更新演出は変形なしの光フラッシュのみ(transformは桁同士が重なるバグの元) */
-  #balls .dg { display: inline-block; width: .64em; text-align: center; }
+  /* 数値欄は常に4スロット固定幅で右寄せ(桁数が変わっても外形と単位位置が動かない) */
+  #balls .digits { display: inline-flex; align-items: baseline; justify-content: flex-end; width: 3.36em; vertical-align: baseline; }
+  #balls .dg { display: inline-block; flex: 0 0 .84em; width: .84em; text-align: center; }   /* .84em > グリフ最大送り.774em で重ならない */
   #balls .dg.roll { animation: dgRoll .3s ease-out; }
   @keyframes dgRoll {
-    0% { filter: brightness(2.1) drop-shadow(0 0 6px #ffe987); }
+    0% { filter: brightness(2.1); }
     100% { filter: brightness(1); }
   }
   #vignette.on { opacity: 1; }
@@ -1129,6 +1130,7 @@
         <div class="menuCol">
           <button class="bigBtn gold" id="continueBtn" style="display:none">つづきから</button>
           <button class="bigBtn" id="startBtn">開店（新規）</button>
+          <button class="ghostBtn" id="freeBtn">フリーモード</button>
           <button class="ghostBtn" id="settingsBtn">設定</button>
         </div>
         <p id="titleStats" style="margin-top:12px;font-size:12px;color:#cfe6c4;font-weight:800;display:inline-block;padding:5px 12px;border-radius:9px;background:rgba(6,10,8,.62)"></p>
@@ -1140,7 +1142,6 @@
         <h1 style="font-size:26px"><span class="green">設定</span></h1>
         <div class="menuCol">
           <button class="ghostBtn" id="diffBtn">難易度: ふつう</button>
-          <button class="ghostBtn" id="freeBtn">フリーモード</button>
           <button class="ghostBtn" id="tutBtn">遊び方</button>
           <button class="ghostBtn" id="glossaryBtn">用語集</button>
           <button class="ghostBtn" id="guideBtn">役ガイド</button>
@@ -1358,7 +1359,7 @@
 
       <div class="card" id="ballsCard">
         <h3 class="gh" data-gl="mochidama">持ち玉</h3>
-        <div id="balls">0<span>玉</span></div>
+        <div id="balls"><span class="digits"><span class="dg">0</span></span><span class="unit">玉</span></div>
         <div id="statChips">
           <span class="statChip glLink" id="luckChip" data-gl="un">運 <b id="luckV">1.0</b></span>
           <span class="statChip glLink" id="multChip" data-gl="bairitsu">倍率 <b id="multV">×1.0</b></span>

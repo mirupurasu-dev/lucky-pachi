@@ -2680,6 +2680,19 @@ function addLog(msg, cls) {
   document.getElementById('log').innerHTML =
     logLines.slice().reverse().map(l => `<div class="${l.cls || ''}">${l.msg}</div>`).join('');
 }
+// 持ち玉表示の整形: 〜9999は数字のまま、1万以上は万、1億以上は億へ圧縮(数値部は必ず4文字以内)
+function formatBallsHUD(value) {
+  const num = Number(value);
+  const exact = Math.max(0, Math.floor(Number.isFinite(num) ? num : 0));
+  if (exact < 10000) return { exact, digits: String(exact), unit: '玉' };
+  const divisor = exact < 100000000 ? 10000 : 100000000;
+  const unit = exact < 100000000 ? '万' : '億';
+  const scaled = exact / divisor;
+  const decimals = scaled < 10 ? 2 : scaled < 100 ? 1 : 0;   // 常に4文字以内
+  const factor = 10 ** decimals;
+  const digits = (Math.floor(scaled * factor) / factor).toFixed(decimals);
+  return { exact, digits, unit };
+}
 function updateHUD() {
   if (S.simMode) return;
   document.getElementById('stageLabel').textContent = S.free
@@ -2691,19 +2704,24 @@ function updateHUD() {
   const bar = document.getElementById('shotsBar');
   bar.style.width = `${Math.max(0, (S.shotsLeft / total) * 100)}%`;
   bar.classList.toggle('low', S.shotsLeft / total < 0.25);
-  // 持ち玉オドメーター(変わった桁だけ回転)
+  // 持ち玉オドメーター(変わった桁だけ回転)。1万以上は万/億へ圧縮(常に4文字以内)し10億でもHUDからはみ出さない
   const bEl = document.getElementById('balls');
-  const str = String(S.balls);
+  const shown = formatBallsHUD(S.balls);
+  const str = shown.digits;
   const prev = bEl.dataset.v || '';
-  if (prev !== str) {
+  const prevUnit = bEl.dataset.unit || '';
+  const exactLabel = `${shown.exact.toLocaleString('ja-JP')}玉`;
+  bEl.title = exactLabel;                       // 完全値はツールチップ/読み上げに残す
+  bEl.setAttribute('aria-label', `持ち玉 ${exactLabel}`);
+  if (prev !== str || prevUnit !== shown.unit) {
     let html = '';
     for (let i = 0; i < str.length; i++) {
       const changed = prev.length !== str.length || prev[i] !== str[i];
       html += `<span class="dg${changed ? ' roll' : ''}">${str[i]}</span>`;
     }
-    bEl.innerHTML = html + '<span class="unit">玉</span>';
+    bEl.innerHTML = `<span class="digits">${html}</span><span class="unit">${shown.unit}</span>`;
     bEl.dataset.v = str;
-    bEl.classList.remove('bump'); void bEl.offsetWidth; bEl.classList.add('bump');
+    bEl.dataset.unit = shown.unit;
   }
   document.getElementById('luckV').textContent = effLuck().toFixed(1);
   const em = effMult();
