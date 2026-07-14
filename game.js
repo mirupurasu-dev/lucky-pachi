@@ -3562,7 +3562,7 @@ function createGLPresenter(canvas, srcCanvas) {
       // 大当り/FEVER中(boost)はブルームを強めず、むしろ下げて白飛びを防ぐ(キャラ顔・髪が飛ぶ対策)
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? (0.5 - boost * 0.26) : 0.22);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'fxon'), fxMax ? 1 : 0);
-      gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.18 : 0.06) + boost * 0.2);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.16 : 0.06) + boost * 0.14);
       gl.uniform3f(gl.getUniformLocation(P_COMP, 'shock'), shockS.x, shockS.y, shockS.t);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'radial'), radialT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -4164,7 +4164,7 @@ function drawCharFx(c, dt) {
   const inT = Math.min(1, cf.t / 0.28);
   const ease = 1 - Math.pow(1 - inT, 3);
   const outT = Math.max(0, (cf.t - (cf.dur - 0.3)) / 0.3);
-  const ch = H * 0.62;
+  const ch = H * 0.56;   /* 巨大キャラの占有と白飛び面積を軽減(ドーパミン演出として大きめは維持) */
   const cw = ch * (cf.img.width / cf.img.height);
   const x = W - (cw * 0.92) * ease + (rng() - 0.5) * (cf.kind === 'hot' ? 3 : 0);
   const y = H - ch * (1 - outT * 0.25) + Math.sin(S.time * 2.2) * 6;
@@ -4648,6 +4648,16 @@ function draw(dt) {
   c.shadowColor = T.accent; c.shadowBlur = S.rush ? 14 : 7;
   c.strokeRect(HESO.x - hw - 2, HESO.y - 4, hw * 2 + 4, 16);
   c.shadowBlur = 0;
+  // 狙点マーカー: ヘソ(得点の受け口)を示す静かな脈動リング。「どこを狙うか」を一目で示す
+  if (!S.celebrate && !S.simMode) {
+    const pulse = 0.5 + Math.sin(S.time * 2.6) * 0.5;
+    c.save();
+    c.strokeStyle = T.accent;
+    c.globalAlpha = 0.22 + pulse * 0.18;
+    c.lineWidth = 2;
+    c.beginPath(); c.ellipse(HESO.x, HESO.y + 4, hw + 8 + pulse * 3, 12 + pulse * 3, 0, 0, 7); c.stroke();
+    c.restore();
+  }
   // アタッカー
   const open = S.rush && S.rush.phase === 'open';
   c.fillStyle = open ? '#ffffff18' : '#00000066';

@@ -763,9 +763,22 @@
   .shopItem .pr {
     margin-left: auto; font-size: 13.5px; font-weight: 900; color: #ffd76a; white-space: nowrap;
     background: linear-gradient(180deg, #2b2216, #1a140c);
-    border: 1px solid #c9a34a55; border-radius: 7px; padding: 5px 10px;
+    border: 1px solid #c9a34a55; border-radius: 7px; padding: 5px 10px; text-align: center;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
   }
+  /* 主従の是正: 買える商品の価格ピルを主操作(購入)として緑で強調し、「次の面へ」は控えめにする */
+  .shopItem:not(:disabled):not(.sold) .pr {
+    color: #eafff0; border-color: var(--accent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 34%, #14201a), #0f1712);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  #shopNext {
+    background: linear-gradient(180deg, rgba(38,50,42,.92), rgba(14,20,16,.96)) !important;
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--line)) !important;
+    color: var(--text) !important; text-shadow: none !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,.5) !important;
+  }
+  #shopNext::before { display: none; }
 
   /* ================= 演出レイヤー ================= */
   #fxLayer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
@@ -1000,7 +1013,11 @@
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     /* 「持ち物を見る」を開いても“スクロールは一切出さない”。入りきらない分はクリップ(チップは折返し表示) */
-    .overlay.fit #draftInvBody, .overlay.fit #shopInvBody { max-height: 26vh; overflow: hidden; }
+    /* 所持物は「今の持ち物を見る」で開く任意の詳細ドロワー。ページは無スクロールのまま、この中だけ内包スクロール可にして所有物を一切隠さない(無言クリップ廃止)。下端フェードで続きがある事を示す */
+    .overlay.fit #draftInvBody, .overlay.fit #shopInvBody {
+      max-height: 26vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+      -webkit-mask-image: linear-gradient(#000 86%, transparent); mask-image: linear-gradient(#000 86%, transparent);
+    }
     /* カード領域が残りの高さを吸い、その中で等寸に敷く。余れば中央寄せ */
     .overlay.fit #draftCards, .overlay.fit #shopItems,
     .overlay.fit #buildGrid, .overlay.fit #removeGrid {
