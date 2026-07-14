@@ -1804,6 +1804,15 @@ function stageShots(m) {
   return Math.max(90, CFG.shotsPerStage + m.shotsAdd - S.loop * 4);
 }
 function startStage(n) {
+  // 3面・7面: プレイ前に神社(お賽銭)イベントを挟む
+  if (!S.simMode && !S.free && (n === 3 || n === 7)) {
+    S.stage = n;
+    openShrine(n, () => beginStage(n));
+    return;
+  }
+  beginStage(n);
+}
+function beginStage(n) {
   S.stage = n;
   if (S.free) {
     // フリーモード: テーマは選んだ面に固定、ノルマは軽め、玉は常に潤沢=死なずに演出を楽しむ
@@ -1839,6 +1848,133 @@ function startStage(n) {
   }
   updateHUD();
 }
+
+// ========== 神社 お賽銭イベント (3面・7面) ==========
+// 5秒間、画面を連打 → 1タップにつき「持ち玉の1%」を寄進。寄進した玉ぶんだけ運が上がる。
+// レート: 3面=1500玉で運+1 / 7面=1万玉で運+1。暴走防止に1回の上限は運+3。
+let shrineCtx = null;
+function fmtN(n) { return Math.round(n).toLocaleString('en-US'); }
+function openShrine(stage, onDone) {
+  const rate = stage === 3 ? 1500 : 10000;
+  const perTap = Math.max(1, Math.floor(S.balls * 0.01)); // タップ1回=開始時持ち玉の1%
+  shrineCtx = { stage, rate, perTap, donated: 0, taps: 0, ended: false, active: false, onDone, timer: null };
+  const nm = stage === 3 ? '三の宮' : '七の宮';
+  document.getElementById('shrineTtl').textContent = nm + ' 御賽銭';
+  document.getElementById('shrineRate').innerHTML = `${fmtN(rate)}玉ごとに <b>運+1</b>`;
+  document.getElementById('shrinePerTap').textContent = fmtN(perTap);
+  document.getElementById('shrineIntroTtl').textContent = nm + ' にお参り';
+  document.getElementById('shrineIntroNote').innerHTML = `※1タップで約 <b>${fmtN(perTap)}玉</b> 減ります。運との引き換えです。`;
+  document.getElementById('shrineReward').classList.remove('show');
+  document.getElementById('shrineIntro').classList.add('show');   // まず説明を出す
+  document.getElementById('shrineScene').classList.remove('active');
+  document.getElementById('shrineMinus').classList.remove('show');
+  const bar = document.getElementById('shrineTimerBar');
+  bar.style.transition = 'none'; bar.style.width = '100%';
+  updateShrineStats();
+  document.getElementById('shrineOverlay').classList.add('show');
+  sfx('reach');
+}
+function startShrineTapping() {
+  const c = shrineCtx; if (!c || c.active || c.ended) return;
+  c.active = true;
+  document.getElementById('shrineIntro').classList.remove('show');
+  document.getElementById('shrineScene').classList.add('active');
+  const bar = document.getElementById('shrineTimerBar');
+  bar.style.transition = 'none'; bar.style.width = '100%'; void bar.offsetWidth;
+  bar.style.transition = 'width 5s linear'; bar.style.width = '0%';
+  sfx('push');
+  c.timer = setTimeout(endShrine, 5000);
+}
+function updateShrineStats() {
+  const c = shrineCtx; if (!c) return;
+  document.getElementById('shrineDonated').textContent = fmtN(c.donated);
+  document.getElementById('shrineLuckGain').textContent = '+' + Math.min(3, c.donated / c.rate).toFixed(2);
+  document.getElementById('shrineBallsLeft').textContent = fmtN(S.balls);
+}
+function shrineTap(clientX, clientY) {
+  const c = shrineCtx; if (!c || !c.active || c.ended) return;
+  const give = Math.min(S.balls, c.perTap);
+  if (give <= 0) return; // 玉切れ
+  S.balls -= give; c.donated += give; c.taps++;
+  updateShrineStats();
+  // 賽銭箱を揺らす＆光らせる(神社とは分離)
+  const box = document.getElementById('shrineBox');
+  box.classList.remove('hit'); void box.offsetWidth; box.classList.add('hit');
+  const bg = document.getElementById('shrineBoxGlow');
+  bg.classList.remove('on'); void bg.offsetWidth; bg.classList.add('on');
+  // 「持ち玉がいくら減ったか」を強調(−○玉＆数字を赤く弾ませる)
+  const minus = document.getElementById('shrineMinus');
+  minus.textContent = '−' + fmtN(give);
+  minus.classList.remove('show'); void minus.offsetWidth; minus.classList.add('show');
+  const bl = document.querySelector('.shrine-stat .ss-balls');
+  bl.classList.remove('dropped'); void bl.offsetWidth; bl.classList.add('dropped');
+  shrineTapFX(clientX, clientY, c.taps, give);
+}
+function shrineTapFX(cx, cy, taps, give) {
+  const layer = document.getElementById('shrineFx');
+  if (!layer) return;
+  const r = layer.getBoundingClientRect();
+  const px = cx - r.left, py = cy - r.top;
+  const big = (taps % 10 === 0);
+  // 小判・札束がタップ場所から湧き出て落ちる(じゃらじゃら)
+  const coins = big ? 22 : 10;
+  const glyphs = ['🪙', '💰', '💴', '🪙', '🪙'];
+  for (let i = 0; i < coins; i++) {
+    const co = document.createElement('div'); co.className = 'shCoin';
+    co.textContent = glyphs[(Math.random() * glyphs.length) | 0];
+    co.style.left = px + 'px'; co.style.top = py + 'px';
+    co.style.setProperty('--dx', ((Math.random() - 0.5) * (big ? 280 : 160)).toFixed(0) + 'px');
+    co.style.setProperty('--rot', ((Math.random() - 0.5) * 760).toFixed(0) + 'deg');
+    layer.appendChild(co); setTimeout(() => co.remove(), 940);
+  }
+  // 火花
+  const sparks = big ? 18 : 9;
+  for (let i = 0; i < sparks; i++) {
+    const sp = document.createElement('div'); sp.className = 'shSpark';
+    const a = Math.random() * Math.PI * 2, d = 25 + Math.random() * (big ? 95 : 55);
+    sp.style.left = px + 'px'; sp.style.top = py + 'px';
+    sp.style.setProperty('--dx', (Math.cos(a) * d).toFixed(0) + 'px');
+    sp.style.setProperty('--dy', (Math.sin(a) * d).toFixed(0) + 'px');
+    layer.appendChild(sp); setTimeout(() => sp.remove(), 520);
+  }
+  // 波紋リング
+  const rp = document.createElement('div'); rp.className = 'shRipple' + (big ? ' big' : '');
+  rp.style.left = px + 'px'; rp.style.top = py + 'px';
+  layer.appendChild(rp); setTimeout(() => rp.remove(), 600);
+  // −○玉 フロート(タップ場所から溢れる寄進額)
+  const mn = document.createElement('div'); mn.className = 'shMinus' + (big ? ' big' : '');
+  mn.textContent = '−' + fmtN(give) + '玉';
+  mn.style.left = px + 'px'; mn.style.top = py + 'px';
+  layer.appendChild(mn); setTimeout(() => mn.remove(), 860);
+  // 全画面フラッシュ＆シェイク
+  const scene = document.getElementById('shrineScene');
+  scene.classList.remove('shShake'); void scene.offsetWidth; scene.classList.add('shShake');
+  const fl = document.getElementById('shrineFlash');
+  fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
+  if (big) { fl.classList.add('bigflash'); setTimeout(() => fl.classList.remove('bigflash'), 240); }
+  sfx('heso');
+  if (big) sfx('jackpot');
+}
+function endShrine() {
+  const c = shrineCtx; if (!c || c.ended) return;
+  c.ended = true; if (c.timer) clearTimeout(c.timer);
+  const gain = +Math.min(3, c.donated / c.rate).toFixed(2); // 1回の上限=運+3(暴走防止)
+  if (gain > 0) { S.luck = +(S.luck + gain).toFixed(2); }
+  document.getElementById('shrineScene').classList.remove('active');
+  const rw = document.getElementById('shrineReward');
+  rw.innerHTML = gain > 0
+    ? `御利益<br><span class="rw-big">運 +${gain.toFixed(2)}</span><br><span class="rw-sub">${fmtN(c.donated)}玉を奉納</span>`
+    : `<span class="rw-sub">奉納なし</span>`;
+  rw.classList.add('show');
+  if (gain > 0) { fx.flashDOM && fx.flashDOM(); sfx('bigwin'); }
+  setTimeout(() => {
+    document.getElementById('shrineOverlay').classList.remove('show');
+    const done = c.onDone; shrineCtx = null;
+    updateHUD();
+    if (done) done();
+  }, 1700);
+}
+
 function applyTheme() {
   if (S.simMode) return;
   document.documentElement.style.setProperty('--accent', S.theme.accent);
@@ -2265,6 +2401,10 @@ function priceAt(base) {
 }
 function openShop() {
   S.phase = 'shop';
+  // 直前の一時オーバーレイが残っていると「次の面へ」ボタンを覆って進めなくなるため確実に閉じる
+  ['placeOverlay', 'confirmOverlay', 'symDetailOverlay', 'glossaryOverlay', 'draftOverlay'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.remove('show');
+  });
   shopStock = [];
   const seen = new Set();
   const hasThin = S.deck.filter(d => d === 'shiro').length > 1;
@@ -3479,6 +3619,7 @@ for (let i = 0; i < 3; i++) {
   grainTiles.push(g);
 }
 let grainFrame = 0;
+let grainTick = 0;
 
 function hitStop(scale, dur) { S.timeScale = scale; S.tsTimer = dur; } // 時間停止/スロー
 
@@ -4286,7 +4427,8 @@ function postFX(dt) {
   // 走査線 + フィルムグレイン
   c.globalAlpha = 0.07;
   c.drawImage(scanCv, 0, 0);
-  grainFrame = (grainFrame + 1) % 3;
+  grainTick = (grainTick + 1) % 3;               // 毎フレームだとチラつきが強いので3フレームに1回だけ更新
+  if (grainTick === 0) grainFrame = (grainFrame + 1) % 3;
   c.globalAlpha = 0.55;
   c.drawImage(grainTiles[grainFrame], 0, 0, CFG.CW, CFG.CH);
   c.globalAlpha = 1;
@@ -4305,7 +4447,7 @@ function draw(dt) {
   // バーチャルカメラ: リーチで寄り、当たりでズームパンチ、揺れは回転込み
   const cam = S.cam;
   let tz = 1, ty = 390;
-  if (S.spin && S.spin.reachPlayed) { tz = 1.055; ty = 305; }
+  if (S.spin && S.spin.reachPlayed) { tz = 1.08; ty = 362; } // 寄りは強め＆パンは控えめに(上に振りすぎると筐体上端の電飾/データ帯が露出して「砂嵐」に見えるため)
   if (S.rush) { tz = 1.025 + Math.sin(S.time * 6) * 0.007; ty = 430; }
   cam.z += ((tz + cam.punch) - cam.z) * Math.min(1, dt * 7);
   cam.py += (ty - cam.py) * Math.min(1, dt * 5);
@@ -5582,9 +5724,17 @@ document.addEventListener('click', e => {
   if (chip) { e.stopPropagation(); openSymDetail(chip.dataset.sym); }
 });
 document.getElementById('sdClose').onclick = () => closeSymDetail();
-document.getElementById('symDetailOverlay').addEventListener('click', e => {
-  if (e.target.id === 'symDetailOverlay') closeSymDetail(); // 背景タップで閉じる
-});
+document.getElementById('symDetailOverlay').addEventListener('click', () => closeSymDetail()); // 情報ポップアップ=どこをタップしても閉じる(閉じられず詰まるのを防ぐ)
+// 神社: 説明の「お参りする」で開始 → 以降は画面連打で寄進
+(function () {
+  const ov = document.getElementById('shrineOverlay');
+  if (ov) ov.addEventListener('pointerdown', e => {
+    if (!shrineCtx || !shrineCtx.active) return; // 説明中はボタン操作を優先
+    e.preventDefault(); shrineTap(e.clientX, e.clientY);
+  });
+  const sb = document.getElementById('shrineStartBtn');
+  if (sb) sb.onclick = () => startShrineTapping();
+})();
 document.getElementById('tutBtn').onclick = () => openTut();
 document.getElementById('tutSkip').onclick = () => closeTut();
 document.getElementById('tutNext').onclick = () => {

@@ -24,6 +24,13 @@
     font-weight: 400 900;
     font-display: swap;
   }
+  /* 筆書体(Yuji Boku / SIL OFL) 見出し用。ローカル同梱 */
+  @font-face {
+    font-family: 'Brush';
+    src: url('assets/brush.woff2') format('woff2');
+    font-weight: 400 900;
+    font-display: swap;
+  }
   :root {
     --bg: #0a0c0b;
     --panel: #14171599;
@@ -35,7 +42,7 @@
     --accent2: #159254;
     --danger: #ff4d5e;
     --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-    --f-disp: 'Nikumaru', 'Reggae One', 'Zen Kaku Gothic New', sans-serif;
+    --f-disp: 'Brush', 'Nikumaru', 'Yu Mincho', serif;
     --f-num: 'Orbitron', 'Courier New', monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -156,20 +163,13 @@
   }
   .overlay.show { display: flex; }
   .overlay .inner { text-align: center; padding: 20px; width: 100%; max-width: 430px; }
-  /* タイトルは にくまる を土台に「3D太字ゴールド丸文字」加工 */
+  /* タイトルは筆書体(Yuji Boku)。3Dはやめて、墨＋金の和風で */
   .overlay h1 {
-    font-size: 38px; font-weight: 400; letter-spacing: .04em; line-height: 1.28; font-family: var(--f-disp);
-    color: #ffce5c;
-    background: linear-gradient(180deg, #fff8db 0%, #ffe58c 40%, #ffd15a 51%, #f4b53a 53%, #ffcf5e 100%);
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 3px #6e4415; paint-order: stroke fill;
-    filter:
-      drop-shadow(0 1px 0 #7a4e18) drop-shadow(0 2px 0 #6e4415)
-      drop-shadow(0 3px 0 #5a380f) drop-shadow(0 5px 4px rgba(0,0,0,.55));
+    font-size: 40px; font-weight: 400; letter-spacing: .06em; line-height: 1.3; font-family: var(--f-disp);
+    color: #f0d9a0; text-shadow: 0 2px 5px rgba(0,0,0,.7), 0 0 18px rgba(210,160,70,.25);
   }
-  /* 意味を持つ色見出しは色を保ったまま3D立体だけ乗せる */
-  .overlay h1 .green { color: var(--accent); background: none; -webkit-text-fill-color: var(--accent); }
-  .overlay h1 .red { color: var(--danger); background: none; -webkit-text-fill-color: var(--danger); }
+  .overlay h1 .green { color: var(--accent); }
+  .overlay h1 .red { color: var(--danger); }
   .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
   .overlay p b { color: var(--text); }
   /* 選択の確認ダイアログ */
@@ -202,6 +202,101 @@
   .sd-body .sdNone { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; }
   .chip.sym.tapInfo { cursor: pointer; }
   .chip .tapHint { display: block; margin-top: 4px; color: var(--accent); font-weight: 800; font-size: 10px; }
+
+  /* ================= 神社 お賽銭 ================= */
+  #shrineOverlay { z-index: 84; }
+  #shrineOverlay.show { display: block; }
+  .shrine-scene {
+    position: absolute; inset: 0; overflow: hidden; cursor: pointer; touch-action: none;
+    background: #0a0910 url('assets/shrine_bg2_art.webp') center bottom / cover no-repeat;
+    user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .shrine-scene::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: linear-gradient(180deg, rgba(4,6,10,.82) 0%, rgba(4,6,10,.2) 30%, rgba(4,6,10,0) 48%, rgba(4,6,10,.6) 100%);
+  }
+  /* 後光(連打中に回る金の光条) */
+  .shrine-rays {
+    position: absolute; left: 50%; top: 60%; width: 210%; aspect-ratio: 1; transform: translate(-50%,-50%);
+    pointer-events: none; z-index: 1; opacity: 0; transition: opacity .4s;
+    background: repeating-conic-gradient(from 0deg, rgba(255,214,120,.14) 0deg 7deg, transparent 7deg 15deg);
+    -webkit-mask: radial-gradient(circle, #000 12%, transparent 60%); mask: radial-gradient(circle, #000 12%, transparent 60%);
+    animation: raysSpin 16s linear infinite;
+  }
+  .shrine-scene.active .shrine-rays { opacity: 1; }
+  @keyframes raysSpin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+  /* 全画面フラッシュ(連打で爆光) */
+  .shrine-flash { position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle at 50% 62%, rgba(255,228,150,.6), transparent 58%); opacity: 0; }
+  .shrine-flash.on { animation: shFlash .2s ease-out; }
+  .shrine-flash.bigflash { background: radial-gradient(circle at 50% 62%, rgba(255,240,180,1), rgba(255,130,60,.4) 42%, transparent 72%); }
+  @keyframes shFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .shrine-top { position: absolute; top: 0; left: 0; right: 0; z-index: 3; text-align: center; padding: calc(14px + env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+  .shrine-ttl { font-family: var(--f-disp); font-size: 36px; letter-spacing: .08em; color: #f5deac; text-shadow: 0 2px 6px rgba(0,0,0,.85), 0 0 20px rgba(210,160,70,.35); }
+  .shrine-rate { margin-top: 4px; font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; }
+  .shrine-rate b { color: #ffe08a; }
+  .shrine-timer { margin: 10px auto 0; width: min(78%, 300px); height: 12px; border-radius: 8px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.25); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,.6); }
+  .shrine-timer-bar { height: 100%; width: 100%; border-radius: 7px; background: linear-gradient(90deg, #ffd257, #ff7a4a); box-shadow: 0 0 10px #ffb04a; }
+  .shrine-hint { position: absolute; top: calc(96px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 3; font-size: 17px; font-weight: 900; color: #fff; text-shadow: 0 2px 6px #000; text-align: center; pointer-events: none; animation: shPulse .6s ease-in-out infinite; display: none; }
+  .shrine-scene.active .shrine-hint { display: block; }
+  .shrine-hint b { color: #ffdc5a; font-size: 22px; }
+  @keyframes shPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  /* 賽銭箱(神社と分離・タップで揺れる) */
+  .shrine-box-wrap { position: absolute; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2; width: min(58%, 270px); pointer-events: none; }
+  .shrine-box-glow { position: absolute; left: 50%; top: 44%; transform: translate(-50%,-50%); width: 150%; height: 150%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255,205,95,.55), transparent 62%); opacity: 0; }
+  .shrine-box-glow.on { animation: boxGlow .32s ease-out; }
+  @keyframes boxGlow { 0% { opacity: .9; } 100% { opacity: 0; } }
+  .shrine-box { position: relative; display: block; width: 100%; height: auto; transform-origin: 50% 92%; filter: drop-shadow(0 12px 20px rgba(0,0,0,.72)); }
+  .shrine-box.hit { animation: boxHit .19s cubic-bezier(.3,1.3,.5,1); }
+  @keyframes boxHit { 0% { transform: scale(1,1); } 28% { transform: scale(1.09,.9) translateY(5px); } 60% { transform: scale(.95,1.06) translateY(-4px); } 100% { transform: scale(1,1); } }
+  /* 下部ステータス(マイナスをはっきり見せる) */
+  .shrine-stat { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 3; text-align: center; color: #fff; text-shadow: 0 2px 6px #000; pointer-events: none; }
+  .shrine-stat .ss-balls { font-size: 16px; font-weight: 800; }
+  .shrine-stat .ss-balls b { color: #fff; font-family: var(--f-num); font-size: 28px; margin: 0 2px; }
+  .shrine-stat .ss-balls.dropped b { animation: ballDrop .26s ease-out; }
+  @keyframes ballDrop { 0% { color: #ff9a6b; transform: scale(1.18); } 100% { color: #fff; transform: scale(1); } }
+  .ss-minus { display: inline-block; min-width: 54px; text-align: left; color: #ff5b5b; font-family: var(--f-num); font-size: 18px; font-weight: 900; margin-left: 4px; opacity: 0; }
+  .ss-minus.show { animation: minusPop .45s ease-out; }
+  @keyframes minusPop { 0% { opacity: 0; transform: translateY(-5px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(6px); } }
+  .shrine-stat .ss-row { font-size: 15px; font-weight: 800; margin-top: 2px; }
+  .shrine-stat .ss-row b { color: #ffe08a; font-family: var(--f-num); font-size: 20px; }
+  .shrine-stat .ss-row b:last-child { color: #8ef0a8; }
+  .shrine-stat .ss-sub { font-size: 11px; color: #d9dcda; margin-top: 2px; }
+  .shrine-stat .ss-sub b { color: #fff; font-family: var(--f-num); }
+  /* お参り前の説明 */
+  .shrine-intro { position: absolute; inset: 0; z-index: 6; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(4,6,10,.74); }
+  .shrine-intro.show { display: flex; }
+  .si-card { max-width: 350px; width: 100%; text-align: center; background: linear-gradient(180deg, rgba(32,24,15,.96), rgba(15,11,7,.97)); border: 1px solid #6e5a2e; border-radius: 16px; padding: 24px 22px 22px; box-shadow: 0 12px 44px rgba(0,0,0,.6); animation: shReward .4s cubic-bezier(.2,1.3,.4,1); }
+  .si-ttl { font-family: var(--f-disp); font-size: 32px; color: #f5deac; letter-spacing: .06em; }
+  .si-lead { font-size: 14px; color: #efe6d6; font-weight: 700; line-height: 1.85; margin-top: 12px; }
+  .si-lead b { color: #ffdc5a; }
+  .si-lead .si-luck { color: #8ef0a8; font-size: 17px; }
+  .si-note { font-size: 11.5px; color: #d7a58a; margin-top: 14px; font-weight: 700; }
+  .si-card .bigBtn { margin-top: 18px; }
+  .shrine-reward { position: absolute; inset: 0; z-index: 7; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(0,0,0,.4), rgba(0,0,0,.72)); color: #fff; font-weight: 900; font-size: 18px; text-shadow: 0 2px 8px #000; }
+  .shrine-reward.show { display: flex; animation: shReward .5s cubic-bezier(.2,1.4,.4,1); }
+  .shrine-reward .rw-big { font-family: var(--f-disp); font-size: 60px; letter-spacing: .06em; color: #ffe08a; text-shadow: 0 3px 10px rgba(0,0,0,.8), 0 0 26px rgba(255,190,80,.5); display: inline-block; margin: 6px 0; }
+  .shrine-reward .rw-sub { font-size: 14px; color: #ffe08a; }
+  @keyframes shReward { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .shrine-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  /* 小判が湧き出て落ちる(じゃらじゃら) */
+  .shCoin { position: absolute; font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)) drop-shadow(0 0 7px #ffcf5a); will-change: transform, opacity; animation: shCoinSpill .9s cubic-bezier(.3,.5,.4,1) forwards; }
+  @keyframes shCoinSpill {
+    0% { transform: translate(-50%,-50%) scale(.3) rotate(0); opacity: 0; }
+    12% { opacity: 1; }
+    38% { transform: translate(calc(-50% + var(--dx)*.55), calc(-50% - 58px)) scale(1.08) rotate(calc(var(--rot)*.4)); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + 175px)) scale(.82) rotate(var(--rot)); opacity: 0; }
+  }
+  .shSpark { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #fff2b0; box-shadow: 0 0 10px 2px #ffd257; transform: translate(-50%,-50%); animation: shSparkFly .5s ease-out forwards; }
+  @keyframes shSparkFly { 0% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2); opacity: 0; } }
+  .shRipple { position: absolute; border-radius: 50%; transform: translate(-50%,-50%); border: 3px solid #ffe08a; box-shadow: 0 0 16px #ffca5a; animation: shRip .55s ease-out forwards; }
+  .shRipple.big { border-color: #fff2c0; border-width: 5px; }
+  @keyframes shRip { 0% { width: 12px; height: 12px; opacity: .95; } 100% { width: 150px; height: 150px; opacity: 0; } }
+  .shMinus { position: absolute; transform: translate(-50%,-50%); font-family: var(--f-num); font-size: 24px; font-weight: 900; color: #ff5b5b; text-shadow: 0 2px 6px #000, 0 0 12px rgba(255,60,60,.8); white-space: nowrap; animation: shFloatUp .82s ease-out forwards; }
+  .shMinus.big { font-size: 34px; color: #ffd257; text-shadow: 0 2px 8px #000, 0 0 16px #ffb04a; }
+  @keyframes shFloatUp { 0% { transform: translate(-50%,-50%) scale(.6); opacity: 0; } 22% { opacity: 1; } 100% { transform: translate(-50%,-150%) scale(1.12); opacity: 0; } }
+  .shShake { animation: shShake .18s ease-in-out; }
+  @keyframes shShake { 0% { transform: translate(0,0); } 30% { transform: translate(-5px,3px); } 60% { transform: translate(5px,-3px); } 100% { transform: translate(0,0); } }
+
   /* 盤面役物: 設置場所を選ぶモード */
   #placeOverlay { position: absolute; inset: 0; z-index: 70; display: none; }
   #placeOverlay.show { display: block; }
@@ -362,10 +457,10 @@
   /* ================= ドラフト/ショップ ================= */
   #draftCards { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
   .draftCard {
-    width: 128px; background: linear-gradient(170deg, #1b201d, #101312);
-    /* レア度ごとの和風フレーム(画像)を枠に。中央は塗らずカード地を活かす */
-    border: 13px solid transparent; border-image: url(assets/frame_normal_art.webp) 210 stretch;
-    border-radius: 13px; padding: 6px 7px 7px;
+    width: 128px;
+    /* レア度ごとの和風フレーム: カードと同じ縦横比で作った画像を等倍表示(伸びない) */
+    background: #0c0f0b url(assets/frame_normal_art.webp) center / 100% 100% no-repeat;
+    border: none; border-radius: 12px; padding: 30px 12px 30px;
     cursor: pointer; font-family: inherit; color: var(--text); text-align: center;
     transition: transform .15s, box-shadow .15s;
   }
@@ -374,10 +469,10 @@
     box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent);
   }
   .draftCard .kind { font-size: 9px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
-  .draftCard.rare { border-image-source: url(assets/frame_rare_art.webp); }
+  .draftCard.rare { background-image: url(assets/frame_rare_art.webp); }
   .draftCard.rare .kind { color: #6fb7ff; }
   .draftCard.rare:hover { box-shadow: 0 10px 30px #2b6cff40; }
-  .draftCard.legend { border-image-source: url(assets/frame_legend_art.webp); }
+  .draftCard.legend { background-image: url(assets/frame_legend_art.webp); }
   .draftCard.legend .kind { color: #ffcf5a; }
   .draftCard.legend:hover { box-shadow: 0 10px 34px #ffb84a55; }
   .shopItem .rar { font-size: 9px; font-weight: 900; letter-spacing: .12em; margin-right: 4px; }
@@ -890,8 +985,7 @@
     .overlay.fit #draftCards { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 7px; }
     .overlay.fit #draftCards .draftCard {
       flex: 1 1 0; min-width: 0; width: auto; max-width: 33.4%;
-      height: min(100%, 320px); padding: 2px 2px 3px;
-      border-width: 10px; /* 小さいカードでは枠を少し細く(中身の幅を確保) */
+      height: min(100%, 320px); padding: 27px 7px 27px; /* 上下=飾り帯を避ける／左右=金レールを避ける */
     }
     .overlay.fit .draftCard, .overlay.fit .buildCard { display: flex; flex-direction: column; overflow: hidden; min-height: 0; position: relative; }
     .overlay.fit .draftCard .cardInner, .overlay.fit .draftCard .cfFront { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; height: 100%; }
@@ -899,7 +993,7 @@
     /* あふれた補足(狙える役/シナジー)は下端でフェードして自然にクリップ */
     .overlay.fit .draftCard .roleTags, .overlay.fit .buildCard .roleTags,
     .overlay.fit .draftCard .synGain { flex: 0 1 auto; min-height: 0; overflow: hidden; }
-    .overlay.fit .draftCard::before, .overlay.fit .buildCard::before {
+    .overlay.fit .buildCard::before {
       content: ''; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 22px; z-index: 4;
       background: linear-gradient(transparent, #12150f 88%); pointer-events: none; border-radius: 0 0 11px 11px;
     }
@@ -1131,6 +1225,45 @@
         <div class="sd-desc" id="sdDesc"></div>
         <div class="sd-body" id="sdBody"></div>
         <button class="ghostBtn" id="sdClose">とじる</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="shrineOverlay">
+      <div class="shrine-scene" id="shrineScene">
+        <div class="shrine-rays" id="shrineRays"></div>
+        <div class="shrine-flash" id="shrineFlash"></div>
+        <div class="shrine-top">
+          <div class="shrine-ttl" id="shrineTtl">御賽銭</div>
+          <div class="shrine-rate" id="shrineRate"></div>
+          <div class="shrine-timer"><div class="shrine-timer-bar" id="shrineTimerBar"></div></div>
+        </div>
+        <div class="shrine-hint" id="shrineHint">画面を<b>連打</b>！</div>
+
+        <div class="shrine-box-wrap">
+          <div class="shrine-box-glow" id="shrineBoxGlow"></div>
+          <img class="shrine-box" id="shrineBox" src="assets/saisenbako_art.webp" alt="賽銭箱" draggable="false">
+        </div>
+
+        <div class="shrine-stat" id="shrineStat">
+          <div class="ss-balls">持ち玉 <b id="shrineBallsLeft">0</b><span class="ss-minus" id="shrineMinus"></span></div>
+          <div class="ss-row">奉納 <b id="shrineDonated">0</b>玉　→　運 <b id="shrineLuckGain">+0.00</b></div>
+          <div class="ss-sub">1タップ <b id="shrinePerTap">0</b>玉</div>
+        </div>
+
+        <div class="shrine-fx" id="shrineFx"></div>
+
+        <!-- お参り前の説明 -->
+        <div class="shrine-intro" id="shrineIntro">
+          <div class="si-card">
+            <div class="si-ttl" id="shrineIntroTtl">神社が現れた</div>
+            <p class="si-lead">画面を<b>連打</b>すると、1回ごとに<br>持ち玉を<b>お賽銭</b>として奉納します。</p>
+            <p class="si-lead">奉納した玉のぶんだけ<br><b class="si-luck">運が上がる。</b></p>
+            <p class="si-note" id="shrineIntroNote">※玉は減ります。運と引き換えです。</p>
+            <button class="bigBtn" id="shrineStartBtn">お参りする（5秒連打）</button>
+          </div>
+        </div>
+
+        <div class="shrine-reward" id="shrineReward"></div>
       </div>
     </div>
 
