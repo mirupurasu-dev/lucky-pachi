@@ -1843,8 +1843,16 @@ function beginStage(n) {
     card.querySelector('.nm').textContent = S.theme.name;
     card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
     sfx('stage');
-    charCutin('normal', 1.7); // 面開始の挨拶
+    // キャラ挨拶は面カードと領域を奪い合わないよう、カードが引けてから出す(同じ面のままの時だけ)
+    const introStage = n;
+    setTimeout(() => { if (!S.simMode && S.stage === introStage && S.phase === 'play') charCutin('normal', 1.4); }, 1700);
+    // 面カードが出ている間は発射をロック(盤面が見えない裏で発射数を消費しない)
+    S.introLock = true;
+    if (S.introTimer) clearTimeout(S.introTimer);
+    S.introTimer = setTimeout(() => { S.introLock = false; }, 2000);
     saveRun(); // 面の頭(盤面が空)で自動セーブ → 「つづきから」で再開可能
+  } else {
+    S.introLock = false;
   }
   updateHUD();
 }
@@ -1854,6 +1862,12 @@ function beginStage(n) {
 // レート: 3面=1500玉で運+1 / 7面=1万玉で運+1。暴走防止に1回の上限は運+3。
 let shrineCtx = null;
 function fmtN(n) { return Math.round(n).toLocaleString('en-US'); }
+// OSの「視覚効果を減らす」(prefers-reduced-motion)を尊重する — 光過敏/前庭障害への配慮
+let _rmq = null;
+function reduceMotion() {
+  if (_rmq === null) { try { _rmq = window.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) { _rmq = { matches: false }; } }
+  return _rmq.matches;
+}
 function openShrine(stage, onDone) {
   const rate = stage === 3 ? 1500 : 10000;
   const perTap = Math.max(1, Math.floor(S.balls * 0.01)); // タップ1回=開始時持ち玉の1%
@@ -1863,7 +1877,7 @@ function openShrine(stage, onDone) {
   document.getElementById('shrineRate').innerHTML = `${fmtN(rate)}玉ごとに <b>運+1</b>`;
   document.getElementById('shrinePerTap').textContent = fmtN(perTap);
   document.getElementById('shrineIntroTtl').textContent = nm + ' にお参り';
-  document.getElementById('shrineIntroNote').innerHTML = `※1タップで約 <b>${fmtN(perTap)}玉</b> 減ります。運との引き換えです。`;
+  document.getElementById('shrineIntroNote').innerHTML = `1タップ ≈ <b>${fmtN(perTap)}玉</b> を奉納。<br>玉と引き換えに運が上がります。`;
   document.getElementById('shrineReward').classList.remove('show');
   document.getElementById('shrineIntro').classList.add('show');   // まず説明を出す
   document.getElementById('shrineScene').classList.remove('active');
@@ -1946,12 +1960,18 @@ function shrineTapFX(cx, cy, taps, give) {
   mn.textContent = '−' + fmtN(give) + '玉';
   mn.style.left = px + 'px'; mn.style.top = py + 'px';
   layer.appendChild(mn); setTimeout(() => mn.remove(), 860);
-  // 全画面フラッシュ＆シェイク
-  const scene = document.getElementById('shrineScene');
-  scene.classList.remove('shShake'); void scene.offsetWidth; scene.classList.add('shShake');
-  const fl = document.getElementById('shrineFlash');
-  fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
-  if (big) { fl.classList.add('bigflash'); setTimeout(() => fl.classList.remove('bigflash'), 240); }
+  // 全画面フラッシュ＆シェイク — 連打でストロボ化しないよう最大~2回/秒に制限(小判/火花/波紋など局所FXは毎タップ出す)。
+  // 演出控えめ(fxMax=false)や OSの視覚効果軽減(prefers-reduced-motion)では全画面フラッシュ自体を止める(光過敏配慮)。
+  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  const allowFlash = S.fxMax && !reduceMotion() && (!shrineCtx || !shrineCtx.lastFlash || now - shrineCtx.lastFlash > 480 || big);
+  if (allowFlash) {
+    if (shrineCtx) shrineCtx.lastFlash = now;
+    const scene = document.getElementById('shrineScene');
+    scene.classList.remove('shShake'); void scene.offsetWidth; scene.classList.add('shShake');
+    const fl = document.getElementById('shrineFlash');
+    fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
+    if (big) { fl.classList.add('bigflash'); setTimeout(() => fl.classList.remove('bigflash'), 240); }
+  }
   sfx('heso');
   if (big) sfx('jackpot');
 }
@@ -2452,7 +2472,7 @@ function renderShop() {
       `<div class="nm"><span class="rar" style="color:${RARITY_COLOR[item.rarity]}">${RARITY_LABEL[item.rarity]}</span> ${item.name}${item.kind === 'symbol' ? 'を追加' : ''}</div>` +
       `<div class="ds">${item.desc}</div>` +
       synergyGainHTML(item, true) + (item.kind === 'symbol' ? symbolRoleTagsHTML(item.id) : '') +
-      `</span><span class="pr">${item.bought ? '' : item.price + '玉'}</span>` +
+      `</span><span class="pr">${item.bought ? '' : (S.balls < item.price ? `${item.price}玉<br><span class="short">あと${fmtN(item.price - S.balls)}玉</span>` : item.price + '玉')}</span>` +
       (item.bought ? `<span class="soldStamp${item.freshStamp ? ' fresh' : ''}">売約</span>` : '');
     if (item.bought && item.freshStamp) { setTimeout(() => { item.freshStamp = false; }, 700); if (sndOK()) { boomNoise(0.12, 0.07, 0.15); } }
     btn.onclick = () => { if (btn.disabled) return; selectShop(item); };
@@ -2684,7 +2704,7 @@ function updateHUD() {
       const changed = prev.length !== str.length || prev[i] !== str[i];
       html += `<span class="dg${changed ? ' roll' : ''}">${str[i]}</span>`;
     }
-    bEl.innerHTML = html + '<span>玉</span>';
+    bEl.innerHTML = html + '<span class="unit">玉</span>';
     bEl.dataset.v = str;
     bEl.classList.remove('bump'); void bEl.offsetWidth; bEl.classList.add('bump');
   }
@@ -2842,7 +2862,7 @@ function spawnAmbient(dt) {
   if (S.simMode) return;
   const kind = S.theme.ambient;
   const rate = { dust: 2.6, petal: 6.5, bubble: 6.5, lantern: 3, star: 8, rain: 30, emberUp: 9, snow: 10, glitch: 5, shine: 5 }[kind] || 3;
-  if (S.ambient.length < 100 && rng() < rate * dt) {
+  if (S.ambient.length < 64 && rng() < rate * dt) {   /* 背景粒子の総数を抑え、玉と混同しにくくする */
     const a = { kind, t: 0, x: rng() * CFG.W, y: -12, vx: 0, vy: 20, size: 2 + rng() * 3, ph: rng() * 7 };
     switch (kind) {
       case 'dust': a.vy = 8 + rng() * 10; a.size = 1 + rng() * 1.6; break;
@@ -3539,9 +3559,10 @@ function createGLPresenter(canvas, srcCanvas) {
       gl.uniform1i(gl.getUniformLocation(P_COMP, 'b'), 1);
       gl.uniform1i(gl.getUniformLocation(P_COMP, 's'), 2);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'time'), time);
-      gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? 0.5 : 0.22);
+      // 大当り/FEVER中(boost)はブルームを強めず、むしろ下げて白飛びを防ぐ(キャラ顔・髪が飛ぶ対策)
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'bloom'), fxMax ? (0.5 - boost * 0.26) : 0.22);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'fxon'), fxMax ? 1 : 0);
-      gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.18 : 0.06) + boost * 0.4);
+      gl.uniform1f(gl.getUniformLocation(P_COMP, 'streak'), (fxMax ? 0.18 : 0.06) + boost * 0.2);
       gl.uniform3f(gl.getUniformLocation(P_COMP, 'shock'), shockS.x, shockS.y, shockS.t);
       gl.uniform1f(gl.getUniformLocation(P_COMP, 'radial'), radialT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -3929,7 +3950,7 @@ function drawCelebration(c, dt) {
   c.save();
   c.translate(cx, cy - 52);
   c.scale(pop, pop);
-  c.font = '86px "Reggae One", sans-serif';
+  c.font = '86px "Mochiy", sans-serif';
   c.lineWidth = 10; c.lineJoin = 'round';
   c.strokeStyle = 'rgba(130,20,20,.95)';
   c.strokeText(tier.kanji, 0, 0);
@@ -3958,7 +3979,7 @@ function drawCelebration(c, dt) {
   c.shadowColor = '#ff8a2e'; c.shadowBlur = 9;
   c.fillText(winTxt, jx, jy);
   c.shadowBlur = 0;
-  c.font = '900 15px "Zen Kaku Gothic New", sans-serif';
+  c.font = '900 15px "Nikumaru", sans-serif';
   c.fillStyle = '#ffd76a';
   c.fillText('― 玉 GET ―', cx, cy + 108);
   c.restore();
@@ -3987,7 +4008,7 @@ function drawFever(c, dt) {
       c.fillRect(gx, gy, gw * pct, gh);
       c.globalAlpha = 1;
     }
-    c.font = '800 8px Orbitron, monospace';
+    c.font = '800 8px "Mochiy", monospace';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = pct > 0.8 || S.fever ? '#fff' : 'rgba(255,255,255,.5)';
     c.fillText(S.fever ? `FEVER ${S.fever.shots}` : `🌷 ${S.feverGauge || 0}/20`, gx + gw / 2, gy + gh / 2 + 0.5);
@@ -4221,7 +4242,7 @@ function buildCabinet() {
   roundRectPath(c, W / 2 - 120, 22, 240, 30, 8); c.fill();
   c.strokeStyle = '#6a7178'; c.lineWidth = 1.5;
   roundRectPath(c, W / 2 - 120, 22, 240, 30, 8); c.stroke();
-  c.font = '18px "Reggae One", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '18px "Mochiy", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillStyle = T.accent;
   c.shadowColor = T.accent; c.shadowBlur = 12;
   c.fillText('幸 運 の パ チ ン コ', W / 2, 38);
@@ -4356,7 +4377,7 @@ function drawCabinetFX(c, dt) {
     c.fillStyle = '#fff';
     c.fillRect(gx - 9, gy2 - fh - 2, 18, 4);
     c.shadowBlur = 0;
-    c.font = '900 11px "Zen Kaku Gothic New", sans-serif';
+    c.font = '900 11px "Nikumaru", sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = '#9aa49d';
     c.fillText('強', gx, gy1 - 26);
@@ -4401,16 +4422,18 @@ function postFX(dt) {
   const c = c2;
   const needCopy = S.aberr > 0.02 || S.glitchT > 0;
   if (needCopy) { copyCx.clearRect(0, 0, CFG.CW, CFG.CH); copyCx.drawImage(c2.canvas, 0, 0); }
-  // ブルーム: 1/4縮小をぼかして加算合成
-  bloomCx.clearRect(0, 0, bloomCv.width, bloomCv.height);
-  bloomCx.drawImage(c2.canvas, 0, 0, bloomCv.width, bloomCv.height);
-  c.save();
-  c.globalCompositeOperation = 'lighter';
-  c.globalAlpha = 0.15 + S.boardFlash * 0.25 + (S.rush ? 0.1 : 0);
-  try { c.filter = 'blur(5px)'; } catch (e) {}
-  c.drawImage(bloomCv, 0, 0, CFG.CW, CFG.CH);
-  c.filter = 'none';
-  c.restore();
+  // ブルーム: 1/4縮小をぼかして加算合成。ただしWebGL合成側でもブルームを掛けるため、GLPがある時は二重掛けを避けてスキップ
+  if (!GLP) {
+    bloomCx.clearRect(0, 0, bloomCv.width, bloomCv.height);
+    bloomCx.drawImage(c2.canvas, 0, 0, bloomCv.width, bloomCv.height);
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    c.globalAlpha = 0.15 + S.boardFlash * 0.25 + (S.rush ? 0.1 : 0);
+    try { c.filter = 'blur(5px)'; } catch (e) {}
+    c.drawImage(bloomCv, 0, 0, CFG.CW, CFG.CH);
+    c.filter = 'none';
+    c.restore();
+  }
   // 色収差(当たり/RUSH突入時)
   if (S.aberr > 0.02) {
     S.aberr *= 0.88;
@@ -4529,11 +4552,13 @@ function draw(dt) {
   }
   if (zoom) c.restore();
 
-  // 釘(金属スプライト)
+  // 釘(金属スプライト)。玉を主役にするため通常釘は少し落とし、ヘソ(key)だけ全輝度で残す
   for (const p of BOARD.pins) {
     if (!p.alive) continue;
+    c.globalAlpha = p.key ? 1 : 0.7;
     c.drawImage(p.key ? SPRITES.pinKey : (p.guide ? SPRITES.guide : SPRITES.pin), p.x - 6.5, p.y - 6.5, 13, 13);
   }
+  c.globalAlpha = 1;
   // 風車
   for (const w of BOARD.windmills) {
     w.ang += w.dir * 3.2 * dt;
@@ -4638,7 +4663,7 @@ function draw(dt) {
     for (const s of ATT_WINGS) { c.beginPath(); c.moveTo(s.x1, s.y1); c.lineTo(s.x2, s.y2); c.stroke(); }
     c.shadowBlur = 0;
     c.fillStyle = '#fff';
-    c.font = '700 11px Orbitron, sans-serif'; c.textAlign = 'center';
+    c.font = '700 11px "Mochiy", sans-serif'; c.textAlign = 'center';
     c.fillText(`ROUND ${S.rush.round}/${S.rush.totalRounds}  ${S.rush.catches}/${CFG.countPerRound + mods().roundCountAdd}`, ATTACKER.x, ATTACKER.y + 36);
   }
   // 玉
@@ -4646,8 +4671,8 @@ function draw(dt) {
     const bd = BALLS[b.type];
     // 尾
     if (b.trail.length >= 4) {
-      c.strokeStyle = b.type === 'niji' ? `hsl(${(S.time * 260) % 360} 90% 70% / .55)` : bd.trail;
-      c.lineWidth = 3; c.lineCap = 'round';
+      c.strokeStyle = b.type === 'niji' ? `hsl(${(S.time * 260) % 360} 90% 70% / .7)` : bd.trail;
+      c.lineWidth = 4; c.lineCap = 'round';
       c.beginPath();
       c.moveTo(b.trail[0], b.trail[1]);
       for (let i = 2; i < b.trail.length; i += 2) c.lineTo(b.trail[i], b.trail[i + 1]);
@@ -4655,7 +4680,11 @@ function draw(dt) {
     }
     const R = b.r + (bd.fx.pinCoinCap ? b.grown * 0.14 : 0);
     const spr = SPRITES.balls[b.type] || SPRITES.balls.shiro;
-    c.drawImage(spr, b.x - R - 1, b.y - R - 1, (R + 1) * 2, (R + 1) * 2);
+    // 玉が釘/背景の白い光点に埋もれないよう、暗い外周リングを敷いて一回り大きめに描画(当たり判定b.rは不変)
+    const vR = R + 3.2;
+    c.beginPath(); c.arc(b.x, b.y, vR + 1.8, 0, 7);
+    c.fillStyle = 'rgba(7,9,11,.8)'; c.fill();
+    c.drawImage(spr, b.x - vR, b.y - vR, vR * 2, vR * 2);
     if (bd.fx.sparkle && rng() < 0.25) fx.spark(b.x, b.y, bd.color, 1);
   }
   // 集中線(激アツリーチ中)
@@ -4758,7 +4787,7 @@ function draw(dt) {
     p.t += dt;
     c.globalAlpha = Math.max(0, 1 - p.t * 1.3);
     c.fillStyle = p.color;
-    c.font = '14px "Reggae One", sans-serif';
+    c.font = '14px "Mochiy", sans-serif';
     c.fillText(p.txt, p.x, p.y - p.t * 36);
   }
   c.globalAlpha = 1;
@@ -5162,7 +5191,7 @@ function drawReels(c, dt) {
     c.stroke();
     c.globalAlpha = 1;
     c.fillStyle = S.spin.hot ? '#ff6b81' : '#fff';
-    c.font = '15px "Reggae One", sans-serif';
+    c.font = '15px "Mochiy", sans-serif';
     c.fillText(S.spin.hot ? '激アツ！！' : 'リーチ！', BLOCK.x + BLOCK.w / 2, y0 + winH + 22);
   }
   // ランプ列 / WINカウントアップ
@@ -5171,7 +5200,7 @@ function drawReels(c, dt) {
     const k = Math.min(1, S.winFx.t / 0.9);
     c.fillStyle = '#fff';
     c.shadowColor = T.accent; c.shadowBlur = 14;
-    c.font = '24px "Reggae One", sans-serif'; c.textAlign = 'center';
+    c.font = '24px "Mochiy", sans-serif'; c.textAlign = 'center';
     c.fillText(`+${Math.round(S.winFx.amount * k)}`, BLOCK.x + BLOCK.w / 2, lampY + 12);
     c.shadowBlur = 0;
   } else {
@@ -5250,7 +5279,8 @@ function frame(t) {
     S.time += dt;
     if (S.autoAim) autoAimStep(dt);
     S.fireCd -= dt;
-    if (S.fireCd <= 0 && (S.shotsLeft > 0 || S.rush) && S.balls > 0) {
+    // 面開始カード表示中(introLock)と大当り演出中(celebrate)は新規発射を止める(見えない裏で玉/発射数が減るのを防ぐ)
+    if (S.fireCd <= 0 && !S.introLock && !S.celebrate && (S.shotsLeft > 0 || S.rush) && S.balls > 0) {
       if (fireBall(S.power)) {
         const quick = (BALLS[S.lastFiredType] || BALLS.shiro).fx.quickNext;
         S.fireCd = quick ? 0.08 : CFG.fireInterval * mods().fireFast * (S.fever ? 0.45 : 1);
@@ -5362,12 +5392,22 @@ document.getElementById('cardBtn').onclick = function () {
 document.getElementById('sndBtn').onclick = function () {
   S.sndOn = !S.sndOn;
   this.classList.toggle('on', S.sndOn);
+  this.textContent = S.sndOn ? '🔊音 ON' : '🔇音 OFF';   // 状態を色だけでなく文言でも示す
+  this.setAttribute('aria-pressed', String(S.sndOn));
 };
 document.getElementById('fxBtn').onclick = function () {
   S.fxMax = !S.fxMax;
   this.classList.toggle('on', S.fxMax);
   this.textContent = S.fxMax ? '演出MAX' : '演出 控えめ';
 };
+// OSで「視覚効果を減らす」が有効なら、初期状態を「演出 控えめ」にして光過敏/前庭障害に配慮
+(function () {
+  if (reduceMotion()) {
+    S.fxMax = false;
+    const b = document.getElementById('fxBtn');
+    if (b) { b.classList.remove('on'); b.textContent = '演出 控えめ'; }
+  }
+})();
 document.getElementById('hitBtn').onclick = function () {
   S.rightHit = !S.rightHit;
   this.classList.toggle('on', S.rightHit);
@@ -5727,8 +5767,13 @@ document.getElementById('glossaryClose').onclick = () => document.getElementById
 document.querySelectorAll('[data-gl]').forEach(el => el.addEventListener('click', () => openGlossary(el.dataset.gl)));
 // リール構成チップ(sym)をタップ → 狙える役のフル説明ポップアップ。チップは動的に描き直すので委譲で拾う
 document.addEventListener('click', e => {
-  const chip = e.target.closest('.chip.sym[data-sym]');
-  if (chip) { e.stopPropagation(); openSymDetail(chip.dataset.sym); }
+  const symChip = e.target.closest('.chip.sym[data-sym]');
+  if (symChip) { e.stopPropagation(); openSymDetail(symChip.dataset.sym); return; }
+  // それ以外のチップ(玉/お守り/役物/シナジー)はhoverが効かないタッチでも、タップでtipを開閉できるようにする
+  const chip = e.target.closest('.chip');
+  const openedTip = chip && chip.querySelector('.tip');
+  document.querySelectorAll('.chip.tipopen').forEach(c => { if (c !== chip) c.classList.remove('tipopen'); });
+  if (openedTip) { e.stopPropagation(); chip.classList.toggle('tipopen'); }
 });
 document.getElementById('sdClose').onclick = () => closeSymDetail();
 document.getElementById('symDetailOverlay').addEventListener('click', () => closeSymDetail()); // 情報ポップアップ=どこをタップしても閉じる(閉じられず詰まるのを防ぐ)
