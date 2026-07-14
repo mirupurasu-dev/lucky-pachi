@@ -24,11 +24,17 @@
     font-weight: 400 900;
     font-display: swap;
   }
-  /* 筆書体(Yuji Boku / SIL OFL) 見出し用。ローカル同梱 */
+  /* パチンコ演出用 極太明朝(源ノ明朝/Noto Serif JP を wght900で固定) 見出し用。SIL OFL・ローカル同梱 */
   @font-face {
-    font-family: 'Brush';
-    src: url('assets/brush.woff2') format('woff2');
+    font-family: 'Mincho';
+    src: url('assets/mincho.woff2') format('woff2');
     font-weight: 400 900;
+    font-display: swap;
+  }
+  /* 7セグLED(DSEG7 Classic / SIL OFL) データカウンター・数字用。ローカル同梱 */
+  @font-face {
+    font-family: 'Seg7';
+    src: url('assets/seg7.woff2') format('woff2');
     font-display: swap;
   }
   :root {
@@ -42,8 +48,8 @@
     --accent2: #159254;
     --danger: #ff4d5e;
     --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-    --f-disp: 'Brush', 'Nikumaru', 'Yu Mincho', serif;
-    --f-num: 'Orbitron', 'Courier New', monospace;
+    --f-disp: 'Mincho', 'Noto Serif JP', 'Yu Mincho', serif;   /* パチンコ演出=極太明朝 */
+    --f-num: 'Seg7', 'Orbitron', 'Courier New', monospace;      /* データカウンター=7セグ(記号はフォールバック) */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
