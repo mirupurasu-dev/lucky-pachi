@@ -4681,8 +4681,8 @@ function draw(dt) {
     const bd = BALLS[b.type];
     // 尾
     if (b.trail.length >= 4) {
-      c.strokeStyle = b.type === 'niji' ? `hsl(${(S.time * 260) % 360} 90% 70% / .7)` : bd.trail;
-      c.lineWidth = 4; c.lineCap = 'round';
+      c.strokeStyle = b.type === 'niji' ? `hsl(${(S.time * 260) % 360} 90% 70% / .55)` : bd.trail;
+      c.lineWidth = 3; c.lineCap = 'round';
       c.beginPath();
       c.moveTo(b.trail[0], b.trail[1]);
       for (let i = 2; i < b.trail.length; i += 2) c.lineTo(b.trail[i], b.trail[i + 1]);
@@ -4690,11 +4690,7 @@ function draw(dt) {
     }
     const R = b.r + (bd.fx.pinCoinCap ? b.grown * 0.14 : 0);
     const spr = SPRITES.balls[b.type] || SPRITES.balls.shiro;
-    // 玉が釘/背景の白い光点に埋もれないよう、暗い外周リングを敷いて一回り大きめに描画(当たり判定b.rは不変)
-    const vR = R + 3.2;
-    c.beginPath(); c.arc(b.x, b.y, vR + 1.8, 0, 7);
-    c.fillStyle = 'rgba(7,9,11,.8)'; c.fill();
-    c.drawImage(spr, b.x - vR, b.y - vR, vR * 2, vR * 2);
+    c.drawImage(spr, b.x - R - 1, b.y - R - 1, (R + 1) * 2, (R + 1) * 2);
     if (bd.fx.sparkle && rng() < 0.25) fx.spark(b.x, b.y, bd.color, 1);
   }
   // 集中線(激アツリーチ中)
