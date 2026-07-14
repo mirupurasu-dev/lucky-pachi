@@ -24,17 +24,11 @@
     font-weight: 400 900;
     font-display: swap;
   }
-  /* パチンコ演出用 極太明朝(源ノ明朝/Noto Serif JP を wght900で固定) 見出し用。SIL OFL・ローカル同梱 */
+  /* 当たり/ドーパミン演出用 ぷっくりポップ体(Mochiy Pop One / SIL OFL) メイプル風。ローカル同梱 */
   @font-face {
-    font-family: 'Mincho';
-    src: url('assets/mincho.woff2') format('woff2');
+    font-family: 'Mochiy';
+    src: url('assets/mochiy.woff2') format('woff2');
     font-weight: 400 900;
-    font-display: swap;
-  }
-  /* 7セグLED(DSEG7 Classic / SIL OFL) データカウンター・数字用。ローカル同梱 */
-  @font-face {
-    font-family: 'Seg7';
-    src: url('assets/seg7.woff2') format('woff2');
     font-display: swap;
   }
   :root {
@@ -48,8 +42,9 @@
     --accent2: #159254;
     --danger: #ff4d5e;
     --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-    --f-disp: 'Mincho', 'Noto Serif JP', 'Yu Mincho', serif;   /* パチンコ演出=極太明朝 */
-    --f-num: 'Seg7', 'Orbitron', 'Courier New', monospace;      /* データカウンター=7セグ(記号はフォールバック) */
+    --f-disp: 'Nikumaru', 'Zen Kaku Gothic New', sans-serif;    /* データ系/UI見出し=丸ゴシック(にくまる) */
+    --f-num: 'Nikumaru', 'Orbitron', monospace;                 /* データ数字=丸ゴシック(にくまる) */
+    --f-win: 'Mochiy', 'Nikumaru', sans-serif;                  /* 当たり/ドーパミン演出=ぷっくりポップ体(Mochiy) */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -169,13 +164,19 @@
   }
   .overlay.show { display: flex; }
   .overlay .inner { text-align: center; padding: 20px; width: 100%; max-width: 430px; }
-  /* タイトルは筆書体(Yuji Boku)。3Dはやめて、墨＋金の和風で */
+  /* データ系/UI見出しはメイプル風ポップ体: 太い縁取り＋黄→橙グラデ */
   .overlay h1 {
-    font-size: 40px; font-weight: 400; letter-spacing: .06em; line-height: 1.3; font-family: var(--f-disp);
-    color: #f0d9a0; text-shadow: 0 2px 5px rgba(0,0,0,.7), 0 0 18px rgba(210,160,70,.25);
+    font-size: 38px; font-weight: 400; letter-spacing: .02em; line-height: 1.26; font-family: var(--f-disp);
+    color: #ffdf52;
+    background: linear-gradient(#fff4b0, #ffd23e 48%, #ff9e2e);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 4px #5a3410; paint-order: stroke fill;
+    filter: drop-shadow(0 3px 1px rgba(45,22,4,.55));
   }
-  .overlay h1 .green { color: var(--accent); }
-  .overlay h1 .red { color: var(--danger); }
+  .overlay h1 .green { color: var(--accent); background: none; -webkit-text-fill-color: var(--accent); }
+  .overlay h1 .red { color: var(--danger); background: none; -webkit-text-fill-color: var(--danger); }
+  /* 当たり/結果の見出しはドーパミン＝極太明朝で */
+  #clearOverlay h1, #gameoverOverlay h1 { font-family: var(--f-win); -webkit-text-stroke-width: 3px; }
   .overlay p { margin-top: 10px; font-size: 12.5px; color: var(--dim); line-height: 1.85; font-weight: 600; }
   .overlay p b { color: var(--text); }
   /* 選択の確認ダイアログ */
@@ -280,7 +281,7 @@
   .si-card .bigBtn { margin-top: 18px; }
   .shrine-reward { position: absolute; inset: 0; z-index: 7; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(0,0,0,.4), rgba(0,0,0,.72)); color: #fff; font-weight: 900; font-size: 18px; text-shadow: 0 2px 8px #000; }
   .shrine-reward.show { display: flex; animation: shReward .5s cubic-bezier(.2,1.4,.4,1); }
-  .shrine-reward .rw-big { font-family: var(--f-disp); font-size: 60px; letter-spacing: .06em; color: #ffe08a; text-shadow: 0 3px 10px rgba(0,0,0,.8), 0 0 26px rgba(255,190,80,.5); display: inline-block; margin: 6px 0; }
+  .shrine-reward .rw-big { font-family: var(--f-win); font-size: 60px; letter-spacing: .06em; color: #ffe08a; text-shadow: 0 3px 10px rgba(0,0,0,.8), 0 0 26px rgba(255,190,80,.5); display: inline-block; margin: 6px 0; }
   .shrine-reward .rw-sub { font-size: 14px; color: #ffe08a; }
   @keyframes shReward { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
   .shrine-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
@@ -464,21 +465,21 @@
   #draftCards { display: flex; gap: 10px; margin-top: 16px; justify-content: center; flex-wrap: wrap; }
   .draftCard {
     width: 128px;
-    /* レア度ごとの和風フレーム: カードと同じ縦横比で作った画像を等倍表示(伸びない) */
-    background: #0c0f0b url(assets/frame_normal_art.webp) center / 100% 100% no-repeat;
-    border: none; border-radius: 12px; padding: 30px 12px 30px;
+    /* 枠の装飾は廃止。シンプルな暗色カード＋レア度で縁色 */
+    background: linear-gradient(170deg, #1b201d, #0f1210);
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 9px 11px;
     cursor: pointer; font-family: inherit; color: var(--text); text-align: center;
-    transition: transform .15s, box-shadow .15s;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
   }
   .draftCard:hover {
     transform: translateY(-6px) scale(1.04);
     box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent);
   }
   .draftCard .kind { font-size: 9px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
-  .draftCard.rare { background-image: url(assets/frame_rare_art.webp); }
+  .draftCard.rare { border-color: #6fb7ff88; }
   .draftCard.rare .kind { color: #6fb7ff; }
   .draftCard.rare:hover { box-shadow: 0 10px 30px #2b6cff40; }
-  .draftCard.legend { background-image: url(assets/frame_legend_art.webp); }
+  .draftCard.legend { border-color: #ffcf5a99; }
   .draftCard.legend .kind { color: #ffcf5a; }
   .draftCard.legend:hover { box-shadow: 0 10px 34px #ffb84a55; }
   .shopItem .rar { font-size: 9px; font-weight: 900; letter-spacing: .12em; margin-right: 4px; }
@@ -534,7 +535,7 @@
   }
   #roleBanner.show { animation: roleBan 2.6s cubic-bezier(.2,1.1,.3,1) forwards; }
   #roleBanner .rb-k { font-size: 9.5px; letter-spacing: .34em; color: #ffcf5a; font-weight: 900; }
-  #roleBanner .rb-n { font-size: 27px; font-weight: 900; line-height: 1.15;
+  #roleBanner .rb-n { font-size: 27px; font-weight: 900; line-height: 1.15; font-family: var(--f-win);
     background: linear-gradient(180deg,#fff4cf,#ffca4d);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #ffd76a;
     text-shadow: 0 2px 12px rgba(0,0,0,.5); filter: drop-shadow(0 0 10px rgba(255,207,90,.5)); }
@@ -773,7 +774,7 @@
   }
   #cutinText {
     font-size: 46px; font-weight: 400; font-style: italic; letter-spacing: .1em;
-    font-family: var(--f-disp);
+    font-family: var(--f-win);
     color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 26px rgba(255,255,255,.6);
     white-space: nowrap;
   }
@@ -797,7 +798,7 @@
   }
   #stageCard .nm {
     font-size: 60px; font-weight: 400; letter-spacing: .28em; margin-top: 8px; text-indent: .28em;
-    font-family: var(--f-disp);
+    font-family: var(--f-win);
     text-shadow: 0 0 34px color-mix(in srgb, var(--accent) 65%, transparent);
     animation: trackIn 1.9s ease;
   }
@@ -809,7 +810,7 @@
     transform: translate(-50%,-50%) rotate(-8deg) scale(3);
     border: 5px solid var(--accent); color: var(--accent); border-radius: 10px;
     font-size: 46px; font-weight: 400; letter-spacing: .12em; padding: 10px 26px;
-    font-family: var(--f-disp); text-align: center; line-height: 1.12; white-space: nowrap;
+    font-family: var(--f-win); text-align: center; line-height: 1.12; white-space: nowrap;
     opacity: 0; background: rgba(4,6,5,.55);
   }
   #stamp.show { animation: stampSlam .9s cubic-bezier(.2,1.6,.4,1) forwards; }
@@ -992,7 +993,7 @@
     .overlay.fit #draftCards { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 7px; }
     .overlay.fit #draftCards .draftCard {
       flex: 1 1 0; min-width: 0; width: auto; max-width: 33.4%;
-      height: min(100%, 320px); padding: 27px 7px 27px; /* 上下=飾り帯を避ける／左右=金レールを避ける */
+      height: min(100%, 320px); padding: 10px 7px 9px;
     }
     .overlay.fit .draftCard, .overlay.fit .buildCard { display: flex; flex-direction: column; overflow: hidden; min-height: 0; position: relative; }
     .overlay.fit .draftCard .cardInner, .overlay.fit .draftCard .cfFront { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; height: 100%; }
@@ -1031,7 +1032,7 @@
   #fever .row {
     position: absolute; white-space: nowrap;
     font-size: 74px; font-weight: 400; font-style: italic; letter-spacing: .1em;
-    font-family: var(--f-disp);
+    font-family: var(--f-win);
     color: transparent; -webkit-text-stroke: 2px #fff;
     animation: feverScroll 7s linear infinite;
   }

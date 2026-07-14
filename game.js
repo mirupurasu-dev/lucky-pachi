@@ -3920,7 +3920,7 @@ function drawCelebration(c, dt) {
   c.textAlign = 'center'; c.textBaseline = 'middle';
   // ティア名
   c.fillStyle = '#fff';
-  c.font = '700 20px Orbitron, monospace';
+  c.font = '20px "Mochiy", sans-serif';
   c.letterSpacing = '6px';
   c.fillText(tier.name, cx, cy - 128);
   c.letterSpacing = '0px';
@@ -3946,10 +3946,17 @@ function drawCelebration(c, dt) {
   const eased = 1 - Math.pow(1 - cp, 3);
   const val = Math.round(ce.amount * eased);
   const jit = cp < 1 ? 2.5 : 0;
-  c.font = '800 52px Orbitron, monospace';
-  c.fillStyle = '#ffffff';
-  c.shadowColor = '#ffd76a'; c.shadowBlur = 26;
-  c.fillText('+' + val.toLocaleString(), cx + (rng() - 0.5) * jit, cy + 58 + (rng() - 0.5) * jit);
+  // ドーパミン: ぷっくりダメージ数字(太い茶縁 + 黄→橙グラデ)
+  c.font = '52px "Mochiy", sans-serif';
+  const jx = cx + (rng() - 0.5) * jit, jy = cy + 58 + (rng() - 0.5) * jit;
+  const winTxt = '+' + val.toLocaleString();
+  c.lineWidth = 9; c.lineJoin = 'round'; c.strokeStyle = '#5a3410';
+  c.strokeText(winTxt, jx, jy);
+  const ng = c.createLinearGradient(0, jy - 30, 0, jy + 30);
+  ng.addColorStop(0, '#fff4b0'); ng.addColorStop(0.5, '#ffd23e'); ng.addColorStop(1, '#ff9e2e');
+  c.fillStyle = ng;
+  c.shadowColor = '#ff8a2e'; c.shadowBlur = 9;
+  c.fillText(winTxt, jx, jy);
   c.shadowBlur = 0;
   c.font = '900 15px "Zen Kaku Gothic New", sans-serif';
   c.fillStyle = '#ffd76a';
@@ -4006,7 +4013,7 @@ function drawFever(c, dt) {
   const bob = 1 + Math.sin(S.time * 8) * 0.06;
   c.translate(CFG.CW / 2, CFG.FY + 78);
   c.scale(bob, bob);
-  c.font = '900 34px Orbitron, monospace';
+  c.font = '34px "Mochiy", sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineWidth = 7; c.lineJoin = 'round';
   c.strokeStyle = 'rgba(0,0,0,.7)';
@@ -4289,7 +4296,7 @@ function drawCabinetFX(c, dt) {
     c.shadowBlur = 0;
   }
   // データカウンター(本物の7セグLEDフォント)
-  c.font = '12px "Seg7", "Courier New", monospace';
+  c.font = '12px "Nikumaru", monospace';
   c.textAlign = 'left'; c.textBaseline = 'middle';
   c.fillStyle = '#ff5252';
   c.shadowColor = '#ff5252'; c.shadowBlur = 6;
