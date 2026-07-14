@@ -1370,10 +1370,7 @@ function pushRelease(pressed) {
   }
 }
 function showRenStamp(n) {
-  const el = document.getElementById('renStamp');
-  if (!el) return;
-  el.innerHTML = `連<span class="rn">×${n}</span>`;
-  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  /* 赤い「連」スタンプは廃止(ユーザー要望)。連荘数はRUSH演出側で伝わるため表示しない */
 }
 function hideRenStamp() {
   const el = document.getElementById('renStamp');

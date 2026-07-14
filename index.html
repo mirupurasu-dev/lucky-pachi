@@ -425,11 +425,11 @@
     font-size: 46px; text-shadow: 0 2px 18px rgba(0,0,0,.9), 0 0 30px rgba(255,200,90,.4);
     animation: titleGlow 3.2s ease-in-out infinite;
   }
-  #titleOverlay h1 .kin { /* 幸運のパチンコ = 金→黄色グラデ */
-    background: linear-gradient(#ffe987, #ffce39 52%, #ffb327);
+  #titleOverlay h1 .kin { /* 幸運のパチンコ = 明るい黄色(縁は画数の多い漢字が潰れない太さに) */
+    background: linear-gradient(#fffde3, #ffee55 55%, #ffd326);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 4px #5a3410;   /* 金用の茶色縁(緑縁を上書き) */
-    filter: drop-shadow(0 3px 1px rgba(60,35,5,.5));
+    -webkit-text-stroke: 3px #3a2506;
+    filter: drop-shadow(0 3px 0 #2a1a04) drop-shadow(0 0 18px rgba(255,232,95,.75));
   }
   @keyframes titleGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.13)} }
   #titleOverlay p { text-shadow: 0 1px 8px rgba(0,0,0,.9); }
@@ -1090,11 +1090,12 @@
   @keyframes feverScroll { from { transform: translateX(0) } to { transform: translateX(-50%) } }
 
   /* 持ち玉オドメーター */
-  #balls .dg { display: inline-block; }
-  #balls .dg.roll { animation: dgRoll .34s cubic-bezier(.2,1.4,.4,1); }
+  /* 桁は固定幅スロット(重なり/ガタつき防止)。更新演出は変形なしの光フラッシュのみ(transformは桁同士が重なるバグの元) */
+  #balls .dg { display: inline-block; width: .64em; text-align: center; }
+  #balls .dg.roll { animation: dgRoll .3s ease-out; }
   @keyframes dgRoll {
-    0% { transform: translateY(-.5em) scale(1.18); }
-    100% { transform: translateY(0) scale(1); }
+    0% { filter: brightness(2.1) drop-shadow(0 0 6px #ffe987); }
+    100% { filter: brightness(1); }
   }
   #vignette.on { opacity: 1; }
 </style>
