@@ -1127,20 +1127,30 @@
         <div class="menuCol">
           <button class="bigBtn gold" id="continueBtn" style="display:none">つづきから</button>
           <button class="bigBtn" id="startBtn">開店（新規）</button>
-          <button class="ghostBtn" id="diffBtn">難易度: ふつう</button>
-          <button class="ghostBtn" id="freeBtn">🎬 フリーモード</button>
-          <button class="ghostBtn" id="tutBtn">❓ 遊び方</button>
-          <button class="ghostBtn" id="glossaryBtn">📚 用語集</button>
-          <button class="ghostBtn" id="guideBtn">🎴 役ガイド</button>
-          <button class="ghostBtn" id="dexBtn">📖 図鑑</button>
+          <button class="ghostBtn" id="settingsBtn">設定</button>
         </div>
         <p id="titleStats" style="margin-top:12px;font-size:12px;color:#cfe6c4;font-weight:800;display:inline-block;padding:5px 12px;border-radius:9px;background:rgba(6,10,8,.62)"></p>
       </div>
     </div>
 
+    <div class="overlay" id="settingsOverlay">
+      <div class="inner">
+        <h1 style="font-size:26px"><span class="green">設定</span></h1>
+        <div class="menuCol">
+          <button class="ghostBtn" id="diffBtn">難易度: ふつう</button>
+          <button class="ghostBtn" id="freeBtn">フリーモード</button>
+          <button class="ghostBtn" id="tutBtn">遊び方</button>
+          <button class="ghostBtn" id="glossaryBtn">用語集</button>
+          <button class="ghostBtn" id="guideBtn">役ガイド</button>
+          <button class="ghostBtn" id="dexBtn">図鑑</button>
+          <button class="ghostBtn" id="settingsClose">もどる</button>
+        </div>
+      </div>
+    </div>
+
     <div class="overlay" id="freeOverlay">
       <div class="inner" style="max-width:500px">
-        <h1 style="font-size:26px">🎬 <span class="green">フリーモード</span></h1>
+        <h1 style="font-size:26px"><span class="green">フリーモード</span></h1>
         <p style="margin-top:4px">好きな面を選んで気ままに遊べるモード。全部の絵柄が使えて、玉は尽きず、ノルマも軽め。その面の背景・当たり・RUSH・FEVERを心ゆくまで。</p>
         <div id="freeGrid" class="freeGrid"></div>
         <button class="ghostBtn" id="freeClose">もどる</button>
@@ -1149,7 +1159,7 @@
 
     <div class="overlay" id="dexOverlay">
       <div class="inner" style="max-width:520px">
-        <h1 style="font-size:26px">📖 <span class="green">図鑑</span></h1>
+        <h1 style="font-size:26px"><span class="green">図鑑</span></h1>
         <p id="dexSummary" style="margin-top:4px"></p>
         <div id="dexTabs" class="dexTabs"></div>
         <div id="dexGrid" class="dexGrid"></div>
@@ -1159,7 +1169,7 @@
 
     <div class="overlay" id="guideOverlay">
       <div class="inner" style="max-width:560px">
-        <h1 style="font-size:24px">🎴 <span class="green">役ガイド</span></h1>
+        <h1 style="font-size:24px"><span class="green">役ガイド</span></h1>
         <p style="margin-top:4px">揃うと当たりになる組み合わせの一覧。基本は同じ系統3つ(果物×3など)、誰でも狙える。🌙🌙🔮のようなレア固定の大物も。1つ1つは小粒でも、倍率を重ねれば爆発する。</p>
         <div id="guideLegend" class="guideLegend"></div>
         <div id="guideTabs" class="dexTabs"></div>
@@ -1181,7 +1191,7 @@
 
     <div class="overlay" id="glossaryOverlay">
       <div class="inner" style="max-width:500px">
-        <h1 style="font-size:24px">📚 <span class="green">用語集</span></h1>
+        <h1 style="font-size:24px"><span class="green">用語集</span></h1>
         <p style="margin-top:4px">ゲームの言葉の意味を一言で。プレイ中は、運・倍率・玉デッキなどの画面の表示をタップしても、その説明がここで開く。</p>
         <div id="glossaryBody" class="glBody"></div>
         <button class="ghostBtn" id="glossaryClose">とじる</button>
@@ -1239,7 +1249,7 @@
         <h1><span class="red">廃業</span></h1>
         <p id="gameoverText"></p>
         <button class="bigBtn" id="retryBtn">もう一度</button>
-        <p style="margin-top:10px"><button class="ghostBtn" id="gameoverHomeBtn">🏠 タイトルへ戻る</button></p>
+        <p style="margin-top:10px"><button class="ghostBtn" id="gameoverHomeBtn">タイトルへ戻る</button></p>
       </div>
     </div>
 
@@ -1254,7 +1264,7 @@
 
     <div class="overlay fit" id="removeOverlay">
       <div class="inner" style="max-width:440px">
-        <h1 style="font-size:22px">🧹 絵柄を<span class="green">1枚はがす</span></h1>
+        <h1 style="font-size:22px">絵柄を<span class="green">1枚はがす</span></h1>
         <p style="margin-top:4px">絵柄をはがしてスロットをスッキリ。ライバルが減るぶん、残った絵柄がぐっと揃いやすくなる。</p>
         <div id="removeGrid"></div>
         <button class="ghostBtn" id="removeCancel">やめる</button>
@@ -1391,7 +1401,7 @@
     </div>
 
     <div id="bottomBar">
-      <button id="barHandle">🎮 操作 ▲</button>
+      <button id="barHandle">操作 ▲</button>
       <div id="powerCtl">
         <button class="pwBtn" id="pwDown">◀</button>
         <div id="pwBar"></div>
@@ -1399,14 +1409,14 @@
       </div>
 
       <div id="controls">
-        <button class="ctlBtn" id="homeBtn" style="display:none">🏠 メニュー</button>
+        <button class="ctlBtn" id="homeBtn" style="display:none">メニュー</button>
         <button class="ctlBtn" id="hitBtn">👈左打ち</button>
         <button class="ctlBtn on" id="aimBtn">おまかせ照準</button>
         <button class="ctlBtn" id="speedBtn">倍速 ×1</button>
         <button class="ctlBtn" id="zoomBtn">🔍液晶拡大</button>
-        <button class="ctlBtn" id="guideBtnBar">📖役ガイド</button>
-        <button class="ctlBtn on" id="cardBtn">🎴カード背景</button>
-        <button class="ctlBtn on" id="sndBtn" aria-pressed="true">🔊音 ON</button>
+        <button class="ctlBtn" id="guideBtnBar">役ガイド</button>
+        <button class="ctlBtn on" id="cardBtn">カード背景</button>
+        <button class="ctlBtn on" id="sndBtn" aria-pressed="true">音 ON</button>
         <button class="ctlBtn on" id="fxBtn">演出MAX</button>
         <button class="ctlBtn" id="sheetToggle">🎒装備</button>
       </div>
