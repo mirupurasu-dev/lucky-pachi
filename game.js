@@ -2860,9 +2860,8 @@ const fx = {
     if (S.simMode) return;
     const el = document.getElementById('cutin');
     document.getElementById('cutinText').textContent = text;
-    el.style.background = hot
-      ? 'linear-gradient(100deg, transparent 0%, #d1103f 12%, #d1103f 88%, transparent 100%)'
-      : '';
+    // deco版: インラインbackgroundは集中線画像を消すので使わない。hotはclassで赤ティントを画像に重ねる
+    el.classList.toggle('hot', !!hot);
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   },
   flashDOM() {
@@ -3627,6 +3626,9 @@ srcCv.width = CFG.CW; srcCv.height = CFG.CH;
 let GLP = null;
 try { GLP = createGLPresenter(cv, srcCv); } catch (e) { GLP = null; }
 const c2 = GLP ? srcCv.getContext('2d') : cv.getContext('2d');
+// deco版: 大当り用の金レイバースト画像(生成済みアセット)
+const RAYS_IMG = new Image();
+RAYS_IMG.src = 'assets/ui_rays_gold.webp';
 const bloomCv = document.createElement('canvas');
 bloomCv.width = CFG.CW / 4; bloomCv.height = CFG.CH / 4;
 const bloomCx = bloomCv.getContext('2d');
@@ -3933,19 +3935,16 @@ function drawCelebration(c, dt) {
   c.save();
   c.fillStyle = `rgba(0,0,0,${0.55 * a})`;
   c.fillRect(0, 0, W, CFG.CH);
-  // 金の放射(2層逆回転)
+  // 金の放射 — deco版: 生成した金レイバースト画像を2層逆回転でlighter合成(演出控えめ/OSの視覚効果軽減では抑制)
   c.globalCompositeOperation = 'lighter';
-  for (const [spd, alpha, len] of [[0.7, 0.15, 560], [-0.45, 0.09, 600]]) {
-    c.globalAlpha = alpha * a;
-    c.fillStyle = '#ffd76a';
-    const a0 = S.time * spd;
-    for (let i = 0; i < 14; i++) {
-      const ang = a0 + i * Math.PI / 7;
-      c.beginPath();
-      c.moveTo(cx, cy);
-      c.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
-      c.lineTo(cx + Math.cos(ang + 0.13) * len, cy + Math.sin(ang + 0.13) * len);
-      c.closePath(); c.fill();
+  if (S.fxMax && !reduceMotion() && RAYS_IMG.complete && RAYS_IMG.naturalWidth) {
+    for (const [spd, alpha, size] of [[0.35, 0.55, 1250], [-0.22, 0.35, 1450]]) {
+      c.save();
+      c.globalAlpha = alpha * a;
+      c.translate(cx, cy);
+      c.rotate(S.time * spd);
+      c.drawImage(RAYS_IMG, -size / 2, -size / 2, size, size);
+      c.restore();
     }
   }
   c.globalCompositeOperation = 'source-over';
