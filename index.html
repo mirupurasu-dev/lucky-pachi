@@ -219,7 +219,8 @@
   /* deco版: 生成した金装飾パネル枠(四辺装飾・中央暗) */
   /* 確認ダイアログ枠: シンプルな金枠を9スライス(border-image)化。横長でも全辺同じ太さ・角が歪まない */
   .cf-inner { max-width: 360px; background: linear-gradient(160deg, #1a2b22, #0f1712); border: 15px solid transparent; border-image: url('assets/ui_cfframe.webp') 42 / 15px / 0 stretch; border-radius: 4px; padding: 22px 24px 20px; }
-  #settingsOverlay .inner { max-width: 340px; background: url('assets/ui_panel_frame.webp') center / 100% 100% no-repeat; padding: 34px 28px 30px; border-radius: 16px; }
+  /* 設定パネル枠: 鯉枠の引き伸ばしをやめ、確認ダイアログと同じ9スライス金枠に統一(全辺均一・歪まない) */
+  #settingsOverlay .inner { max-width: 340px; background: linear-gradient(160deg, #1a2b22, #0f1712); border: 15px solid transparent; border-image: url('assets/ui_cfframe.webp') 42 / 15px / 0 stretch; border-radius: 4px; padding: 26px 24px 24px; }
   .cf-kind { font-size: 10px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
   .cf-icon { font-size: 46px; line-height: 1.1; margin: 8px 0 2px; min-height: 50px; }
   .cf-icon .dot2 { display: inline-block; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 16px currentColor; vertical-align: middle; }
@@ -429,10 +430,11 @@
   .ghostBtn {
     position: relative; margin-top: 10px; cursor: pointer; font-family: inherit;
     min-height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
-    /* deco版: 生成した黒漆×金トリムのプレート画像 */
-    background: url('assets/ui_btn_dark.webp') center / 100% 100% no-repeat;
-    border: none; color: var(--text);
-    padding: 10px 26px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: .1em;
+    /* 塗り=CSSグラデ(歪まない)＋金の角丸輪郭を9スライス枠で重ねる。どの幅でも輪郭が歪まない */
+    background: linear-gradient(180deg, #1e2c24, #0e1712);
+    border: 8px solid transparent; border-image: url('assets/ui_btnframe.webp') 17 / 8px / 0 stretch;
+    color: var(--text);
+    padding: 4px 22px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: .1em;
     box-shadow: 0 2px 8px rgba(0,0,0,.42);
     transition: border-color .2s, color .2s, transform .12s, box-shadow .2s, filter .15s;
   }
