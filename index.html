@@ -659,8 +659,9 @@
   .draftCard.aura-l { box-shadow: 0 0 40px #ff4dffcc !important; }
   /* ホロ箔(レア=銀箔スイープ/レジェンド=虹ホロ)。指の位置--mx/--myに光沢が追従 */
   .draftCard .cfFront { position: static; }
-  /* ホロ: カード全体を覆い、常時ゆっくり光が流れる(ポインタ位置にも追従) */
-  .draftCard .holo { position: absolute; inset: 0; border-radius: 11px; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0; }
+  /* ホロ: カード直下に置きカード全体(端まで)を覆う。文字側のpaddingの影響を受けない */
+  .draftCard .holo { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0; }
+  .draftCard.facedown .holo { opacity: 0 !important; }   /* 裏向き中は光沢を出さない */
   .draftCard.rare .holo {
     opacity: .5;
     background:
@@ -1083,9 +1084,8 @@
       height: min(100%, 300px);   /* 3枚とも同一の固定サイズ(内容連動をやめ均一化) */
       padding: 18px 11px 15px;    /* 装飾枠に中身が乗らない余白 */
     }
-    /* 装飾が内側に張り出すレア/レジェンドは余白を増やして中身の被りを防ぐ */
-    .overlay.fit #draftCards .draftCard.rare   { padding: 22px 13px 19px; }
-    .overlay.fit #draftCards .draftCard.legend { padding: 27px 15px 25px; }
+    /* レア/レジェンドとも枠をノーマル同等の細枠に作り直したので、余白はベース共通。
+       3枚のカードサイズと文字領域が完全に一致する(レア度別の余白上書きは廃止) */
     /* 3択カード: 種別字間を詰め、名称は2行固定枠で開始位置を揃える */
     .overlay.fit .draftCard .kind { letter-spacing: .04em; }
     .overlay.fit .draftCard .nm { font-size: 12.5px; line-height: 1.18; min-height: 2.36em;

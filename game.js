@@ -2396,8 +2396,9 @@ function openDraft() {
       `<div class="kind">${RARITY_LABEL[card.rarity]}・${kindLabel}</div>` +
       `<div class="icon">${icon}</div><div class="nm">${card.name}</div><div class="ds">${card.desc}</div>` +
       synergyGainHTML(card, true) + (card.kind === 'symbol' ? symbolRoleTagsHTML(card.id) : '') +
-      `<div class="holo"></div>` +
-      `</div></div>`;
+      `</div></div>` +
+      // ホロはcardInnerの外=カード直下に置き、paddingに縮められず端まで覆う(文字側の余白は据え置き)
+      `<div class="holo"></div>`;
     // 3Dチルト(指/マウス位置でカードが傾き、ホロの光沢が流れる)
     el.addEventListener('pointermove', ev => {
       const r = el.getBoundingClientRect();
