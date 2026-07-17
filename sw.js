@@ -1,7 +1,7 @@
 // 幸運のパチンコ — Service Worker
 // TWA(Androidアプリ)がオフラインでも起動できるよう、コアファイルを事前キャッシュし、
 // それ以外の画像等は初回アクセス時にキャッシュへ足していく(stale-while-revalidate)。
-const CACHE_NAME = 'lucky-pachi-v21';
+const CACHE_NAME = 'lucky-pachi-v22';
 const CORE_ASSETS = ['./', './index.html', './game.js', './manifest.json', './assets/nikumaru.woff2', './assets/mochiy.woff2', './assets/notokaku.woff2',
   // deco版UI装飾画像(オフライン初表示でも枠/ロゴ/ハンコ/演出が欠けないよう事前キャッシュ)
   './assets/ui_card_frame.webp', './assets/ui_shopitem_frame.webp', './assets/ui_btn_gold.webp', './assets/ui_btn_dark.webp',
@@ -9,7 +9,8 @@ const CORE_ASSETS = ['./', './index.html', './game.js', './manifest.json', './as
   './assets/ui_hanko_sq.webp', './assets/ui_cutin_band.webp', './assets/ui_rays_gold.webp',
   // レア度別カード枠/ショップ枠(ドラフト・ショップの中核UI。9スライス/背景で全カードに使用)
   './assets/ui_cardframe_normal.webp', './assets/ui_cardframe_rare.webp', './assets/ui_cardframe_legend.webp',
-  './assets/ui_frame_normal.webp', './assets/ui_frame_rare.webp', './assets/ui_frame_legend.webp', './assets/ui_frame_panel.webp'];
+  './assets/ui_frame_normal.webp', './assets/ui_frame_rare.webp', './assets/ui_frame_legend.webp', './assets/ui_frame_panel.webp',
+  './assets/ui_cfframe.webp'];  // 確認ダイアログの9スライス金枠
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
