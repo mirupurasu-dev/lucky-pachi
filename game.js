@@ -156,7 +156,7 @@ const SYMBOL_UNLOCKS = {
   kagi: { stages: 48 }, buta: { stages: 55 }, hanabi: { stages: 62 }, unicorn: { stages: 70 },
   crown: { loops: 1 }, taiyo: { loops: 2 }, ryu: { loops: 3 }, ryusei: { loops: 4 }, joker: { loops: 5 },
 };
-let META = { stages: 0, loops: 0, dex: {}, games: 0 };
+let META = { stages: 0, loops: 0, dex: {}, games: 0, cabSkin: 0 };
 try { META = Object.assign(META, JSON.parse(localStorage.getItem('luckyPachiMeta') || '{}')); } catch (e) {}
 if (!META.dex) META.dex = {}; // 図鑑の発見記録(type:id → 1)
 function saveMeta() { try { localStorage.setItem('luckyPachiMeta', JSON.stringify(META)); } catch (e) {} }
@@ -2195,13 +2195,24 @@ function acquire(card) {
   if (card.kind === 'symRemoveTicket') openSymbolRemove({});
   afterAcquire(card, prevSyn);
 }
+// お守り/役物の絵柄: 生成画像を優先、読み込み失敗時は元の絵文字にフォールバック
+function icoTag(kind, id, emoji, cls) {
+  const pref = kind === 'part' ? 'part' : 'relic';
+  const c = cls || 'ricon';
+  const fb = (emoji || '').replace(/"/g, '');
+  return `<img class="${c}" src="assets/${pref}_${id}_art.webp" alt="" data-fb="${fb}" ` +
+    `onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${c}',textContent:this.dataset.fb}))">`;
+}
+function relicPartIco(o) {
+  return (o.kind === 'relic' || o.kind === 'part') && o.id ? icoTag(o.kind, o.id, o.icon) : o.icon;
+}
 // ---------- 選択の確認ダイアログ ----------
 function confirmSelect(card, price, onOk) {
   const ov = document.getElementById('confirmOverlay');
   const isPart = card.kind === 'part';
   const icon = card.kind === 'ball'
     ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
-    : card.kind === 'symbol' ? card.glyph : card.icon;
+    : card.kind === 'symbol' ? card.glyph : relicPartIco(card);
   const kindLabel = card.kind === 'ball' ? '玉デッキ' : card.kind === 'symbol' ? 'リール絵柄'
     : card.kind === 'part' ? '盤面役物' : card.kind === 'relic' ? 'お守り' : 'アイテム';
   document.getElementById('cfKind').textContent = `${RARITY_LABEL[card.rarity] || ''}・${kindLabel}`;
@@ -2226,7 +2237,7 @@ function startPlacement(card, onPlaced, onCancel) {
   placeCtx = { card, onPlaced, onCancel };
   S.cam.z = 1; S.cam.py = 390; S.cam.punch = 0; // カメラをデフォルト固定→盤面座標とDOMを一致
   S.placing = true;
-  document.getElementById('plName').innerHTML = `${card.icon} ${card.name}`;
+  document.getElementById('plName').innerHTML = `${icoTag('part', card.id, card.icon)} ${card.name}`;
   document.getElementById('placeOverlay').classList.add('show');
   layoutPlaceSlots();
 }
@@ -2244,10 +2255,10 @@ function layoutPlaceSlots() {
     btn.style.left = (l + cxp * sx) + 'px';
     btn.style.top = (t + cyp * sy) + 'px';
     if (occ) {
-      btn.innerHTML = `<span class="ps-ic">${occ.icon}</span>`;
+      btn.innerHTML = `<span class="ps-ic">${icoTag('part', occ.id, occ.icon)}</span>`;
       btn.disabled = true;
     } else {
-      btn.innerHTML = `<span class="ps-plus">＋</span><span class="ps-ic ghost">${placeCtx.card.icon}</span>`;
+      btn.innerHTML = `<span class="ps-plus">＋</span><span class="ps-ic ghost">${icoTag('part', placeCtx.card.id, placeCtx.card.icon)}</span>`;
       btn.onclick = () => commitPlacement(sl);
     }
     box.appendChild(btn);
@@ -2378,7 +2389,7 @@ function openDraft() {
     el.style.setProperty('--i', i);
     const icon = card.kind === 'ball'
       ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
-      : card.kind === 'symbol' ? card.glyph : card.icon;
+      : card.kind === 'symbol' ? card.glyph : relicPartIco(card);
     const kindLabel = card.kind === 'ball' ? 'BALL' : card.kind === 'symbol' ? 'REEL' : 'RELIC';
     el.innerHTML =
       `<div class="cardInner"><div class="cfFace cfFront">` +
@@ -2463,7 +2474,7 @@ function renderShop() {
     btn.disabled = item.bought || S.balls < item.price;
     const ic = item.kind === 'ball'
       ? `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff, ${item.color})"></span>`
-      : item.kind === 'symbol' ? item.glyph : item.icon;
+      : item.kind === 'symbol' ? item.glyph : relicPartIco(item);
     btn.innerHTML =
       `<span class="ic">${ic}</span><span>` +
       `<div class="nm"><span class="rar" style="color:${RARITY_COLOR[item.rarity]}">${RARITY_LABEL[item.rarity]}</span> ${item.name}${item.kind === 'symbol' ? 'を追加' : ''}</div>` +
@@ -2775,12 +2786,12 @@ function reelChipsHTML() {
 }
 function relicChipsHTML() {
   return S.relics.length
-    ? S.relics.map(r => `<span class="chip">${r.icon} ${r.name}<span class="tip">${r.desc}</span></span>`).join('')
+    ? S.relics.map(r => `<span class="chip">${icoTag('relic', r.id, r.icon)} ${r.name}<span class="tip">${r.desc}</span></span>`).join('')
     : '<span style="color:var(--dim);font-size:10px;font-weight:600">まだ何もない</span>';
 }
 function partChipsHTML() {
   return S.parts.length
-    ? S.parts.map(p => `<span class="chip">${p.icon} ${p.name}<span class="tip">${p.desc}</span></span>`).join('')
+    ? S.parts.map(p => `<span class="chip">${icoTag('part', p.id, p.icon)} ${p.name}<span class="tip">${p.desc}</span></span>`).join('')
       + (freeSlots().length ? `<span class="chip" style="opacity:.5">空き ×${freeSlots().length}</span>` : '')
     : '<span style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — 面クリア後のごほうびや屋台で、装置を置ける</span>';
 }
@@ -4088,6 +4099,42 @@ for (let s = 1; s <= 10; s++) {
   im.src = `assets/lcd_${s}_art.webp`;
 }
 function stageLcdBg() { return LCD_STAGE_BG[S.free ? S.freeTheme : S.stage] || ART.lcdBg; } // その面の背景(フリーは選択テーマ)
+
+// ===== 台デザイン(筐体スキン): 標準＋生成10種を切替可能。winは各アートの黒窓フラクション[wx0,wx1,wy0,wy1](PIL実測、盤面整列用) =====
+const DEFAULT_WIN = [0.126, 0.8721, 0.166, 0.8561];
+const CAB_SKINS = [
+  { id: 'default',  name: '標準・金鯉', file: 'assets/cabinet_art.webp',        win: DEFAULT_WIN,                       unlock: 0, img: null },
+  { id: 'kinryu',   name: '金龍',       file: 'assets/cab01_kinryu_art.webp',   win: [0.2627, 0.7324, 0.181, 0.7122],  unlock: 2,  img: null },
+  { id: 'ginhoou',  name: '銀鳳凰',     file: 'assets/cab02_ginhoou_art.webp',  win: [0.2939, 0.71, 0.2025, 0.748],    unlock: 4,  img: null },
+  { id: 'sakura',   name: '桜花',       file: 'assets/cab03_sakura_art.webp',   win: [0.2461, 0.7686, 0.1777, 0.6979], unlock: 6,  img: null },
+  { id: 'matsuri',  name: '祭囃子',     file: 'assets/cab04_matsuri_art.webp',  win: [0.2695, 0.7109, 0.2207, 0.6667], unlock: 9,  img: null },
+  { id: 'hatou',    name: '波濤',       file: 'assets/cab05_hatou_art.webp',    win: [0.2461, 0.7529, 0.2214, 0.8216], unlock: 12, img: null },
+  { id: 'dennou',   name: '電脳',       file: 'assets/cab06_dennou_art.webp',   win: [0.2588, 0.7539, 0.1895, 0.7214], unlock: 15, img: null },
+  { id: 'guren',    name: '紅蓮',       file: 'assets/cab07_guren_art.webp',    win: [0.2549, 0.7305, 0.265, 0.7109],  unlock: 18, img: null },
+  { id: 'hyoushou', name: '氷晶',       file: 'assets/cab08_hyoushou_art.webp', win: [0.2744, 0.7441, 0.168, 0.6908],  unlock: 22, img: null },
+  { id: 'raiden',   name: '雷電',       file: 'assets/cab09_raiden_art.webp',   win: [0.2734, 0.7412, 0.2344, 0.694],  unlock: 26, img: null },
+  { id: 'tenjou',   name: '天上',       file: 'assets/cab10_tenjou_art.webp',   win: [0.2441, 0.7559, 0.2708, 0.8027], unlock: 30, img: null },
+];
+CAB_SKINS.forEach((s, i) => {
+  if (i === 0) return; // 標準はART.cabinetを使う
+  const im = new Image();
+  im.onload = () => { s.img = im; if ((META.cabSkin || 0) === i) buildCabinet(); };
+  im.src = s.file; // 404なら標準にフォールバック
+});
+function curCabSkin() { return CAB_SKINS[META.cabSkin || 0] || CAB_SKINS[0]; }
+function cabSkinUnlocked(i) { return META.stages >= (CAB_SKINS[i].unlock || 0); }
+// 右下レバーを台デザインに連動させる(標準はCSSの手続き描画、スキン時は生成レバー画像)
+function applyLeverSkin() {
+  const lever = document.getElementById('lever'); if (!lever) return;
+  const skin = curCabSkin();
+  if (skin.id !== 'default') {
+    lever.style.setProperty('--lever-img', `url('assets/lever_${skin.id}_art.webp')`);
+    lever.classList.add('skinned');
+  } else {
+    lever.classList.remove('skinned');
+    lever.style.removeProperty('--lever-img');
+  }
+}
 for (let i = 0; i < 6; i++) { // 泳ぐ生き物(金鯉/紅白鯉/カメ/フグ/タコ/招き猫魚)
   const im = new Image();
   im.onload = () => { LCD_CREATURES[i] = im; if (swimmers.length === 0) seedSwimmers(); };
@@ -4303,11 +4350,13 @@ function buildCabinet() {
   // LEDソケット
   c.fillStyle = '#050607';
   for (const l of LEDS) { c.beginPath(); c.arc(l.x, l.y, 7, 0, 7); c.fill(); }
-  // AIアート筐体: アートの黒窓(実測 x12.60-87.21%, y16.60-85.61%)を盤面矩形に正確に一致させて無歪み描画
-  if (ART.cabinet) {
-    const wx0 = 0.126, wx1 = 0.8721, wy0 = 0.166, wy1 = 0.8561;
+  // AIアート筐体: 選択中の台スキンの黒窓を盤面矩形に一致させて無歪み描画(盤面が中央を覆う)
+  const skin = curCabSkin();
+  const cabArt = skin.img || ART.cabinet;
+  if (cabArt) {
+    const [wx0, wx1, wy0, wy1] = skin.win;
     const dw = CFG.W / (wx1 - wx0), dh = CFG.H / (wy1 - wy0);
-    c.drawImage(ART.cabinet, CFG.FX - wx0 * dw, CFG.FY - wy0 * dh, dw, dh);
+    c.drawImage(cabArt, CFG.FX - wx0 * dw, CFG.FY - wy0 * dh, dw, dh);
   }
 }
 
@@ -5552,11 +5601,11 @@ function dexCardHTML(key, id) {
     if (seen) { name = b.name; desc = b.desc; }
   } else if (key === 'relic') {
     const r = RELICS.find(x => x.id === id); rar = r.rarity;
-    icon = seen ? `<span class="dg">${r.icon}</span>` : '<span class="dg">？</span>';
+    icon = seen ? icoTag('relic', id, r.icon, 'dg') : '<span class="dg">？</span>';
     if (seen) { name = r.name; desc = r.desc; }
   } else if (key === 'part') {
     const p = PARTS[id]; rar = p.rarity;
-    icon = seen ? `<span class="dg">${p.icon}</span>` : '<span class="dg">？</span>';
+    icon = seen ? icoTag('part', id, p.icon, 'dg') : '<span class="dg">？</span>';
     if (seen) { name = p.name; desc = p.desc; }
   } else if (key === 'recipe') {
     const rc = RECIPES.find(r => r.name === id); rar = 'rare';
@@ -5760,6 +5809,24 @@ document.getElementById('continueBtn').onclick = () => { ensureAudio(); continue
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
 document.getElementById('settingsBtn').onclick = () => { sfx('tick'); document.getElementById('settingsOverlay').classList.add('show'); };
 document.getElementById('settingsClose').onclick = () => closeSettings();
+// 台デザイン(筐体スキン)選択
+function renderCabGrid() {
+  const grid = document.getElementById('cabGrid'); if (!grid) return;
+  grid.innerHTML = CAB_SKINS.map((s, i) => {
+    const unlocked = cabSkinUnlocked(i);
+    const sel = (META.cabSkin || 0) === i;
+    const lock = unlocked ? '' : `<div class="cabLock">🔒<br>あと${Math.max(1, s.unlock - META.stages)}面クリアで解禁</div>`;
+    return `<button class="cabCard${sel ? ' sel' : ''}${unlocked ? '' : ' locked'}" data-skin="${i}"${unlocked ? '' : ' disabled'}>` +
+      `<img class="cabThumb" src="${s.file}" alt="" loading="lazy"><span class="cabName">${s.name}</span>${lock}</button>`;
+  }).join('');
+}
+document.getElementById('cabSkinBtn').onclick = () => { sfx('tick'); closeSettings(); renderCabGrid(); document.getElementById('cabinetOverlay').classList.add('show'); };
+document.getElementById('cabClose').onclick = () => document.getElementById('cabinetOverlay').classList.remove('show');
+document.getElementById('cabGrid').addEventListener('click', e => {
+  const card = e.target.closest('.cabCard'); if (!card || card.classList.contains('locked')) return;
+  META.cabSkin = +card.dataset.skin; saveMeta(); buildCabinet(); applyLeverSkin(); renderCabGrid(); sfx('coin');
+});
+applyLeverSkin(); // 起動時に保存済みスキンのレバーを反映
 document.getElementById('dexBtn').onclick = () => { closeSettings(); openDex(); };
 document.getElementById('dexClose').onclick = () => document.getElementById('dexOverlay').classList.remove('show');
 document.getElementById('diffBtn').onclick = () => { setDiff(diffIdx + 1); updateDiffBtn(); sfx('tick'); };
