@@ -2563,7 +2563,7 @@ function renderBuild() {
 function renderBuildPicked() {
   document.getElementById('buildPicked').innerHTML = Object.entries(S.symbolPool)
     .map(([id, n]) => `<span class="chip sym">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span></span>`)
-    .join('') || '<span style="color:var(--dim);font-size:10px;font-weight:600">まだ空のリール</span>';
+    .join('') || '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">まだ空のリール</span>';
 }
 
 // ---------- セーブ / ロード(途中再開) ----------
@@ -2787,13 +2787,13 @@ function reelChipsHTML() {
 function relicChipsHTML() {
   return S.relics.length
     ? S.relics.map(r => `<span class="chip">${icoTag('relic', r.id, r.icon)} ${r.name}<span class="tip">${r.desc}</span></span>`).join('')
-    : '<span style="color:var(--dim);font-size:10px;font-weight:600">まだ何もない</span>';
+    : '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">まだ何もない</span>';
 }
 function partChipsHTML() {
   return S.parts.length
     ? S.parts.map(p => `<span class="chip">${icoTag('part', p.id, p.icon)} ${p.name}<span class="tip">${p.desc}</span></span>`).join('')
       + (freeSlots().length ? `<span class="chip" style="opacity:.5">空き ×${freeSlots().length}</span>` : '')
-    : '<span style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — 面クリア後のごほうびや屋台で、装置を置ける</span>';
+    : '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">空きスロット ×6 — 面クリア後のごほうびや屋台で、装置を置ける</span>';
 }
 function renderCollections() {
   document.getElementById('deckChips').innerHTML = deckChipsHTML();
@@ -2807,7 +2807,7 @@ function renderCollections() {
     const act = activeSynergies();
     syEl.innerHTML = (act.length
       ? act.map(sy => `<span class="chip" style="border-color:#ff4dff66;color:#ff8aff">🔗${sy.name} ×${sy.mult}<span class="tip">${sy.desc}</span></span>`).join('')
-      : '<span style="color:var(--dim);font-size:10px;font-weight:600">相性の良い組み合わせを集めると相乗倍率が乗る</span>')
+      : '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">相性の良い組み合わせを集めると相乗倍率が乗る</span>')
       + (act.length < SYNERGIES.length ? `<span class="chip" style="opacity:.45">未発見 ×${SYNERGIES.length - act.length}</span>` : '');
   }
   // 特殊役(レシピ)
@@ -2819,7 +2819,7 @@ function renderCollections() {
       const g = recipeGlyphs(rc);
       return `<span class="chip sym" style="${ready ? 'border-color:var(--accent2)' : 'opacity:.45'}">${g}<span class="cnt">${rc.name}</span><span class="tip"><b>${rc.name}</b> ${recipePatternHTML(rc)}<br>${rc.desc}${ready ? '（成立可能！）' : '（あと少し）'}</span></span>`;
     }).filter(Boolean).join('');
-    rcEl.innerHTML = rows || '<span style="color:var(--dim);font-size:10px;font-weight:600">特定の絵柄の組み合わせで「特殊役」が揃うようになる</span>';
+    rcEl.innerHTML = rows || '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">特定の絵柄の組み合わせで「特殊役」が揃うようになる</span>';
   }
 }
 

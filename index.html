@@ -30,6 +30,13 @@
     font-weight: 400 900;
     font-display: swap;
   }
+  /* 説明・解説テキスト用 角ゴシック(Noto Sans JP / SIL OFL、ゲーム内字形にサブセット・可変ウェイト)。丸ゴシック本文と区別し可読性重視 */
+  @font-face {
+    font-family: 'NotoKaku';
+    src: url('assets/notokaku.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+  }
   :root {
     --bg: #0a0c0b;
     --panel: #14171599;
@@ -41,6 +48,7 @@
     --accent2: #159254;
     --danger: #ff4d5e;
     --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    --f-desc: 'NotoKaku', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;  /* 絵柄などの説明・解説テキスト=角ゴシック */
     --f-disp: 'Mochiy', 'Zen Kaku Gothic New', sans-serif;      /* UI見出し/タイトル=ぷっくりポップ体(Mochiy) */
     --f-num: 'Mochiy', 'Orbitron', monospace;                   /* データ数字=ぷっくりポップ体(Mochiy) */
     --f-win: 'Mochiy', 'Zen Kaku Gothic New', sans-serif;       /* 当たり/ドーパミン演出=ぷっくりポップ体(Mochiy) */
@@ -59,6 +67,24 @@
     user-select: none;
     -webkit-user-select: none;
     overflow: hidden;
+  }
+  /* ===== 絵柄などの「説明・解説」テキストは角ゴシック(--f-desc)。名前/見出し/数字は各表示体のまま =====
+     効果説明・解説文・ツールチップ・役の説明・補足案内など。丸ゴシック本文と字形を分けて可読性を上げる。 */
+  .ds, .dd, .buildCard .d,
+  .cf-desc, .cf-hint,
+  .tip, .tapHint,
+  .roleTags .rt, .sd-body .roleTags .rt,
+  .sd-desc, .sdNone,
+  .gRow .gpat, .gRow .gds, .gFamH .n,
+  .glItem .glD,
+  .overlay p, .overlay .lead,
+  .tutPage p, .tutPage .ex, .tutPage .flow4 .f,
+  .synGain .sgr, .synGain .sgd,
+  #multBox .mbBreak,
+  .si-lead, .si-note, .shrine-hint, .shrine-rate, .shrine-stat .ss-sub, .shrine-reward .rw-sub,
+  .cabCard .cabLock,
+  .descFont {
+    font-family: var(--f-desc);
   }
   #app { display: flex; gap: 16px; padding: 12px; align-items: stretch; }
   #boardWrap {
