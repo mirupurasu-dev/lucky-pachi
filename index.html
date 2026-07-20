@@ -52,6 +52,7 @@
     --f-disp: 'Mochiy', 'Zen Kaku Gothic New', sans-serif;      /* UI見出し/タイトル=ぷっくりポップ体(Mochiy) */
     --f-num: 'Mochiy', 'Orbitron', monospace;                   /* データ数字=ぷっくりポップ体(Mochiy) */
     --f-win: 'Mochiy', 'Zen Kaku Gothic New', sans-serif;       /* 当たり/ドーパミン演出=ぷっくりポップ体(Mochiy) */
+    --grad-title: linear-gradient(#ffe36b, #ffbb2e 52%, #ff8a1f);  /* 中タイトル共通=黄→オレンジグラデ */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -202,13 +203,13 @@
   /* データ系/UI見出しはメイプル風ポップ体: 太い縁取り＋黄→橙グラデ */
   .overlay h1 {
     font-size: 38px; font-weight: 400; letter-spacing: .02em; line-height: 1.26; font-family: var(--f-disp);
-    color: #b6e84a;
-    background: linear-gradient(#33bd52, #9fe43c 55%, #d8f24e);   /* 緑→黄緑グラデ */
+    color: #ffcf4a;
+    background: var(--grad-title);   /* 黄→オレンジグラデ */
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 3px #163f1a; paint-order: stroke fill;   /* 濃緑の縁取り(内部を潰さない太さ) */
-    filter: drop-shadow(0 3px 1px rgba(8,30,10,.55));
+    -webkit-text-stroke: 3px #5a2c00; paint-order: stroke fill;   /* 濃い茶の縁取り(内部を潰さない太さ) */
+    filter: drop-shadow(0 3px 1px rgba(40,22,0,.55));
   }
-  .overlay h1 .green { color: var(--accent); background: none; -webkit-text-fill-color: var(--accent); }
+  .overlay h1 .green { background: var(--grad-title); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   .overlay h1 .red { color: var(--danger); background: none; -webkit-text-fill-color: var(--danger); }
   /* 当たり/結果の見出しはドーパミン＝極太明朝で */
   #clearOverlay h1, #gameoverOverlay h1 { font-family: var(--f-win); -webkit-text-stroke-width: 3px; }
@@ -224,7 +225,7 @@
   .cf-kind { font-size: 10px; letter-spacing: .2em; color: var(--dim); font-weight: 900; }
   .cf-icon { font-size: 46px; line-height: 1.1; margin: 8px 0 2px; min-height: 50px; }
   .cf-icon .dot2 { display: inline-block; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 16px currentColor; vertical-align: middle; }
-  .cf-name { font-size: 18px; font-weight: 900; }
+  .cf-name { font-size: 18px; font-weight: 900; font-family: var(--f-desc); }
   .cf-name .cfrar { font-size: 11px; font-weight: 900; }
   .cf-desc { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; margin-top: 8px; }
   .cf-hint { font-size: 11px; color: var(--accent); font-weight: 800; margin-top: 8px; }
@@ -237,7 +238,7 @@
   #symDetailOverlay { z-index: 86; }
   .sd-inner { max-width: 360px; background: linear-gradient(180deg,#171b16,#0e120d); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; display: flex; flex-direction: column; }
   .sd-glyph { font-size: 44px; line-height: 1; }
-  .sd-name { font-size: 18px; font-weight: 900; margin-top: 4px; }
+  .sd-name { font-size: 18px; font-weight: 900; margin-top: 4px; font-family: var(--f-desc); }
   .sd-name .sdCnt { display: block; font-size: 11px; font-weight: 700; color: var(--dim); margin-top: 2px; }
   .sd-desc { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.6; margin-top: 8px; }
   .sd-body { max-height: 54vh; overflow-y: auto; margin: 10px 0 4px; }
@@ -518,7 +519,7 @@
   .dexCard.legend { border-color: color-mix(in srgb, #ff4dff 50%, var(--line)); }
   .dexCard .dg { font-size: 22px; line-height: 1.1; }
   .dexCard img.dg { width: 30px; height: 30px; object-fit: contain; }
-  .dexCard .dn { font-size: 10px; font-weight: 900; margin-top: 3px; }
+  .dexCard .dn { font-size: 10px; font-weight: 900; margin-top: 3px; font-family: var(--f-desc); }
   .dexCard .dd { font-size: 8.5px; color: var(--dim); font-weight: 600; line-height: 1.35; margin-top: 2px; }
   .dexCard.locked .dg { filter: grayscale(1) brightness(.4); }
 
@@ -552,11 +553,14 @@
   .shopItem .rar { font-size: 9px; font-weight: 900; letter-spacing: .12em; margin-right: 4px; }
   .draftCard .icon { font-size: 34px; line-height: 1.6; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 60%, transparent)); }
   .draftCard .icon .dot2 { display: inline-block; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 14px currentColor; }
-  /* お守り/役物の生成画像アイコン(絵文字の代替) — 文脈のfont-sizeに追従 */
-  .ricon { width: 1.05em; height: 1.05em; object-fit: contain; vertical-align: -0.16em; }
-  .draftCard .icon .ricon { filter: drop-shadow(0 1px 3px rgba(0,0,0,.55)); }
-  .chip .ricon { width: 15px; height: 15px; vertical-align: middle; }
-  .draftCard .nm { font-size: 13.5px; font-weight: 900; margin-top: 2px; }
+  /* お守り/役物/絵柄の生成画像アイコン(絵文字の代替) — 文脈のfont-sizeに追従 */
+  .ricon, .sicon { width: 1.05em; height: 1.05em; object-fit: contain; vertical-align: -0.16em; }
+  .draftCard .icon .ricon, .draftCard .icon .sicon { width: 1.15em; height: 1.15em; filter: drop-shadow(0 1px 3px rgba(0,0,0,.55)); }
+  .chip .ricon, .chip .sicon { width: 15px; height: 15px; vertical-align: middle; }
+  .chip.sym .sicon { width: 20px; height: 20px; }
+  .buildCard .g .sicon { width: 46px; height: 46px; }        /* ロードアウト/除去カードの絵柄=大きめ */
+  .sd-glyph .sicon { width: 96px; height: 96px; }            /* 絵柄詳細ポップアップの大アイコン */
+  .draftCard .nm { font-size: 13.5px; font-weight: 900; margin-top: 2px; font-family: var(--f-desc); }
   .draftCard .ds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 5px; line-height: 1.5; min-height: 44px; }
 
   /* 開始リール選択 */
@@ -571,7 +575,7 @@
   .buildCard:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--accent); }
   .buildCard:disabled { opacity: .28; cursor: default; }
   .buildCard .g { font-size: 24px; line-height: 1.3; }
-  .buildCard .n { font-size: 10.5px; font-weight: 900; margin-top: 2px; }
+  .buildCard .n { font-size: 10.5px; font-weight: 900; margin-top: 2px; font-family: var(--f-desc); }
   .buildCard .d { font-size: 9px; color: var(--dim); font-weight: 600; margin-top: 3px; line-height: 1.35; min-height: 20px; }
   .buildCard.rare { border-color: #38c8ff55; }
   .buildCard.rare:hover:not(:disabled) { border-color: #38c8ff; box-shadow: 0 6px 18px #38c8ff33; }
@@ -796,7 +800,7 @@
   .shopItem:disabled { opacity: .58; cursor: default; }
   .shopItem .pr .short { color: #ff7a7a; font-size: 9px; font-weight: 900; letter-spacing: 0; }
   .shopItem .ic { font-size: 20px; width: 26px; text-align: center; }
-  .shopItem .nm { font-size: 13px; font-weight: 900; }
+  .shopItem .nm { font-size: 13px; font-weight: 900; font-family: var(--f-desc); }
   .shopItem .ds { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 1px; }
   .shopItem .pr {
     margin-left: auto; font-size: 13.5px; font-weight: 900; color: #ffd76a; white-space: nowrap;
@@ -1262,7 +1266,7 @@
 
     <div class="overlay fit" id="buildOverlay">
       <div class="inner" style="max-width:440px">
-        <h1 style="font-size:22px" id="buildTitle">開始リールを組め</h1>
+        <h1 style="font-size:22px; color:#ffd24a" id="buildTitle">開始リールを組め</h1>
         <p id="buildSub" style="margin-top:4px"></p>
         <div id="buildGrid"></div>
         <p id="buildLocked" style="margin-top:8px;font-size:10px;color:var(--dim);font-weight:700"></p>

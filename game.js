@@ -259,7 +259,7 @@ function needGlyph(nd) {
   return CAT_INFO[nd.cat] ? CAT_INFO[nd.cat].glyph : '?';
 }
 function needLabel(nd) {
-  if (nd.id) return (SYMBOLS[nd.id] ? SYMBOLS[nd.id].glyph : '?') + (nd.n > 1 ? '×' + nd.n : '');
+  if (nd.id) return (SYMBOLS[nd.id] ? symImg(nd.id, SYMBOLS[nd.id].glyph) : '?') + (nd.n > 1 ? '×' + nd.n : '');
   if (nd.rarity) return '🌟レジェンド×' + nd.n;
   const ci = CAT_INFO[nd.cat] || { glyph: '?', name: '?' };
   return ci.glyph + ci.name + '×' + nd.n;
@@ -2117,7 +2117,7 @@ function openSymbolRemove(opts = {}) {
     const el = document.createElement('button');
     el.className = 'buildCard';
     el.innerHTML =
-      `<div class="g">${s.glyph}</div><div class="n">${s.name} ×${n}</div>` +
+      `<div class="g">${symImg(id, s.glyph)}</div><div class="n">${s.name} ×${n}</div>` +
       `<div class="d">${s.desc.replace('3揃い: ', '')}</div>` +
       symbolRoleTagsHTML(id);
     el.onclick = () => {
@@ -2206,13 +2206,20 @@ function icoTag(kind, id, emoji, cls) {
 function relicPartIco(o) {
   return (o.kind === 'relic' || o.kind === 'part') && o.id ? icoTag(o.kind, o.id, o.icon) : o.icon;
 }
+// リール絵柄: 生成した和風メダル画像を優先、読み込み失敗時は絵文字にフォールバック
+function symImg(id, glyph, cls) {
+  const c = cls || 'sicon';
+  const fb = (glyph || '').replace(/"/g, '');
+  return `<img class="${c}" src="assets/sym_${id}_art.webp" alt="" data-fb="${fb}" ` +
+    `onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${c}',textContent:this.dataset.fb}))">`;
+}
 // ---------- 選択の確認ダイアログ ----------
 function confirmSelect(card, price, onOk) {
   const ov = document.getElementById('confirmOverlay');
   const isPart = card.kind === 'part';
   const icon = card.kind === 'ball'
     ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
-    : card.kind === 'symbol' ? card.glyph : relicPartIco(card);
+    : card.kind === 'symbol' ? symImg(card.id, card.glyph) : relicPartIco(card);
   const kindLabel = card.kind === 'ball' ? '玉デッキ' : card.kind === 'symbol' ? 'リール絵柄'
     : card.kind === 'part' ? '盤面役物' : card.kind === 'relic' ? 'お守り' : 'アイテム';
   document.getElementById('cfKind').textContent = `${RARITY_LABEL[card.rarity] || ''}・${kindLabel}`;
@@ -2389,7 +2396,7 @@ function openDraft() {
     el.style.setProperty('--i', i);
     const icon = card.kind === 'ball'
       ? `<span class="dot2" style="background:radial-gradient(circle at 35% 35%, #fff, ${card.color});color:${card.color}"></span>`
-      : card.kind === 'symbol' ? card.glyph : relicPartIco(card);
+      : card.kind === 'symbol' ? symImg(card.id, card.glyph) : relicPartIco(card);
     const kindLabel = card.kind === 'ball' ? 'BALL' : card.kind === 'symbol' ? 'REEL' : 'RELIC';
     el.innerHTML =
       `<div class="cardInner"><div class="cfFace cfFront">` +
@@ -2475,7 +2482,7 @@ function renderShop() {
     btn.disabled = item.bought || S.balls < item.price;
     const ic = item.kind === 'ball'
       ? `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff, ${item.color})"></span>`
-      : item.kind === 'symbol' ? item.glyph : relicPartIco(item);
+      : item.kind === 'symbol' ? symImg(item.id, item.glyph) : relicPartIco(item);
     btn.innerHTML =
       `<span class="ic">${ic}</span><span>` +
       `<div class="nm"><span class="rar" style="color:${RARITY_COLOR[item.rarity]}">${RARITY_LABEL[item.rarity]}</span> ${item.name}${item.kind === 'symbol' ? 'を追加' : ''}</div>` +
@@ -2533,10 +2540,11 @@ function renderBuild() {
     const el = document.createElement('button');
     el.className = `buildCard${st.rarity === 'rare' ? ' rare' : ''}`;
     el.innerHTML =
-      `<div class="g">${s.glyph}</div><div class="n">${s.name}</div>` +
+      `<div class="g">${symImg(id, s.glyph)}</div><div class="n">${s.name}</div>` +
       `<div class="d">${s.desc.replace('3揃い: ', '')}</div>` +
       symbolRoleTagsHTML(id);
-    el.onclick = () => {
+    // タップで詳細(効果+狙える役)を確認ダイアログで見せてから「これにする」で確定
+    const pick = () => {
       const prevSyn = activeSynergies().slice();
       S.symbolPool[id] = (S.symbolPool[id] || 0) + st.copies;
       markDex('sym', id);
@@ -2550,6 +2558,8 @@ function renderBuild() {
         startStage(1);
       } else renderBuild();
     };
+    el.onclick = () => confirmSelect(
+      { kind: 'symbol', rarity: st.rarity, id, name: s.name, desc: s.desc, glyph: s.glyph }, null, pick);
     grid.appendChild(el);
   }
   // 未解禁の匂わせ(スルメ)
@@ -2563,7 +2573,7 @@ function renderBuild() {
 }
 function renderBuildPicked() {
   document.getElementById('buildPicked').innerHTML = Object.entries(S.symbolPool)
-    .map(([id, n]) => `<span class="chip sym">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span></span>`)
+    .map(([id, n]) => `<span class="chip sym tapInfo" data-sym="${id}" role="button" tabindex="0">${symImg(id, SYMBOLS[id].glyph)}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}<br><span class="tapHint">タップで狙える役をぜんぶ見る</span></span></span>`)
     .join('') || '<span class="descFont" style="color:var(--dim);font-size:10px;font-weight:600">まだ空のリール</span>';
 }
 
@@ -2782,7 +2792,7 @@ function deckChipsHTML() {
 function reelChipsHTML() {
   return Object.entries(S.symbolPool)
     .filter(([, n]) => n > 0)
-    .map(([id, n]) => `<span class="chip sym tapInfo" data-sym="${id}" role="button" tabindex="0">${SYMBOLS[id].glyph}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}<br><span class="tapHint">タップで狙える役をぜんぶ見る</span></span></span>`)
+    .map(([id, n]) => `<span class="chip sym tapInfo" data-sym="${id}" role="button" tabindex="0">${symImg(id, SYMBOLS[id].glyph)}<span class="cnt">×${n}</span><span class="tip"><b>${SYMBOLS[id].name}</b><br>${SYMBOLS[id].desc}<br><span class="tapHint">タップで狙える役をぜんぶ見る</span></span></span>`)
     .join('');
 }
 function relicChipsHTML() {
@@ -5761,7 +5771,7 @@ function openSymDetail(id) {
   const s = SYMBOLS[id];
   if (!s) return;
   const n = S.symbolPool[id] || 0;
-  document.getElementById('sdGlyph').textContent = s.glyph;
+  document.getElementById('sdGlyph').innerHTML = symImg(id, s.glyph);
   document.getElementById('sdName').innerHTML = `${s.name}<span class="sdCnt">リールに ×${n}</span>`;
   document.getElementById('sdDesc').textContent = s.desc;
   const roles = symbolRoleTagsHTML(id);
