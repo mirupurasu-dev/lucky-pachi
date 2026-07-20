@@ -1866,7 +1866,7 @@ function reduceMotion() {
   return _rmq.matches;
 }
 function openShrine(stage, onDone) {
-  const rate = stage === 3 ? 1500 : 10000;
+  const rate = stage === 3 ? 1500 : 3000;  // 七の宮は旧10000→3000(A/B実測で常に赤字だったため緩和)
   const perTap = Math.max(1, Math.floor(S.balls * 0.01)); // タップ1回=開始時持ち玉の1%
   shrineCtx = { stage, rate, perTap, donated: 0, taps: 0, ended: false, active: false, onDone, timer: null };
   const nm = stage === 3 ? '三の宮' : '七の宮';
