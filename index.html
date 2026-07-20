@@ -47,7 +47,7 @@
     --accent: #29e07c;      /* 面テーマでJSから書き換わる */
     --accent2: #159254;
     --danger: #ff4d5e;
-    --f-base: 'Nikumaru', 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    --f-base: 'NotoKaku', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;  /* 基本UI=角ゴシック(視認性優先。丸文字はハンコ演出のみ残す) */
     --f-desc: 'NotoKaku', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;  /* 絵柄などの説明・解説テキスト=角ゴシック */
     --f-disp: 'Mochiy', 'Zen Kaku Gothic New', sans-serif;      /* UI見出し/タイトル=ぷっくりポップ体(Mochiy) */
     --f-num: 'Mochiy', 'Orbitron', monospace;                   /* データ数字=ぷっくりポップ体(Mochiy) */
@@ -55,6 +55,8 @@
     --grad-title: linear-gradient(#ffe36b, #ffbb2e 52%, #ff8a1f);  /* 中タイトル共通=黄→オレンジグラデ */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* ハンコ・スタンプ演出だけは丸文字(Nikumaru)の風合いを残す */
+  #renStamp, .soldStamp, #stageCard .num, .draftCard .cfBack .crestSub { font-family: 'Nikumaru', 'Zen Kaku Gothic New', sans-serif; }
   html, body { height: 100%; }
   body {
     background: var(--bg);
@@ -1200,6 +1202,8 @@
           <button class="ghostBtn" id="glossaryBtn">用語集</button>
           <button class="ghostBtn" id="guideBtn">役ガイド</button>
           <button class="ghostBtn" id="dexBtn">図鑑</button>
+          <button class="ghostBtn" id="saveNowBtn">いますぐセーブ</button>
+          <button class="ghostBtn" id="toTitleBtn">セーブしてタイトルへ</button>
           <button class="ghostBtn" id="settingsClose">もどる</button>
         </div>
       </div>

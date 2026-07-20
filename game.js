@@ -1874,7 +1874,7 @@ function openShrine(stage, onDone) {
   document.getElementById('shrineRate').innerHTML = `${fmtN(rate)}玉ごとに <b>運+1</b>`;
   document.getElementById('shrinePerTap').textContent = fmtN(perTap);
   document.getElementById('shrineIntroTtl').textContent = nm + ' にお参り';
-  document.getElementById('shrineIntroNote').innerHTML = `1タップ ≈ <b>${fmtN(perTap)}玉</b> を奉納。<br>玉と引き換えに運が上がります。`;
+  document.getElementById('shrineIntroNote').innerHTML = `1タップ ≈ <b>${fmtN(perTap)}玉</b> を奉納。<br>玉と引き換えに運が上がります。<br><span style="font-size:11px;color:var(--dim)">運が上がると3揃い・特殊役が出やすくなる。効果はこの周の間だけ。</span>`;
   document.getElementById('shrineReward').classList.remove('show');
   document.getElementById('shrineIntro').classList.add('show');   // まず説明を出す
   document.getElementById('shrineScene').classList.remove('active');
@@ -2210,7 +2210,7 @@ function relicPartIco(o) {
 function symImg(id, glyph, cls) {
   const c = cls || 'sicon';
   const fb = (glyph || '').replace(/"/g, '');
-  return `<img class="${c}" src="assets/sym_${id}_art.webp" alt="" data-fb="${fb}" ` +
+  return `<img class="${c}" src="assets/sym_${id}_art.webp" alt="" data-sym="${id}" data-fb="${fb}" ` +
     `onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${c}',textContent:this.dataset.fb}))">`;
 }
 // ---------- 選択の確認ダイアログ ----------
@@ -4451,7 +4451,7 @@ function drawCabinetFX(c, dt) {
     c.fillStyle = '#fff';
     c.fillRect(gx - 9, gy2 - fh - 2, 18, 4);
     c.shadowBlur = 0;
-    c.font = '900 11px "Nikumaru", sans-serif';
+    c.font = '900 11px "NotoKaku", sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = '#9aa49d';
     c.fillText('強', gx, gy1 - 26);
@@ -5725,7 +5725,7 @@ const GLOSSARY = [
     { id: 'men', t: '面（めん）', d: '一言でいうと、ステージのこと。全部で10面。面ごとに撃てる玉の数とノルマが決まっている。' },
   ] },
   { g: 'ステータス（右上の3つ）', terms: [
-    { id: 'un', t: '運（うん）', d: '一言でいうと、絵柄の揃いやすさ。クローバー🍀などで上がる。高いほど当たりが出やすくなる。' },
+    { id: 'un', t: '運（うん）', d: '一言でいうと、絵柄の揃いやすさ。高いほど3揃いと特殊役が出やすくなる。クローバー🍀など植物系の絵柄・お守り・神社(3面/7面)のお賽銭で上がる。効果はこの周の間だけで、次の周は1.0に戻る。' },
     { id: 'bairitsu', t: '倍率（ばいりつ）', d: '一言でいうと、当たりの玉が何倍になるかの数字。×2なら100玉の当たりが200玉。天体絵柄(🌙)で上がる。「宴覚醒」は連チャン中だけ一時的に上がる(途切れると0に戻る)。覚醒役は系統ごとに効果が違う。' },
     { id: 'total', t: '合計倍率（今、何倍か）', d: '一言でいうと、いまの倍率ぜんぶの掛け算。倍率×相乗×FEVER×役倍率をまとめた数字で、画面右上にいつも出ている。' },
     { id: 'soujou', t: '相乗（そうじょう）', d: '一言でいうと、相性ボーナスの倍率。相性のいい持ち物の組み合わせ(シナジー)が成立すると上がる。' },
@@ -5818,8 +5818,29 @@ function openFree() { renderFreeGrid(); document.getElementById('freeOverlay').c
 document.getElementById('continueBtn').onclick = () => { ensureAudio(); continueRun(); };
 // 設定: 難易度/フリーモード/遊び方/用語集/役ガイド/図鑑 をここに集約(タイトルは最小化)
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
-document.getElementById('settingsBtn').onclick = () => { sfx('tick'); document.getElementById('settingsOverlay').classList.add('show'); };
+document.getElementById('settingsBtn').onclick = () => {
+  sfx('tick');
+  // セーブ/タイトルへ はラン中だけ表示(タイトル画面・フリーモードでは隠す)
+  const inRun = S.phase !== 'title' && !S.free;
+  document.getElementById('saveNowBtn').style.display = inRun ? '' : 'none';
+  document.getElementById('toTitleBtn').style.display = inRun ? '' : 'none';
+  document.getElementById('settingsOverlay').classList.add('show');
+};
 document.getElementById('settingsClose').onclick = () => closeSettings();
+document.getElementById('saveNowBtn').onclick = () => {
+  saveRun(); sfx('tick');
+  const b = document.getElementById('saveNowBtn');
+  b.textContent = 'セーブした！';
+  setTimeout(() => { b.textContent = 'いますぐセーブ'; }, 1200);
+};
+document.getElementById('toTitleBtn').onclick = () => { // セーブしてタイトルへ(廃業→タイトルと同じ遷移)
+  saveRun();
+  closeSettings();
+  S.free = false; S.phase = 'title';
+  document.getElementById('homeBtn').style.display = 'none';
+  document.getElementById('titleOverlay').classList.add('show');
+  refreshMenu();
+};
 // 台デザイン(筐体スキン)選択
 function renderCabGrid() {
   const grid = document.getElementById('cabGrid'); if (!grid) return;
@@ -5867,6 +5888,12 @@ document.getElementById('glossaryBtn').onclick = () => { closeSettings(); openGl
 document.getElementById('glossaryClose').onclick = () => document.getElementById('glossaryOverlay').classList.remove('show');
 // HUDの用語・パネル見出しをタップ → その語の説明を用語集で開く
 document.querySelectorAll('[data-gl]').forEach(el => el.addEventListener('click', () => openGlossary(el.dataset.gl)));
+// 役リスト・役ガイド内の絵柄アイコンをタップ → その絵柄の説明ポップアップ
+// (captureで先取りし、カード選択/購入/オーバーレイ閉じは発火させない)
+document.addEventListener('click', e => {
+  const ic = e.target.closest && e.target.closest('.roleTags img.sicon[data-sym], .gpat img.sicon[data-sym]');
+  if (ic) { e.stopPropagation(); e.preventDefault(); openSymDetail(ic.dataset.sym); }
+}, true);
 // リール構成チップ(sym)をタップ → 狙える役のフル説明ポップアップ。チップは動的に描き直すので委譲で拾う
 document.addEventListener('click', e => {
   const symChip = e.target.closest('.chip.sym[data-sym]');

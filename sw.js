@@ -1,7 +1,7 @@
 // 幸運のパチンコ — Service Worker
 // TWA(Androidアプリ)がオフラインでも起動できるよう、コアファイルを事前キャッシュし、
 // それ以外の画像等は初回アクセス時にキャッシュへ足していく(stale-while-revalidate)。
-const CACHE_NAME = 'lucky-pachi-v27';
+const CACHE_NAME = 'lucky-pachi-v28';
 const CORE_ASSETS = ['./', './index.html', './game.js', './manifest.json', './assets/nikumaru.woff2', './assets/mochiy.woff2', './assets/notokaku.woff2',
   // deco版UI装飾画像(オフライン初表示でも枠/ロゴ/ハンコ/演出が欠けないよう事前キャッシュ)
   './assets/ui_card_frame.webp', './assets/ui_shopitem_frame.webp', './assets/ui_btn_gold.webp', './assets/ui_btnframe.webp',
